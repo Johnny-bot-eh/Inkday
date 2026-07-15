@@ -67,6 +67,17 @@ export async function getExistingPlay(opts: {
   });
 }
 
+/** All of a user's plays for one calendar day (one query — avoids home-page Turso storms). */
+export async function listPlaysForDate(userId: string, dateKey: string) {
+  const db = getDb();
+  return db.query.playResult.findMany({
+    where: and(
+      eq(playResult.userId, userId),
+      eq(playResult.dateKey, dateKey),
+    ),
+  });
+}
+
 export async function submitPlay(opts: {
   userId: string;
   puzzleType: PuzzleType;

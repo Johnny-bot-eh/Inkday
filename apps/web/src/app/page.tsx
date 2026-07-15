@@ -8,53 +8,35 @@ import {
   WORD_DAILY_DIFFICULTY,
   todayKey,
   wordleTitle,
-  type Difficulty,
-  type PuzzleType,
 } from "@daily-puzzle/puzzle-core";
-import { getExistingPlay, getProfile } from "@/lib/game-service";
+import { getProfile, listPlaysForDate } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { ChallengeCountdown } from "@/components/challenge-countdown";
 
 export default async function HomePage() {
   const session = await getSession();
   const dateKey = todayKey();
-  const profile = session?.user ? await getProfile(session.user.id) : null;
 
-  const playKeys: Array<{ type: PuzzleType; difficulty: Difficulty }> = [
-    { type: "wordle", difficulty: WORD_DAILY_DIFFICULTY },
-    ...EXTRA_WORDLE_DIFFICULTIES.map((difficulty) => ({
-      type: "wordle" as const,
-      difficulty,
-    })),
-    ...DIFFICULTIES.map((difficulty) => ({
-      type: "escape" as const,
-      difficulty,
-    })),
-    ...DIFFICULTIES.map((difficulty) => ({
-      type: "logic" as const,
-      difficulty,
-    })),
-    ...DIFFICULTIES.map((difficulty) => ({
-      type: "path" as const,
-      difficulty,
-    })),
-  ];
+  let profile: Awaited<ReturnType<typeof getProfile>> | null = null;
+  let playedMap = new Map<
+    string,
+    Awaited<ReturnType<typeof listPlaysForDate>>[number]
+  >();
 
-  const played = session?.user
-    ? await Promise.all(
-        playKeys.map(async ({ type, difficulty }) => {
-          const play = await getExistingPlay({
-            userId: session.user.id,
-            puzzleType: type,
-            difficulty,
-            dateKey,
-          });
-          return [`${type}:${difficulty}`, play] as const;
-        }),
-      )
-    : [];
-
-  const playedMap = new Map(played);
+  if (session?.user) {
+    try {
+      const [nextProfile, plays] = await Promise.all([
+        getProfile(session.user.id),
+        listPlaysForDate(session.user.id, dateKey),
+      ]);
+      profile = nextProfile;
+      playedMap = new Map(
+        plays.map((play) => [`${play.puzzleType}:${play.difficulty}`, play]),
+      );
+    } catch (err) {
+      console.error("Home signed-in data failed", err);
+    }
+  }
 
   return (
     <div className="space-y-10">

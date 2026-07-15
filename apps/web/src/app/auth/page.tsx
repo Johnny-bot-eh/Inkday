@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
-  const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,16 +24,21 @@ export default function AuthPage() {
           email: email.trim().toLowerCase(),
           password,
         });
-        if (res.error) throw new Error(res.error.message ?? "Sign up failed");
+        if (res.error && !res.data) {
+          throw new Error(res.error.message ?? "Sign up failed");
+        }
       } else {
         const res = await authClient.signIn.email({
           email: email.trim().toLowerCase(),
           password,
         });
-        if (res.error) throw new Error(res.error.message ?? "Sign in failed");
+        if (res.error && !res.data) {
+          throw new Error(res.error.message ?? "Sign in failed");
+        }
       }
-      router.push("/");
-      router.refresh();
+      // Full navigation avoids soft-nav swallowing a home RSC error as "Error" on this form.
+      window.location.assign("/");
+      return;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Something went wrong";
