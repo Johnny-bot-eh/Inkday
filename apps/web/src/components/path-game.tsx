@@ -191,7 +191,8 @@ export function PathGame({
                 onClick={() => tryStep(coord)}
                 className={[
                   "flex aspect-square items-center justify-center rounded-md border text-sm font-bold transition",
-                  wall && "cursor-default border-transparent bg-paper/10",
+                  wall &&
+                    "cursor-default border-transparent bg-absent text-fog/30 shadow-inner",
                   !wall && !onPath && "border-[var(--line)] bg-ink-2/80 hover:border-ember/50",
                   onPath && !isHead && "border-transparent bg-path/35 text-paper",
                   isHead && "border-transparent bg-path-head text-on-ember",

@@ -46,7 +46,7 @@ const TEMPLATES: PathTemplate[] = [
     waypoints: ["1"],
     map: [
       "S.#..",
-      "...#.",
+      ".....",
       ".#1#.",
       "...#.",
       "..#.E",
@@ -62,10 +62,10 @@ const TEMPLATES: PathTemplate[] = [
     map: [
       "S.#...",
       "..#.#.",
-      "##..#.",
+      "#...#.",
+      ".##...",
       "...##.",
-      ".#....",
-      "...#.E",
+      "..#..E",
     ],
   },
   {
@@ -93,12 +93,12 @@ const TEMPLATES: PathTemplate[] = [
     waypoints: [],
     map: [
       "S.#.#..",
-      "..#.#.#",
-      "##....#",
-      "...##..",
-      ".#.#.#.",
-      "...#...",
-      "#.#.#.E",
+      "..###.#",
+      "#.....#",
+      ".###...",
+      "...###.",
+      ".#.....",
+      "...#.#E",
     ],
   },
   {
@@ -110,12 +110,12 @@ const TEMPLATES: PathTemplate[] = [
     waypoints: ["1", "2", "3"],
     map: [
       "S......",
-      ".#####.",
-      ".#1..#.",
-      ".##.#.#",
-      ".#..2#.",
-      ".#3##..",
-      "....#.E",
+      ".#.#.#.",
+      "..1....",
+      ".#.#.#.",
+      "..2....",
+      ".#.#3#.",
+      "......E",
     ],
   },
   {
@@ -158,13 +158,13 @@ const TEMPLATES: PathTemplate[] = [
     waypoints: ["1", "2"],
     map: [
       "S.#...",
-      "..#.#.",
-      "##1...",
-      "...##.",
-      ".#..2.",
-      "..##.#",
       "......",
-      ".#.#.E",
+      ".#1#..",
+      "......",
+      ".#2#..",
+      "......",
+      ".#.#.#",
+      "....E.",
     ],
   },
 ];
@@ -181,6 +181,85 @@ function findCell(grid: PathCell[][], target: PathCell | string): PathCoord | nu
   }
   return null;
 }
+
+/** True if there exists a simple (no-revisit) path S → waypoints → E. */
+export function pathHasSolution(
+  grid: PathCell[][],
+  waypoints: string[],
+): boolean {
+  const start = findCell(grid, "S");
+  if (!start) return false;
+
+  const rows = grid.length;
+  const cols = grid[0]?.length ?? 0;
+
+  const dfs = (r: number, c: number, wp: number, seen: Set<string>): boolean => {
+    const key = `${r},${c}`;
+    if (seen.has(key)) return false;
+    const tile = grid[r]?.[c];
+    if (!tile || tile === "#") return false;
+
+    let nextWp = wp;
+    if (nextWp < waypoints.length && tile === waypoints[nextWp]) {
+      nextWp += 1;
+    }
+
+    const nextSeen = new Set(seen);
+    nextSeen.add(key);
+
+    if (tile === "E" && nextWp === waypoints.length) return true;
+
+    for (const [dr, dc] of [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ] as const) {
+      const nr = r + dr;
+      const nc = c + dc;
+      if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+      if (dfs(nr, nc, nextWp, nextSeen)) return true;
+    }
+    return false;
+  };
+
+  return dfs(start.r, start.c, 0, new Set());
+}
+
+function assertTemplatesSolvable() {
+  for (const template of TEMPLATES) {
+    const grid = parseMap(template.map);
+    if (
+      template.rows !== grid.length ||
+      template.cols !== (grid[0]?.length ?? 0)
+    ) {
+      throw new Error(`Path template ${template.slug} has mismatched size`);
+    }
+    if (!pathHasSolution(grid, template.waypoints)) {
+      throw new Error(`Path template ${template.slug} has no solution`);
+    }
+    const start = findCell(grid, "S");
+    if (!start) throw new Error(`Path template ${template.slug} missing S`);
+    const openExits = (
+      [
+        [0, 1],
+        [1, 0],
+        [0, -1],
+        [-1, 0],
+      ] as const
+    ).filter(([dr, dc]) => {
+      const r = start.r + dr;
+      const c = start.c + dc;
+      const tile = grid[r]?.[c];
+      return Boolean(tile && tile !== "#");
+    }).length;
+    if (openExits === 0) {
+      throw new Error(`Path template ${template.slug} traps S`);
+    }
+  }
+}
+
+assertTemplatesSolvable();
 
 const BY_DIFFICULTY: Record<Difficulty, (t: PathTemplate) => boolean> = {
   easy: (t) => t.rows <= 5 && t.waypoints.length <= 1,
