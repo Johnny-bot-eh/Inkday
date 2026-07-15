@@ -265,6 +265,7 @@ const BY_DIFFICULTY: Record<Difficulty, (t: PathTemplate) => boolean> = {
   easy: (t) => t.rows <= 5 && t.waypoints.length <= 1,
   medium: (t) => t.rows >= 5 && t.rows <= 7 && t.waypoints.length <= 2,
   hard: (t) => t.rows >= 6,
+  impossible: (t) => t.rows >= 7 && t.waypoints.length >= 1,
 };
 
 export function getPathPuzzle(

@@ -32,12 +32,14 @@ const BY_DIFFICULTY: Record<Difficulty, string[]> = {
   easy: EASY_WORDS,
   medium: MEDIUM_WORDS,
   hard: HARD_WORDS,
+  impossible: HARD_WORDS,
 };
 
 const GUESS_LIMIT: Record<Difficulty, number> = {
   easy: 6,
   medium: 6,
   hard: 5,
+  impossible: 4,
 };
 
 export function getWordleConfig(

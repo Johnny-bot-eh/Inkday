@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { PUZZLE_LABELS, type PuzzleType } from "@daily-puzzle/puzzle-core";
+import { formatDuration } from "@/components/play-timer";
 
 type Props = {
   user: {
@@ -13,10 +15,33 @@ type Props = {
   stats: {
     currentStreak: number;
     bestStreak: number;
+    weeklyStreak?: number;
+    bestWeeklyStreak?: number;
+    monthlyStreak?: number;
+    bestMonthlyStreak?: number;
     totalScore: number;
     puzzlesSolved: number;
     lastPlayDate: string | null;
   } | null;
+  insights: {
+    averageCompletionMs: number | null;
+    favoriteCategory: string | null;
+    favoriteCount: number;
+    friends: Array<{ id: string; name: string }>;
+    achievements: Array<{
+      id: string;
+      title: string;
+      description: string;
+      earned: boolean;
+    }>;
+    unlocks: Array<{
+      id: string;
+      title: string;
+      description: string;
+      unlocked: boolean;
+    }>;
+    unlockIds: string[];
+  };
   recent: Array<{
     id: string;
     puzzleType: string;
@@ -33,17 +58,20 @@ function timeFromMeta(metaJson: string | null): string | null {
   try {
     const meta = JSON.parse(metaJson) as { elapsedMs?: number };
     if (typeof meta.elapsedMs !== "number") return null;
-    const totalSec = Math.floor(meta.elapsedMs / 1000);
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
+    return formatDuration(meta.elapsedMs);
   } catch {
     return null;
   }
 }
 
-export function ProfileView({ user, stats, recent }: Props) {
+function categoryLabel(type: string | null): string {
+  if (!type) return "—";
+  return PUZZLE_LABELS[type as PuzzleType] ?? type;
+}
+
+export function ProfileView({ user, stats, insights, recent }: Props) {
   const router = useRouter();
+  const earnedCount = insights.achievements.filter((a) => a.earned).length;
 
   async function signOut() {
     await authClient.signOut();
@@ -60,10 +88,6 @@ export function ProfileView({ user, stats, recent }: Props) {
             {user.displayName || user.name}
           </h1>
           <p className="mt-1 text-sm text-fog">{user.email}</p>
-          <p className="mt-3 text-sm text-fog">
-            Daily streak: win at least one puzzle each calendar day. A miss later
-            the same day won’t wipe a streak you’ve already secured.
-          </p>
         </div>
         <button
           type="button"
@@ -74,12 +98,124 @@ export function ProfileView({ user, stats, recent }: Props) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile label="Streak" value={`${stats?.currentStreak ?? 0}d`} />
-        <Tile label="Best streak" value={`${stats?.bestStreak ?? 0}d`} />
-        <Tile label="Total score" value={`${stats?.totalScore ?? 0}`} />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Tile label="Username" value={user.displayName || user.name} />
         <Tile label="Solved" value={`${stats?.puzzlesSolved ?? 0}`} />
+        <Tile label="Total points" value={`${stats?.totalScore ?? 0}`} />
+        <Tile label="Daily streak" value={`${stats?.currentStreak ?? 0}d`} />
+        <Tile label="Best daily" value={`${stats?.bestStreak ?? 0}d`} />
+        <Tile label="Weekly streak" value={`${stats?.weeklyStreak ?? 0}w`} />
+        <Tile label="Monthly streak" value={`${stats?.monthlyStreak ?? 0}m`} />
+        <Tile
+          label="Avg time"
+          value={
+            insights.averageCompletionMs != null
+              ? formatDuration(insights.averageCompletionMs)
+              : "—"
+          }
+        />
+        <Tile label="Favorite" value={categoryLabel(insights.favoriteCategory)} />
+        <Tile label="Achievements" value={`${earnedCount}/${insights.achievements.length}`} />
       </div>
+
+      <section>
+        <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
+          Achievements
+        </h2>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {insights.achievements.map((a) => (
+            <div
+              key={a.id}
+              className={[
+                "rounded-xl border px-4 py-3",
+                a.earned
+                  ? "border-ember/35 bg-ember/10"
+                  : "border-[var(--line)] bg-ink-2/50 opacity-70",
+              ].join(" ")}
+            >
+              <div className="font-semibold">
+                {a.earned ? "✓ " : ""}
+                {a.title}
+              </div>
+              <div className="mt-1 text-xs text-fog">{a.description}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
+          Unlocks
+        </h2>
+        <div className="mt-3 grid gap-2">
+          {insights.unlocks.map((u) => (
+            <div
+              key={u.id}
+              className={[
+                "rounded-xl border px-4 py-3",
+                u.unlocked
+                  ? "border-mint/40 bg-mint/10"
+                  : "border-[var(--line)] bg-ink-2/50",
+              ].join(" ")}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-semibold">{u.title}</div>
+                <span className="text-xs text-fog">
+                  {u.unlocked ? "Unlocked" : "Locked"}
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-fog">{u.description}</div>
+              {u.unlocked && u.id === "impossible_mode" && (
+                <Link
+                  href="/play/escape/impossible"
+                  className="mt-2 inline-block text-sm text-ember hover:underline"
+                >
+                  Play Impossible Escape →
+                </Link>
+              )}
+              {u.unlocked && u.id === "exclusive_cases" && (
+                <Link
+                  href="/play/escape/hard"
+                  className="mt-2 inline-block text-sm text-ember hover:underline"
+                >
+                  Exclusive hard cases →
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
+            Friends
+          </h2>
+          <Link href="/friends" className="text-sm text-ember hover:underline">
+            Manage →
+          </Link>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {insights.friends.length === 0 ? (
+            <p className="text-sm text-fog">
+              No friends yet.{" "}
+              <Link href="/friends" className="text-ember hover:underline">
+                Invite someone
+              </Link>
+              .
+            </p>
+          ) : (
+            insights.friends.map((friend) => (
+              <span
+                key={friend.id}
+                className="rounded-full border border-[var(--line)] bg-ink-2/80 px-3 py-1 text-sm"
+              >
+                {friend.name}
+              </span>
+            ))
+          )}
+        </div>
+      </section>
 
       <section>
         <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
@@ -127,7 +263,7 @@ function Tile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-[var(--line)] bg-ink-2/80 px-4 py-3">
       <div className="text-xs uppercase tracking-wider text-fog">{label}</div>
-      <div className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold">
+      <div className="mt-1 truncate font-[family-name:var(--font-display)] text-2xl font-bold">
         {value}
       </div>
     </div>

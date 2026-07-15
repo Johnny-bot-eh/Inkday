@@ -12,6 +12,11 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
+import {
+  PlayResultsCard,
+  type PlayRanks,
+} from "@/components/play-results-card";
+import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   difficulty: Difficulty;
@@ -43,6 +48,17 @@ export function LogicGame({
       : null,
   );
   const [submitting, setSubmitting] = useState(false);
+  const [results, setResults] = useState<{
+    won: boolean;
+    elapsedMs?: number;
+    score?: number;
+    streak?: number;
+    breakdown?: ScoreBreakdown | null;
+    ranks?: PlayRanks | null;
+    answer?: string | null;
+    newAchievements?: Array<{ title: string; description: string }>;
+    newUnlocks?: Array<{ title: string; description: string }>;
+  } | null>(null);
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
     resetKey: `${dateKey}-${difficulty}`,
@@ -87,10 +103,15 @@ export function LogicGame({
       const correct =
         answer.trim().toLowerCase() === puzzle.answer.trim().toLowerCase();
       setDone(true);
+      setResults({
+        won: correct,
+        elapsedMs,
+        answer: puzzle.answer,
+      });
       setStatus(
         correct
-          ? `Correct in ${timeLabel} — ${puzzle.answer}. Sign in to save points.`
-          : `Not quite (${timeLabel}). Answer: ${puzzle.answer}.`,
+          ? `Correct in ${timeLabel}. Sign in to save points.`
+          : `Not quite (${timeLabel}).`,
       );
       return;
     }
@@ -114,11 +135,18 @@ export function LogicGame({
         return;
       }
       setDone(true);
-      setStatus(
-        data.won
-          ? `Solved in ${timeLabel} · ${data.score} pts · streak ${data.streak}`
-          : `Wrong in ${timeLabel} · answer was ${data.answer}`,
-      );
+      setResults({
+        won: Boolean(data.won),
+        elapsedMs: data.elapsedMs ?? elapsedMs,
+        score: data.score,
+        streak: data.streak,
+        breakdown: data.breakdown,
+        ranks: data.ranks,
+        answer: data.answer,
+        newAchievements: data.newAchievements,
+        newUnlocks: data.newUnlocks,
+      });
+      setStatus(null);
       router.refresh();
     } catch {
       setStatus("Network error saving result");
@@ -260,6 +288,8 @@ export function LogicGame({
           {status}
         </p>
       )}
+
+      {results && <PlayResultsCard {...results} />}
     </div>
   );
 }

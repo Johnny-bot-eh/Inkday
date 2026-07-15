@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { todayKey, type Difficulty, type PuzzleType } from "@daily-puzzle/puzzle-core";
 
 type Friendship = {
   id: string;
@@ -15,17 +16,46 @@ type Friendship = {
   } | null;
 };
 
+type Challenge = {
+  id: string;
+  status: string;
+  puzzleType: PuzzleType;
+  difficulty: Difficulty;
+  dateKey: string;
+  incoming: boolean;
+  challengerScore: number | null;
+  opponentScore: number | null;
+  winnerId: string | null;
+  href: string;
+  other: { id: string; name: string } | null;
+};
+
+const CHALLENGE_OPTIONS: Array<{
+  puzzleType: PuzzleType;
+  difficulty: Difficulty;
+  label: string;
+}> = [
+  { puzzleType: "wordle", difficulty: "medium", label: "Word Daily" },
+  { puzzleType: "escape", difficulty: "hard", label: "Detective Hard" },
+  { puzzleType: "logic", difficulty: "medium", label: "Logic Medium" },
+  { puzzleType: "path", difficulty: "medium", label: "Path Medium" },
+];
+
 export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
   const [friendships, setFriendships] = useState<Friendship[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [challengeTarget, setChallengeTarget] = useState<string | null>(null);
+  const [challengePick, setChallengePick] = useState(CHALLENGE_OPTIONS[0]!.label);
 
   async function load() {
     const res = await fetch("/api/social?view=friends");
     if (!res.ok) return;
     const data = await res.json();
     setFriendships(data.friendships ?? []);
+    setChallenges(data.challenges ?? []);
   }
 
   useEffect(() => {
@@ -39,7 +69,7 @@ export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
           Friends
         </h1>
         <p className="mt-2 text-fog">
-          Add friends to compare daily ranks side by side.
+          Add friends, send puzzle challenges, and compete on weekly ladders.
         </p>
         <Link
           href="/auth"
@@ -91,6 +121,56 @@ export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
     await load();
   }
 
+  async function sendChallenge(opponentId: string) {
+    const pick =
+      CHALLENGE_OPTIONS.find((o) => o.label === challengePick) ??
+      CHALLENGE_OPTIONS[0]!;
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/social", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "challenge",
+          opponentId,
+          puzzleType: pick.puzzleType,
+          difficulty: pick.difficulty,
+          dateKey: todayKey(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(
+          data.error === "exists"
+            ? "Challenge already open for that board today."
+            : data.error === "not_friends"
+              ? "You can only challenge friends."
+              : data.error,
+        );
+        return;
+      }
+      setMessage(`Challenge sent: ${pick.label}`);
+      setChallengeTarget(null);
+      await load();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function respondChallenge(id: string, accept: boolean) {
+    await fetch("/api/social", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "challenge_respond",
+        challengeId: id,
+        accept,
+      }),
+    });
+    await load();
+  }
+
   const pending = friendships.filter(
     (f) => f.status === "pending" && f.incoming,
   );
@@ -98,6 +178,10 @@ export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
     (f) => f.status === "pending" && !f.incoming,
   );
   const accepted = friendships.filter((f) => f.status === "accepted");
+  const openChallenges = challenges.filter((c) =>
+    ["pending", "active"].includes(c.status),
+  );
+  const doneChallenges = challenges.filter((c) => c.status === "completed");
 
   return (
     <div className="mx-auto max-w-xl animate-rise space-y-8">
@@ -106,7 +190,8 @@ export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
           Friends
         </h1>
         <p className="mt-2 text-fog">
-          Invite by email, then check the Friends leaderboard.
+          Invite friends, challenge them to today’s boards, and battle on weekly
+          tournaments.
         </p>
       </div>
 
@@ -131,6 +216,61 @@ export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
         </button>
       </form>
       {message && <p className="text-sm text-fog">{message}</p>}
+
+      {openChallenges.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm uppercase tracking-wider text-ember">
+            Active challenges
+          </h2>
+          {openChallenges.map((c) => (
+            <div
+              key={c.id}
+              className="rounded-xl border border-[var(--line)] bg-ink-2/80 px-4 py-3"
+            >
+              <div className="font-semibold">
+                {c.incoming ? "From" : "To"} {c.other?.name} · {c.puzzleType}{" "}
+                {c.difficulty}
+              </div>
+              <div className="mt-1 text-xs text-fog">
+                {c.status === "pending" && c.incoming
+                  ? "Accept to open the duel"
+                  : c.status === "pending"
+                    ? "Waiting for them to accept"
+                    : "Both play today’s board — highest score wins"}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {c.status === "pending" && c.incoming && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => void respondChallenge(c.id, true)}
+                      className="rounded-md bg-mint/20 px-3 py-1 text-sm text-mint"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void respondChallenge(c.id, false)}
+                      className="rounded-md px-3 py-1 text-sm text-fog"
+                    >
+                      Decline
+                    </button>
+                  </>
+                )}
+                {(c.status === "active" ||
+                  (c.status === "pending" && !c.incoming)) && (
+                  <Link
+                    href={c.href}
+                    className="rounded-md bg-ember/20 px-3 py-1 text-sm text-ember"
+                  >
+                    Play board →
+                  </Link>
+                )}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       {pending.length > 0 && (
         <section className="space-y-2">
@@ -169,13 +309,65 @@ export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
           <h2 className="text-sm uppercase tracking-wider text-ember">
             Connected
           </h2>
+          <div className="mb-2 flex flex-wrap gap-2">
+            <select
+              value={challengePick}
+              onChange={(e) => setChallengePick(e.target.value)}
+              className="rounded-lg border border-[var(--line)] bg-ink-2 px-3 py-2 text-sm"
+            >
+              {CHALLENGE_OPTIONS.map((o) => (
+                <option key={o.label} value={o.label}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
           {accepted.map((f) => (
             <div
               key={f.id}
-              className="rounded-xl border border-[var(--line)] bg-panel/50 px-4 py-3"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-panel/50 px-4 py-3"
             >
-              {f.other?.displayName || f.other?.name}
-              <div className="text-xs text-fog">{f.other?.email}</div>
+              <div>
+                <div>{f.other?.displayName || f.other?.name}</div>
+                <div className="text-xs text-fog">{f.other?.email}</div>
+              </div>
+              {f.other && (
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    setChallengeTarget(f.other!.id);
+                    void sendChallenge(f.other!.id);
+                  }}
+                  className="rounded-lg border border-ember/40 px-3 py-1.5 text-sm text-ember hover:bg-ember/10"
+                >
+                  {challengeTarget === f.other.id ? "Sending…" : "Challenge"}
+                </button>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {doneChallenges.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm uppercase tracking-wider text-fog">
+            Recent results
+          </h2>
+          {doneChallenges.slice(0, 6).map((c) => (
+            <div
+              key={c.id}
+              className="rounded-xl border border-[var(--line)] px-4 py-3 text-sm"
+            >
+              vs {c.other?.name} · {c.puzzleType} {c.difficulty}
+              <div className="text-xs text-fog">
+                {c.challengerScore ?? "—"} – {c.opponentScore ?? "—"}
+                {c.winnerId
+                  ? c.winnerId === c.other?.id
+                    ? " · They won"
+                    : " · You won"
+                  : " · Draw"}
+              </div>
             </div>
           ))}
         </section>

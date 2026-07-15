@@ -52,6 +52,12 @@ const statements = [
   user_id TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,
   current_streak INTEGER NOT NULL DEFAULT 0,
   best_streak INTEGER NOT NULL DEFAULT 0,
+  weekly_streak INTEGER NOT NULL DEFAULT 0,
+  best_weekly_streak INTEGER NOT NULL DEFAULT 0,
+  monthly_streak INTEGER NOT NULL DEFAULT 0,
+  best_monthly_streak INTEGER NOT NULL DEFAULT 0,
+  last_win_week_start TEXT,
+  last_win_month_start TEXT,
   total_score INTEGER NOT NULL DEFAULT 0,
   puzzles_solved INTEGER NOT NULL DEFAULT 0,
   last_play_date TEXT,
@@ -79,6 +85,62 @@ const statements = [
 )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS play_once_per_day_idx ON play_result(user_id, puzzle_type, difficulty, date_key)`,
   `CREATE INDEX IF NOT EXISTS play_leaderboard_idx ON play_result(date_key, puzzle_type, difficulty)`,
+  `CREATE TABLE IF NOT EXISTS user_achievement (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  achievement_id TEXT NOT NULL,
+  earned_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS user_achievement_unique_idx ON user_achievement(user_id, achievement_id)`,
+  `CREATE INDEX IF NOT EXISTS user_achievement_user_idx ON user_achievement(user_id)`,
+  `CREATE TABLE IF NOT EXISTS user_unlock (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  unlock_id TEXT NOT NULL,
+  unlocked_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS user_unlock_unique_idx ON user_unlock(user_id, unlock_id)`,
+  `CREATE INDEX IF NOT EXISTS user_unlock_user_idx ON user_unlock(user_id)`,
+  `CREATE TABLE IF NOT EXISTS friend_challenge (
+  id TEXT PRIMARY KEY NOT NULL,
+  challenger_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  opponent_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  puzzle_type TEXT NOT NULL,
+  difficulty TEXT NOT NULL,
+  date_key TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  challenger_score INTEGER,
+  opponent_score INTEGER,
+  winner_id TEXT REFERENCES user(id) ON DELETE SET NULL,
+  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE INDEX IF NOT EXISTS friend_challenge_challenger_idx ON friend_challenge(challenger_id)`,
+  `CREATE INDEX IF NOT EXISTS friend_challenge_opponent_idx ON friend_challenge(opponent_id)`,
+  `CREATE INDEX IF NOT EXISTS friend_challenge_date_idx ON friend_challenge(date_key)`,
+  `CREATE TABLE IF NOT EXISTS tournament_award (
+  id TEXT PRIMARY KEY NOT NULL,
+  week_start TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  place INTEGER NOT NULL,
+  bonus_points INTEGER NOT NULL DEFAULT 0,
+  badge TEXT NOT NULL,
+  awarded_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS tournament_award_unique_idx ON tournament_award(week_start, scope, user_id)`,
+  `CREATE INDEX IF NOT EXISTS tournament_award_user_idx ON tournament_award(user_id)`,
+  `CREATE INDEX IF NOT EXISTS tournament_award_week_idx ON tournament_award(week_start, scope)`,
+];
+
+/** Additive column migrations — safe to re-run (ignore duplicate-column errors). */
+const alters = [
+  `ALTER TABLE user_stats ADD COLUMN weekly_streak INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE user_stats ADD COLUMN best_weekly_streak INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE user_stats ADD COLUMN monthly_streak INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE user_stats ADD COLUMN best_monthly_streak INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE user_stats ADD COLUMN last_win_week_start TEXT`,
+  `ALTER TABLE user_stats ADD COLUMN last_win_month_start TEXT`,
+  `ALTER TABLE user_stats ADD COLUMN challenge_wins INTEGER NOT NULL DEFAULT 0`,
 ];
 
 function createDbClient() {
@@ -107,6 +169,17 @@ const { label, client } = createDbClient();
 
 for (const statement of statements) {
   await client.execute(statement);
+}
+
+for (const statement of alters) {
+  try {
+    await client.execute(statement);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!/duplicate column/i.test(message)) {
+      throw err;
+    }
+  }
 }
 
 console.log(`Migrated database: ${label}`);

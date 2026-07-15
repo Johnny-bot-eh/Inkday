@@ -22,7 +22,7 @@ export default async function ProfilePage() {
     );
   }
 
-  const { user, stats, recent } = await getProfile(session.user.id);
+  const { user, stats, recent, insights } = await getProfile(session.user.id);
   if (!user) return null;
 
   return (
@@ -33,6 +33,7 @@ export default async function ProfilePage() {
         displayName: user.displayName,
       }}
       stats={stats}
+      insights={insights}
       recent={recent}
     />
   );

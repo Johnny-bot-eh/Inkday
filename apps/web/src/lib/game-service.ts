@@ -1,13 +1,39 @@
-import type { Difficulty, PuzzleType } from "@daily-puzzle/puzzle-core";
-import { nextStreak } from "@daily-puzzle/puzzle-core";
+import type {
+  Difficulty,
+  LeaderboardPeriod,
+  PuzzleType,
+} from "@daily-puzzle/puzzle-core";
 import {
+  ACHIEVEMENTS,
+  UNLOCKS,
+  WEEKLY_TOURNAMENT_BADGES,
+  WEEKLY_TOURNAMENT_BONUS,
+  evaluateAchievements,
+  evaluateUnlocks,
+  isNightOwlClear,
+  isSpeedClear,
+  isWeekComplete,
+  nextMonthlyStreak,
+  nextStreak,
+  nextWeeklyStreak,
+  periodRange,
+  previousWeekStartKey,
+  unlockRequiredForDifficulty,
+  weekStartKey,
+  type ProgressCounters,
+} from "@daily-puzzle/puzzle-core";
+import {
+  friendChallenge,
   friendship,
   getDb,
   playResult,
+  tournamentAward,
   user,
+  userAchievement,
   userStats,
+  userUnlock,
 } from "@daily-puzzle/db";
-import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 export async function ensureUserStats(userId: string) {
@@ -56,6 +82,14 @@ export async function submitPlay(opts: {
     return { ok: false as const, reason: "already_played" as const, play: existing };
   }
 
+  const requiredUnlock = unlockRequiredForDifficulty(opts.difficulty);
+  if (requiredUnlock) {
+    const unlocked = await userHasUnlock(opts.userId, requiredUnlock);
+    if (!unlocked) {
+      return { ok: false as const, reason: "locked" as const };
+    }
+  }
+
   const playId = randomUUID();
   await db.insert(playResult).values({
     id: playId,
@@ -76,6 +110,28 @@ export async function submitPlay(opts: {
     won: opts.won,
   });
   const bestStreak = Math.max(stats?.bestStreak ?? 0, streak);
+
+  const weekly = nextWeeklyStreak({
+    previousStreak: stats?.weeklyStreak ?? 0,
+    lastWinWeekStart: stats?.lastWinWeekStart ?? null,
+    playDate: opts.dateKey,
+    won: opts.won,
+  });
+  const monthly = nextMonthlyStreak({
+    previousStreak: stats?.monthlyStreak ?? 0,
+    lastWinMonthStart: stats?.lastWinMonthStart ?? null,
+    playDate: opts.dateKey,
+    won: opts.won,
+  });
+  const bestWeeklyStreak = Math.max(
+    stats?.bestWeeklyStreak ?? 0,
+    weekly.streak,
+  );
+  const bestMonthlyStreak = Math.max(
+    stats?.bestMonthlyStreak ?? 0,
+    monthly.streak,
+  );
+
   const totalScore = (stats?.totalScore ?? 0) + opts.score;
   const puzzlesSolved = (stats?.puzzlesSolved ?? 0) + (opts.won ? 1 : 0);
 
@@ -85,6 +141,12 @@ export async function submitPlay(opts: {
       userId: opts.userId,
       currentStreak: streak,
       bestStreak,
+      weeklyStreak: weekly.streak,
+      bestWeeklyStreak,
+      monthlyStreak: monthly.streak,
+      bestMonthlyStreak,
+      lastWinWeekStart: weekly.weekStart,
+      lastWinMonthStart: monthly.monthStart,
       totalScore,
       puzzlesSolved,
       lastPlayDate: opts.dateKey,
@@ -94,12 +156,43 @@ export async function submitPlay(opts: {
       set: {
         currentStreak: streak,
         bestStreak,
+        weeklyStreak: weekly.streak,
+        bestWeeklyStreak,
+        monthlyStreak: monthly.streak,
+        bestMonthlyStreak,
+        lastWinWeekStart: weekly.weekStart,
+        lastWinMonthStart: monthly.monthStart,
         totalScore,
         puzzlesSolved,
         lastPlayDate: opts.dateKey,
         updatedAt: new Date(),
       },
     });
+
+  const progress = await syncProgression(opts.userId, {
+    dailyStreak: streak,
+    bestDailyStreak: bestStreak,
+    weeklyStreak: weekly.streak,
+    monthlyStreak: monthly.streak,
+  });
+
+  const challengeUpdate = await applyChallengeScore({
+    userId: opts.userId,
+    puzzleType: opts.puzzleType,
+    difficulty: opts.difficulty,
+    dateKey: opts.dateKey,
+    score: opts.score,
+  });
+
+  // Re-sync if a challenge win may unlock Challenge Victor
+  if (challengeUpdate?.wonChallenge) {
+    await syncProgression(opts.userId, {
+      dailyStreak: streak,
+      bestDailyStreak: bestStreak,
+      weeklyStreak: weekly.streak,
+      monthlyStreak: monthly.streak,
+    });
+  }
 
   const play = await db.query.playResult.findFirst({
     where: eq(playResult.id, playId),
@@ -110,7 +203,156 @@ export async function submitPlay(opts: {
     play,
     streak,
     bestStreak,
+    weeklyStreak: weekly.streak,
+    monthlyStreak: monthly.streak,
     totalScore,
+    newAchievements: progress.newAchievements,
+    newUnlocks: progress.newUnlocks,
+    challenge: challengeUpdate,
+  };
+}
+
+export async function userHasUnlock(userId: string, unlockId: string) {
+  const db = getDb();
+  const row = await db.query.userUnlock.findFirst({
+    where: and(
+      eq(userUnlock.userId, userId),
+      eq(userUnlock.unlockId, unlockId),
+    ),
+  });
+  return Boolean(row);
+}
+
+export async function getUserUnlockIds(userId: string): Promise<string[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ unlockId: userUnlock.unlockId })
+    .from(userUnlock)
+    .where(eq(userUnlock.userId, userId));
+  return rows.map((r) => r.unlockId);
+}
+
+export async function getUserAchievementIds(userId: string): Promise<string[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ achievementId: userAchievement.achievementId })
+    .from(userAchievement)
+    .where(eq(userAchievement.userId, userId));
+  return rows.map((r) => r.achievementId);
+}
+
+async function buildProgressCounters(
+  userId: string,
+  streakOverlay?: Partial<ProgressCounters>,
+): Promise<ProgressCounters> {
+  const db = getDb();
+  const [stats, wins, challengeWinRows, champRows] = await Promise.all([
+    ensureUserStats(userId),
+    db
+      .select({
+        puzzleType: playResult.puzzleType,
+        metaJson: playResult.metaJson,
+        createdAt: playResult.createdAt,
+      })
+      .from(playResult)
+      .where(and(eq(playResult.userId, userId), eq(playResult.won, true))),
+    db
+      .select({ id: friendChallenge.id })
+      .from(friendChallenge)
+      .where(
+        and(
+          eq(friendChallenge.winnerId, userId),
+          eq(friendChallenge.status, "completed"),
+        ),
+      ),
+    db
+      .select({ id: tournamentAward.id })
+      .from(tournamentAward)
+      .where(
+        and(eq(tournamentAward.userId, userId), eq(tournamentAward.place, 1)),
+      ),
+  ]);
+
+  let escapeWins = 0;
+  let logicWins = 0;
+  let speedClears = 0;
+  let perfectClears = 0;
+  let nightOwlClears = 0;
+
+  for (const play of wins) {
+    if (play.puzzleType === "escape") escapeWins += 1;
+    if (play.puzzleType === "logic") logicWins += 1;
+    if (play.createdAt && isNightOwlClear(new Date(play.createdAt))) {
+      nightOwlClears += 1;
+    }
+    if (!play.metaJson) continue;
+    try {
+      const meta = JSON.parse(play.metaJson) as {
+        elapsedMs?: number;
+        breakdown?: { perfectBonus?: number };
+      };
+      if (isSpeedClear(meta.elapsedMs)) speedClears += 1;
+      if ((meta.breakdown?.perfectBonus ?? 0) > 0) perfectClears += 1;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return {
+    escapeWins,
+    logicWins,
+    totalWins: wins.length,
+    speedClears,
+    perfectClears,
+    nightOwlClears,
+    dailyStreak: streakOverlay?.dailyStreak ?? stats?.currentStreak ?? 0,
+    weeklyStreak: streakOverlay?.weeklyStreak ?? stats?.weeklyStreak ?? 0,
+    monthlyStreak: streakOverlay?.monthlyStreak ?? stats?.monthlyStreak ?? 0,
+    bestDailyStreak: streakOverlay?.bestDailyStreak ?? stats?.bestStreak ?? 0,
+    challengeWins: challengeWinRows.length,
+    weeklyChampionships: champRows.length,
+  };
+}
+
+async function syncProgression(
+  userId: string,
+  streakOverlay?: Partial<ProgressCounters>,
+) {
+  const db = getDb();
+  const [counters, earned, unlocked] = await Promise.all([
+    buildProgressCounters(userId, streakOverlay),
+    getUserAchievementIds(userId),
+    getUserUnlockIds(userId),
+  ]);
+
+  const earnedSet = new Set(earned);
+  const unlockedSet = new Set(unlocked);
+  const newAchievementIds = evaluateAchievements(counters, earnedSet);
+  const newUnlockIds = evaluateUnlocks(counters, unlockedSet);
+
+  for (const achievementId of newAchievementIds) {
+    await db.insert(userAchievement).values({
+      id: randomUUID(),
+      userId,
+      achievementId,
+    });
+  }
+  for (const unlockId of newUnlockIds) {
+    await db.insert(userUnlock).values({
+      id: randomUUID(),
+      userId,
+      unlockId,
+    });
+  }
+
+  return {
+    counters,
+    newAchievements: ACHIEVEMENTS.filter((a) =>
+      newAchievementIds.includes(a.id),
+    ),
+    newUnlocks: UNLOCKS.filter((u) => newUnlockIds.includes(u.id)),
+    achievementIds: [...earnedSet, ...newAchievementIds],
+    unlockIds: [...unlockedSet, ...newUnlockIds],
   };
 }
 
@@ -135,7 +377,8 @@ export async function getFriendIds(userId: string): Promise<string[]> {
 }
 
 export async function getLeaderboard(opts: {
-  dateKey: string;
+  dateKey?: string;
+  period?: LeaderboardPeriod;
   puzzleType?: PuzzleType;
   difficulty?: Difficulty;
   userIds?: string[];
@@ -143,8 +386,20 @@ export async function getLeaderboard(opts: {
 }) {
   const db = getDb();
   const limit = opts.limit ?? 25;
+  const period = opts.period ?? "day";
+  const anchor = opts.dateKey
+    ? new Date(`${opts.dateKey}T12:00:00.000Z`)
+    : new Date();
+  const { startKey, endKey, rangeLabel } = periodRange(period, anchor);
 
-  const conditions = [eq(playResult.dateKey, opts.dateKey)];
+  const conditions =
+    period === "day"
+      ? [eq(playResult.dateKey, endKey)]
+      : [
+          gte(playResult.dateKey, startKey),
+          lte(playResult.dateKey, endKey),
+        ];
+
   if (opts.puzzleType) {
     conditions.push(eq(playResult.puzzleType, opts.puzzleType));
   }
@@ -152,11 +407,13 @@ export async function getLeaderboard(opts: {
     conditions.push(eq(playResult.difficulty, opts.difficulty));
   }
   if (opts.userIds) {
-    if (opts.userIds.length === 0) return [];
+    if (opts.userIds.length === 0) {
+      return { rows: [], dateKey: endKey, period, rangeLabel, startKey, endKey };
+    }
     conditions.push(inArray(playResult.userId, opts.userIds));
   }
 
-  return db
+  const rows = await db
     .select({
       userId: playResult.userId,
       name: user.name,
@@ -172,6 +429,8 @@ export async function getLeaderboard(opts: {
     .groupBy(playResult.userId, user.name, user.displayName)
     .orderBy(desc(sql`sum(${playResult.score})`))
     .limit(limit);
+
+  return { rows, dateKey: endKey, period, rangeLabel, startKey, endKey };
 }
 
 export async function listFriendships(userId: string) {
@@ -265,16 +524,551 @@ export async function respondFriend(
   return { ok: true as const };
 }
 
+export async function getPlayRanks(opts: {
+  userId: string;
+  dateKey: string;
+}): Promise<{
+  friends: {
+    rank: number | null;
+    total: number;
+    top: Array<{ userId: string; name: string; score: number }>;
+  };
+  global: {
+    rank: number | null;
+    total: number;
+  };
+}> {
+  const friendIds = await getFriendIds(opts.userId);
+  const friendBoard = await getLeaderboard({
+    dateKey: opts.dateKey,
+    period: "day",
+    userIds: [...friendIds, opts.userId],
+    limit: 100,
+  });
+  const globalBoard = await getLeaderboard({
+    dateKey: opts.dateKey,
+    period: "day",
+    limit: 500,
+  });
+
+  const friendIndex = friendBoard.rows.findIndex((r) => r.userId === opts.userId);
+  const globalIndex = globalBoard.rows.findIndex((r) => r.userId === opts.userId);
+
+  return {
+    friends: {
+      rank: friendIndex >= 0 ? friendIndex + 1 : null,
+      total: friendBoard.rows.length,
+      top: friendBoard.rows.slice(0, 3).map((r) => ({
+        userId: r.userId,
+        name: r.displayName || r.name,
+        score: r.dayScore,
+      })),
+    },
+    global: {
+      rank: globalIndex >= 0 ? globalIndex + 1 : null,
+      total: globalBoard.rows.length,
+    },
+  };
+}
+
 export async function getProfile(userId: string) {
   const db = getDb();
-  const [profileUser, stats, recent] = await Promise.all([
-    db.query.user.findFirst({ where: eq(user.id, userId) }),
-    ensureUserStats(userId),
-    db.query.playResult.findMany({
-      where: eq(playResult.userId, userId),
-      orderBy: [desc(playResult.createdAt)],
-      limit: 12,
-    }),
-  ]);
-  return { user: profileUser, stats, recent };
+  const [profileUser, stats, recent, allWins, friendships, achievementIds, unlockIds] =
+    await Promise.all([
+      db.query.user.findFirst({ where: eq(user.id, userId) }),
+      ensureUserStats(userId),
+      db.query.playResult.findMany({
+        where: eq(playResult.userId, userId),
+        orderBy: [desc(playResult.createdAt)],
+        limit: 12,
+      }),
+      db
+        .select({
+          puzzleType: playResult.puzzleType,
+          metaJson: playResult.metaJson,
+        })
+        .from(playResult)
+        .where(and(eq(playResult.userId, userId), eq(playResult.won, true))),
+      listFriendships(userId),
+      getUserAchievementIds(userId),
+      getUserUnlockIds(userId),
+    ]);
+
+  let totalElapsed = 0;
+  let timedPlays = 0;
+  const typeCounts = new Map<string, number>();
+
+  for (const play of allWins) {
+    typeCounts.set(
+      play.puzzleType,
+      (typeCounts.get(play.puzzleType) ?? 0) + 1,
+    );
+    if (!play.metaJson) continue;
+    try {
+      const meta = JSON.parse(play.metaJson) as { elapsedMs?: number };
+      if (typeof meta.elapsedMs === "number" && meta.elapsedMs >= 0) {
+        totalElapsed += meta.elapsedMs;
+        timedPlays += 1;
+      }
+    } catch {
+      /* ignore bad meta */
+    }
+  }
+
+  let favoriteCategory: string | null = null;
+  let favoriteCount = 0;
+  for (const [type, count] of typeCounts) {
+    if (count > favoriteCount) {
+      favoriteCategory = type;
+      favoriteCount = count;
+    }
+  }
+
+  const acceptedFriends = friendships
+    .filter((f) => f.status === "accepted" && f.other)
+    .map((f) => ({
+      id: f.other!.id,
+      name: f.other!.displayName || f.other!.name,
+    }));
+
+  const earned = new Set(achievementIds);
+  const unlocked = new Set(unlockIds);
+
+  return {
+    user: profileUser,
+    stats,
+    recent,
+    insights: {
+      averageCompletionMs:
+        timedPlays > 0 ? Math.round(totalElapsed / timedPlays) : null,
+      favoriteCategory,
+      favoriteCount,
+      friends: acceptedFriends,
+      achievements: ACHIEVEMENTS.map((a) => ({
+        ...a,
+        earned: earned.has(a.id),
+      })),
+      unlocks: UNLOCKS.map((u) => ({
+        ...u,
+        unlocked: unlocked.has(u.id),
+      })),
+      unlockIds,
+    },
+  };
 }
+
+async function areFriends(a: string, b: string): Promise<boolean> {
+  const ids = await getFriendIds(a);
+  return ids.includes(b);
+}
+
+export async function createFriendChallenge(opts: {
+  challengerId: string;
+  opponentId: string;
+  puzzleType: PuzzleType;
+  difficulty: Difficulty;
+  dateKey: string;
+}) {
+  if (opts.challengerId === opts.opponentId) {
+    return { ok: false as const, reason: "self" as const };
+  }
+  if (!(await areFriends(opts.challengerId, opts.opponentId))) {
+    return { ok: false as const, reason: "not_friends" as const };
+  }
+
+  const db = getDb();
+  const existing = await db.query.friendChallenge.findFirst({
+    where: and(
+      eq(friendChallenge.dateKey, opts.dateKey),
+      eq(friendChallenge.puzzleType, opts.puzzleType),
+      eq(friendChallenge.difficulty, opts.difficulty),
+      or(
+        and(
+          eq(friendChallenge.challengerId, opts.challengerId),
+          eq(friendChallenge.opponentId, opts.opponentId),
+        ),
+        and(
+          eq(friendChallenge.challengerId, opts.opponentId),
+          eq(friendChallenge.opponentId, opts.challengerId),
+        ),
+      ),
+      inArray(friendChallenge.status, ["pending", "active"]),
+    ),
+  });
+  if (existing) {
+    return { ok: false as const, reason: "exists" as const };
+  }
+
+  const id = randomUUID();
+  await db.insert(friendChallenge).values({
+    id,
+    challengerId: opts.challengerId,
+    opponentId: opts.opponentId,
+    puzzleType: opts.puzzleType,
+    difficulty: opts.difficulty,
+    dateKey: opts.dateKey,
+    status: "pending",
+  });
+  return { ok: true as const, id };
+}
+
+export async function respondFriendChallenge(
+  userId: string,
+  challengeId: string,
+  accept: boolean,
+) {
+  const db = getDb();
+  const row = await db.query.friendChallenge.findFirst({
+    where: eq(friendChallenge.id, challengeId),
+  });
+  if (!row || row.opponentId !== userId || row.status !== "pending") {
+    return { ok: false as const, reason: "forbidden" as const };
+  }
+  await db
+    .update(friendChallenge)
+    .set({ status: accept ? "active" : "declined" })
+    .where(eq(friendChallenge.id, challengeId));
+  return { ok: true as const };
+}
+
+export async function listFriendChallenges(userId: string) {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(friendChallenge)
+    .where(
+      or(
+        eq(friendChallenge.challengerId, userId),
+        eq(friendChallenge.opponentId, userId),
+      ),
+    )
+    .orderBy(desc(friendChallenge.createdAt))
+    .limit(40);
+
+  const otherIds = [
+    ...new Set(
+      rows.map((r) =>
+        r.challengerId === userId ? r.opponentId : r.challengerId,
+      ),
+    ),
+  ];
+  const people =
+    otherIds.length === 0
+      ? []
+      : await db.select().from(user).where(inArray(user.id, otherIds));
+  const byId = new Map(people.map((p) => [p.id, p]));
+
+  return rows.map((row) => {
+    const otherId =
+      row.challengerId === userId ? row.opponentId : row.challengerId;
+    const other = byId.get(otherId);
+    return {
+      ...row,
+      incoming: row.opponentId === userId,
+      other: other
+        ? {
+            id: other.id,
+            name: other.displayName || other.name,
+          }
+        : null,
+      href: `/play/${row.puzzleType}/${row.difficulty}`,
+    };
+  });
+}
+
+async function applyChallengeScore(opts: {
+  userId: string;
+  puzzleType: PuzzleType;
+  difficulty: Difficulty;
+  dateKey: string;
+  score: number;
+}) {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(friendChallenge)
+    .where(
+      and(
+        eq(friendChallenge.dateKey, opts.dateKey),
+        eq(friendChallenge.puzzleType, opts.puzzleType),
+        eq(friendChallenge.difficulty, opts.difficulty),
+        inArray(friendChallenge.status, ["pending", "active"]),
+        or(
+          eq(friendChallenge.challengerId, opts.userId),
+          eq(friendChallenge.opponentId, opts.userId),
+        ),
+      ),
+    );
+
+  if (rows.length === 0) return null;
+
+  let wonChallenge = false;
+  let completed: (typeof rows)[number] | null = null;
+
+  for (const row of rows) {
+    const isChallenger = row.challengerId === opts.userId;
+    const patch = isChallenger
+      ? { challengerScore: opts.score, status: "active" as const }
+      : { opponentScore: opts.score, status: "active" as const };
+
+    const challengerScore = isChallenger
+      ? opts.score
+      : row.challengerScore;
+    const opponentScore = isChallenger ? row.opponentScore : opts.score;
+
+    if (
+      typeof challengerScore === "number" &&
+      typeof opponentScore === "number"
+    ) {
+      let winnerId: string | null = null;
+      if (challengerScore > opponentScore) winnerId = row.challengerId;
+      else if (opponentScore > challengerScore) winnerId = row.opponentId;
+
+      await db
+        .update(friendChallenge)
+        .set({
+          challengerScore,
+          opponentScore,
+          winnerId,
+          status: "completed",
+        })
+        .where(eq(friendChallenge.id, row.id));
+
+      if (winnerId) {
+        await db
+          .update(userStats)
+          .set({
+            challengeWins: sql`${userStats.challengeWins} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(userStats.userId, winnerId));
+        if (winnerId === opts.userId) wonChallenge = true;
+      }
+      completed = {
+        ...row,
+        challengerScore,
+        opponentScore,
+        winnerId,
+        status: "completed",
+      };
+    } else {
+      await db
+        .update(friendChallenge)
+        .set(patch)
+        .where(eq(friendChallenge.id, row.id));
+    }
+  }
+
+  return {
+    wonChallenge,
+    completed: completed
+      ? {
+          id: completed.id,
+          winnerId: completed.winnerId,
+          challengerScore: completed.challengerScore,
+          opponentScore: completed.opponentScore,
+        }
+      : null,
+  };
+}
+
+/**
+ * Settle the previous UTC week once: award global top 3 bonuses + badges.
+ * Friends-circle #1 for the calling user is also awarded if applicable.
+ */
+export async function settleWeeklyTournaments(opts?: {
+  forUserId?: string;
+}) {
+  const weekStart = previousWeekStartKey();
+  if (!isWeekComplete(weekStart)) {
+    return { settled: false as const, weekStart, awards: [] as const };
+  }
+
+  const db = getDb();
+  const awards: Array<{
+    userId: string;
+    place: number;
+    badge: string;
+    bonusPoints: number;
+    scope: "global" | "friends";
+  }> = [];
+
+  const existingGlobal = await db.query.tournamentAward.findFirst({
+    where: and(
+      eq(tournamentAward.weekStart, weekStart),
+      eq(tournamentAward.scope, "global"),
+    ),
+  });
+
+  if (!existingGlobal) {
+    const sunday = (() => {
+      const [y, m, d] = weekStart.split("-").map(Number);
+      return new Date(Date.UTC(y!, m! - 1, d! + 6)).toISOString().slice(0, 10);
+    })();
+
+    const top = await db
+      .select({
+        userId: playResult.userId,
+        dayScore: sql<number>`sum(${playResult.score})`.mapWith(Number),
+      })
+      .from(playResult)
+      .where(
+        and(
+          gte(playResult.dateKey, weekStart),
+          lte(playResult.dateKey, sunday),
+        ),
+      )
+      .groupBy(playResult.userId)
+      .orderBy(desc(sql`sum(${playResult.score})`))
+      .limit(3);
+
+    for (let i = 0; i < top.length; i++) {
+      const row = top[i]!;
+      const place = i + 1;
+      const bonusPoints = WEEKLY_TOURNAMENT_BONUS[i] ?? 0;
+      const badge = WEEKLY_TOURNAMENT_BADGES[i] ?? `Place ${place}`;
+      await db.insert(tournamentAward).values({
+        id: randomUUID(),
+        weekStart,
+        scope: "global",
+        userId: row.userId,
+        place,
+        bonusPoints,
+        badge,
+      });
+      if (bonusPoints > 0) {
+        await ensureUserStats(row.userId);
+        await db
+          .update(userStats)
+          .set({
+            totalScore: sql`${userStats.totalScore} + ${bonusPoints}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(userStats.userId, row.userId));
+      }
+      await syncProgression(row.userId);
+      awards.push({
+        userId: row.userId,
+        place,
+        badge,
+        bonusPoints,
+        scope: "global",
+      });
+    }
+  }
+
+  if (opts?.forUserId) {
+    const already = await db.query.tournamentAward.findFirst({
+      where: and(
+        eq(tournamentAward.weekStart, weekStart),
+        eq(tournamentAward.scope, "friends"),
+        eq(tournamentAward.userId, opts.forUserId),
+      ),
+    });
+    if (!already) {
+      const friendIds = await getFriendIds(opts.forUserId);
+      const circle = [...friendIds, opts.forUserId];
+      const sunday = (() => {
+        const [y, m, d] = weekStart.split("-").map(Number);
+        return new Date(Date.UTC(y!, m! - 1, d! + 6)).toISOString().slice(0, 10);
+      })();
+      const top = await db
+        .select({
+          userId: playResult.userId,
+          dayScore: sql<number>`sum(${playResult.score})`.mapWith(Number),
+        })
+        .from(playResult)
+        .where(
+          and(
+            gte(playResult.dateKey, weekStart),
+            lte(playResult.dateKey, sunday),
+            inArray(playResult.userId, circle),
+          ),
+        )
+        .groupBy(playResult.userId)
+        .orderBy(desc(sql`sum(${playResult.score})`))
+        .limit(3);
+
+      for (let i = 0; i < top.length; i++) {
+        const row = top[i]!;
+        const place = i + 1;
+        // Award each circle member once (unique on week+scope+user).
+        const exists = await db.query.tournamentAward.findFirst({
+          where: and(
+            eq(tournamentAward.weekStart, weekStart),
+            eq(tournamentAward.scope, "friends"),
+            eq(tournamentAward.userId, row.userId),
+          ),
+        });
+        if (exists) continue;
+        const badge = WEEKLY_TOURNAMENT_BADGES[i] ?? `Place ${place}`;
+        const friendBonus = WEEKLY_TOURNAMENT_BONUS[i] ?? 0;
+        await db.insert(tournamentAward).values({
+          id: randomUUID(),
+          weekStart,
+          scope: "friends",
+          userId: row.userId,
+          place,
+          bonusPoints: friendBonus,
+          badge: `Friends ${badge}`,
+        });
+        if (friendBonus > 0) {
+          await ensureUserStats(row.userId);
+          await db
+            .update(userStats)
+            .set({
+              totalScore: sql`${userStats.totalScore} + ${friendBonus}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(userStats.userId, row.userId));
+        }
+        await syncProgression(row.userId);
+        if (row.userId === opts.forUserId) {
+          awards.push({
+            userId: row.userId,
+            place,
+            badge: `Friends ${badge}`,
+            bonusPoints: friendBonus,
+            scope: "friends",
+          });
+        }
+      }
+    }
+  }
+
+  return { settled: true as const, weekStart, awards };
+}
+
+export async function listTournamentAwards(userId: string) {
+  const db = getDb();
+  return db
+    .select()
+    .from(tournamentAward)
+    .where(eq(tournamentAward.userId, userId))
+    .orderBy(desc(tournamentAward.awardedAt))
+    .limit(20);
+}
+
+export async function getCurrentWeekTournamentPreview(opts: {
+  userId?: string;
+  scope: "global" | "friends";
+}) {
+  const weekStart = weekStartKey();
+  let userIds: string[] | undefined;
+  if (opts.scope === "friends") {
+    if (!opts.userId) return { weekStart, rows: [] };
+    const friends = await getFriendIds(opts.userId);
+    userIds = [...friends, opts.userId];
+  }
+  const board = await getLeaderboard({
+    period: "week",
+    userIds,
+    limit: 10,
+  });
+  return {
+    weekStart,
+    rows: board.rows,
+    rangeLabel: board.rangeLabel,
+  };
+}
+

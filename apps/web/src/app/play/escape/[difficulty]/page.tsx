@@ -1,40 +1,59 @@
-import { notFound } from "next/navigation";
-import {
-  DIFFICULTIES,
-  type Difficulty,
-  todayKey,
-} from "@daily-puzzle/puzzle-core";
 import { EscapeGame } from "@/components/escape-game";
-import { getExistingPlay } from "@/lib/game-service";
+import { LockedPuzzle } from "@/components/locked-puzzle";
+import { loadPlayPage } from "@/lib/play-page";
+import { userHasUnlock } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 
 export default async function EscapePlayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ difficulty: string }>;
+  searchParams: Promise<{ pack?: string }>;
 }) {
   const { difficulty: raw } = await params;
-  if (!DIFFICULTIES.includes(raw as Difficulty)) notFound();
-  const difficulty = raw as Difficulty;
-  const session = await getSession();
-  const dateKey = todayKey();
-  const existing = session?.user
-    ? await getExistingPlay({
-        userId: session.user.id,
-        puzzleType: "escape",
-        difficulty,
-        dateKey,
-      })
-    : null;
+  const { pack: packRaw } = await searchParams;
+  const pack = packRaw === "exclusive" ? "exclusive" : "standard";
+
+  if (pack === "exclusive") {
+    const session = await getSession();
+    if (!session?.user) {
+      return (
+        <LockedPuzzle
+          title="Exclusive Cases"
+          reason="Sign in and unlock Exclusive Cases (50 detective clears) to open this file."
+        />
+      );
+    }
+    const unlocked = await userHasUnlock(session.user.id, "exclusive_cases");
+    if (!unlocked) {
+      return (
+        <LockedPuzzle
+          title="Exclusive Cases"
+          reason="Solve 50 Escape Room puzzles to unlock exclusive case files."
+        />
+      );
+    }
+  }
+
+  const page = await loadPlayPage({
+    puzzleType: "escape",
+    difficultyRaw: raw,
+  });
+
+  if (page.locked) {
+    return (
+      <LockedPuzzle title="Impossible Escape" reason={page.lockReason!} />
+    );
+  }
 
   return (
     <EscapeGame
-      difficulty={difficulty}
-      dateKey={dateKey}
-      signedIn={Boolean(session?.user)}
-      alreadyPlayed={
-        existing ? { score: existing.score, won: existing.won } : null
-      }
+      difficulty={page.difficulty}
+      dateKey={page.dateKey}
+      signedIn={page.signedIn}
+      alreadyPlayed={page.alreadyPlayed}
+      pack={pack}
     />
   );
 }

@@ -13,6 +13,11 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
+import {
+  PlayResultsCard,
+  type PlayRanks,
+} from "@/components/play-results-card";
+import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   difficulty: Difficulty;
@@ -44,6 +49,17 @@ export function WordleGame({
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [submitting, setSubmitting] = useState(false);
   const [revealAnswer, setRevealAnswer] = useState<string | null>(null);
+  const [results, setResults] = useState<{
+    won: boolean;
+    elapsedMs?: number;
+    score?: number;
+    streak?: number;
+    breakdown?: ScoreBreakdown | null;
+    ranks?: PlayRanks | null;
+    answer?: string | null;
+    newAchievements?: Array<{ title: string; description: string }>;
+    newUnlocks?: Array<{ title: string; description: string }>;
+  } | null>(null);
 
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
@@ -79,6 +95,11 @@ export function WordleGame({
 
     if (!signedIn) {
       setRevealAnswer(config.answer);
+      setResults({
+        won,
+        elapsedMs,
+        answer: config.answer,
+      });
       setStatus(
         won
           ? `Solved in ${timeLabel}! Sign in to save your score.`
@@ -107,11 +128,18 @@ export function WordleGame({
         return;
       }
       setRevealAnswer(data.answer);
-      setStatus(
-        won
-          ? `Solved in ${timeLabel} · ${data.score} pts · streak ${data.streak}`
-          : `Missed in ${timeLabel} · answer was ${data.answer}`,
-      );
+      setResults({
+        won,
+        elapsedMs: data.elapsedMs ?? elapsedMs,
+        score: data.score,
+        streak: data.streak,
+        breakdown: data.breakdown,
+        ranks: data.ranks,
+        answer: data.answer,
+        newAchievements: data.newAchievements,
+        newUnlocks: data.newUnlocks,
+      });
+      setStatus(null);
       router.refresh();
     } catch {
       setStatus("Network error saving result");
@@ -227,10 +255,16 @@ export function WordleGame({
       {status && (
         <p className="mt-4 rounded-lg border border-[var(--line)] bg-panel/60 px-4 py-3 text-sm">
           {status}
-          {revealAnswer && done ? (
+          {revealAnswer && done && !results ? (
             <span className="mt-1 block text-fog">Answer: {revealAnswer}</span>
           ) : null}
         </p>
+      )}
+
+      {results && (
+        <div className="mt-4">
+          <PlayResultsCard {...results} />
+        </div>
       )}
     </div>
   );

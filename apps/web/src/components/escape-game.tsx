@@ -11,12 +11,18 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
+import {
+  PlayResultsCard,
+  type PlayRanks,
+} from "@/components/play-results-card";
+import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   difficulty: Difficulty;
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  pack?: "standard" | "exclusive";
 };
 
 export function EscapeGame({
@@ -24,11 +30,12 @@ export function EscapeGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  pack = "standard",
 }: Props) {
   const router = useRouter();
   const room = useMemo(
-    () => getEscapeRoom(dateKey, difficulty),
-    [dateKey, difficulty],
+    () => getEscapeRoom(dateKey, difficulty, pack),
+    [dateKey, difficulty, pack],
   );
 
   const [code, setCode] = useState("");
@@ -40,6 +47,17 @@ export function EscapeGame({
       : null,
   );
   const [submitting, setSubmitting] = useState(false);
+  const [results, setResults] = useState<{
+    won: boolean;
+    elapsedMs?: number;
+    score?: number;
+    streak?: number;
+    breakdown?: ScoreBreakdown | null;
+    ranks?: PlayRanks | null;
+    answer?: string | null;
+    newAchievements?: Array<{ title: string; description: string }>;
+    newUnlocks?: Array<{ title: string; description: string }>;
+  } | null>(null);
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
     resetKey: `${dateKey}-${difficulty}`,
@@ -51,10 +69,15 @@ export function EscapeGame({
 
     if (!signedIn) {
       setDone(true);
+      setResults({
+        won: opts.won,
+        elapsedMs,
+        answer: room.answer,
+      });
       setStatus(
         opts.won
-          ? `Unlocked in ${timeLabel}! Sign in to save. Code was ${room.answer}.`
-          : `Out of attempts (${timeLabel}). Code was ${room.answer}.`,
+          ? `Unlocked in ${timeLabel}! Sign in to save.`
+          : `Out of attempts (${timeLabel}).`,
       );
       return;
     }
@@ -83,11 +106,18 @@ export function EscapeGame({
         return;
       }
       setDone(true);
-      setStatus(
-        data.won
-          ? `Unlocked in ${timeLabel} · ${data.score} pts · streak ${data.streak}`
-          : `Locked out in ${timeLabel} · code was ${data.answer}`,
-      );
+      setResults({
+        won: Boolean(data.won),
+        elapsedMs: data.elapsedMs ?? elapsedMs,
+        score: data.score,
+        streak: data.streak,
+        breakdown: data.breakdown,
+        ranks: data.ranks,
+        answer: data.answer,
+        newAchievements: data.newAchievements,
+        newUnlocks: data.newUnlocks,
+      });
+      setStatus(null);
       router.refresh();
     } catch {
       setStatus("Network error saving result");
@@ -198,6 +228,8 @@ export function EscapeGame({
           {status}
         </p>
       )}
+
+      {results && <PlayResultsCard {...results} />}
     </div>
   );
 }

@@ -3,6 +3,8 @@ import {
   DIFFICULTIES,
   DIFFICULTY_LABELS,
   EXTRA_WORDLE_DIFFICULTIES,
+  HIDDEN_CHALLENGES,
+  TODAYS_CHALLENGES,
   WORD_DAILY_DIFFICULTY,
   todayKey,
   wordleTitle,
@@ -11,6 +13,7 @@ import {
 } from "@daily-puzzle/puzzle-core";
 import { getExistingPlay, getProfile } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
+import { ChallengeCountdown } from "@/components/challenge-countdown";
 
 export default async function HomePage() {
   const session = await getSession();
@@ -52,7 +55,6 @@ export default async function HomePage() {
     : [];
 
   const playedMap = new Map(played);
-  const dailyWord = playedMap.get(`wordle:${WORD_DAILY_DIFFICULTY}`);
 
   return (
     <div className="space-y-10">
@@ -66,33 +68,21 @@ export default async function HomePage() {
           Inkday
         </h1>
         <p className="mt-4 max-w-lg text-lg text-fog">
-          Word Daily is today’s medium board. Crack escape codes, fill logic
-          grids, draw paths through mazes, and climb the ranks with friends.
+          Four featured dailies refresh every UTC midnight. Crack them, then
+          climb global and friend leaderboards.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href={`/play/wordle/${WORD_DAILY_DIFFICULTY}`}
+            href={TODAYS_CHALLENGES[0]!.href}
             className="animate-glow rounded-lg bg-ember px-5 py-2.5 font-semibold text-on-ember transition hover:bg-ember-deep"
           >
-            Play Word Daily
+            Today’s Challenges
           </Link>
           <Link
-            href="/play/path/medium"
+            href="/leaderboard"
             className="rounded-lg border border-[var(--line)] bg-white/5 px-5 py-2.5 font-semibold text-paper transition hover:bg-white/10"
           >
-            Path Puzzle
-          </Link>
-          <Link
-            href="/play/escape/medium"
-            className="rounded-lg border border-[var(--line)] bg-white/5 px-5 py-2.5 font-semibold text-paper transition hover:bg-white/10"
-          >
-            Escape Room
-          </Link>
-          <Link
-            href="/play/logic/medium"
-            className="rounded-lg border border-[var(--line)] bg-white/5 px-5 py-2.5 font-semibold text-paper transition hover:bg-white/10"
-          >
-            Logic Grid
+            Leaderboards
           </Link>
         </div>
         {profile?.stats && (
@@ -120,159 +110,258 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="animate-rise-delay grid gap-6 lg:grid-cols-2">
-        <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-            Word Daily
-          </h2>
-          <p className="mt-2 text-sm text-fog">
-            The main daily wordle — always medium difficulty.
-          </p>
-          <div className="mt-5">
-            <PlayRow
-              href={`/play/wordle/${WORD_DAILY_DIFFICULTY}`}
-              title="Today’s board"
-              subtitle={
-                dailyWord
-                  ? session?.user
-                    ? `Logged · ${dailyWord.score} pts`
-                    : "Completed today"
-                  : "Medium · 6 letters"
-              }
-              done={Boolean(dailyWord)}
-              featured
-            />
+      <section className="animate-rise-delay space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold">
+              Today’s Challenges
+            </h2>
+            <p className="mt-1 text-sm text-fog">
+              Featured boards for {dateKey}. Clear all four before reset.
+            </p>
           </div>
+          <ChallengeCountdown />
+        </div>
 
-          <h3 className="mt-8 text-sm font-semibold uppercase tracking-[0.18em] text-fog">
-            Word Extra
-          </h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {TODAYS_CHALLENGES.map((challenge) => {
+            const done = playedMap.get(
+              `${challenge.puzzleType}:${challenge.difficulty}`,
+            );
+            return (
+              <PlayRow
+                key={challenge.id}
+                href={challenge.href}
+                title={`${challenge.title} (${challenge.difficultyLabel})`}
+                subtitle={
+                  done
+                    ? session?.user
+                      ? `Logged · ${done.score} pts`
+                      : "Completed today"
+                    : challengeSubtitle(challenge.id)
+                }
+                done={Boolean(done)}
+                featured
+              />
+            );
+          })}
+        </div>
+
+        {session?.user &&
+          profile?.insights?.unlockIds?.includes("hidden_challenges") && (
+            <div className="mt-6 space-y-3">
+              <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+                Hidden Challenges
+              </h3>
+              <p className="text-sm text-fog">
+                Unlocked by your 7-day streak — exclusive night boards.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {HIDDEN_CHALLENGES.map((challenge) => {
+                  const done = playedMap.get(
+                    `${challenge.puzzleType}:${challenge.difficulty}`,
+                  );
+                  return (
+                    <PlayRow
+                      key={challenge.id}
+                      href={challenge.href}
+                      title={challenge.title}
+                      subtitle={
+                        done
+                          ? session?.user
+                            ? `Logged · ${done.score} pts`
+                            : "Completed"
+                          : challenge.difficultyLabel
+                      }
+                      done={Boolean(done)}
+                      featured
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+      </section>
+
+      <section className="space-y-5">
+        <div>
+          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+            More puzzles
+          </h2>
           <p className="mt-1 text-sm text-fog">
-            Bonus boards — easier warm-up or a harder crunch.
+            Word Daily, extras, and every difficulty still available below.
           </p>
-          <div className="mt-4 grid gap-3">
-            {EXTRA_WORDLE_DIFFICULTIES.map((difficulty) => {
-              const done = playedMap.get(`wordle:${difficulty}`);
-              return (
-                <PlayRow
-                  key={difficulty}
-                  href={`/play/wordle/${difficulty}`}
-                  title={`${wordleTitle(difficulty)} · ${DIFFICULTY_LABELS[difficulty]}`}
-                  subtitle={
-                    done
-                      ? session?.user
-                        ? `Logged · ${done.score} pts`
-                        : "Completed today"
-                      : difficulty === "easy"
-                        ? "Shorter words · 6 guesses"
-                        : "Longer words · 5 guesses"
-                  }
-                  done={Boolean(done)}
-                />
-              );
-            })}
-          </div>
-        </article>
+        </div>
 
-        <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-            Escape Room
-          </h2>
-          <p className="mt-2 text-sm text-fog">
-            Combine notebook scraps, calendars, and plaques into a single code —
-            like cracking a safe from scattered clues.
-          </p>
-          <div className="mt-5 grid gap-3">
-            {DIFFICULTIES.map((difficulty) => {
-              const done = playedMap.get(`escape:${difficulty}`);
-              return (
-                <PlayRow
-                  key={difficulty}
-                  href={`/play/escape/${difficulty}`}
-                  title={DIFFICULTY_LABELS[difficulty]}
-                  subtitle={
-                    done
-                      ? session?.user
-                        ? `Logged · ${done.score} pts`
-                        : "Completed today"
-                      : difficulty === "easy"
-                        ? "More hints · 5 attempts"
+        {session?.user && profile?.insights?.unlocks && (
+          <div className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-5">
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+              Unlockables
+            </h3>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {profile.insights.unlocks.map((u) => (
+                <div
+                  key={u.id}
+                  className={[
+                    "rounded-xl border px-3 py-3 text-sm",
+                    u.unlocked
+                      ? "border-mint/35 bg-mint/10"
+                      : "border-[var(--line)] bg-panel/40",
+                  ].join(" ")}
+                >
+                  <div className="font-semibold">{u.title}</div>
+                  <div className="mt-1 text-xs text-fog">{u.description}</div>
+                  {u.unlocked && u.id === "impossible_mode" && (
+                    <Link
+                      href="/play/path/impossible"
+                      className="mt-2 inline-block text-ember hover:underline"
+                    >
+                      Try Impossible →
+                    </Link>
+                  )}
+                  {u.unlocked && u.id === "exclusive_cases" && (
+                    <Link
+                      href="/play/escape/medium?pack=exclusive"
+                      className="mt-2 inline-block text-ember hover:underline"
+                    >
+                      Open exclusive case →
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+              Word puzzles
+            </h3>
+            <div className="mt-4 grid gap-3">
+              <PlayRow
+                href={`/play/wordle/${WORD_DAILY_DIFFICULTY}`}
+                title="Word Daily"
+                subtitle={
+                  playedMap.get(`wordle:${WORD_DAILY_DIFFICULTY}`)
+                    ? session?.user
+                      ? `Logged · ${playedMap.get(`wordle:${WORD_DAILY_DIFFICULTY}`)!.score} pts`
+                      : "Completed today"
+                    : "Medium · main daily board"
+                }
+                done={Boolean(playedMap.get(`wordle:${WORD_DAILY_DIFFICULTY}`))}
+              />
+              {EXTRA_WORDLE_DIFFICULTIES.map((difficulty) => {
+                const done = playedMap.get(`wordle:${difficulty}`);
+                return (
+                  <PlayRow
+                    key={difficulty}
+                    href={`/play/wordle/${difficulty}`}
+                    title={`${wordleTitle(difficulty)} · ${DIFFICULTY_LABELS[difficulty]}`}
+                    subtitle={
+                      done
+                        ? session?.user
+                          ? `Logged · ${done.score} pts`
+                          : "Completed today"
+                        : difficulty === "easy"
+                          ? "Featured above as Daily Word"
+                          : "Longer words · 5 guesses"
+                    }
+                    done={Boolean(done)}
+                  />
+                );
+              })}
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+              Escape Room
+            </h3>
+            <div className="mt-4 grid gap-3">
+              {DIFFICULTIES.map((difficulty) => {
+                const done = playedMap.get(`escape:${difficulty}`);
+                return (
+                  <PlayRow
+                    key={difficulty}
+                    href={`/play/escape/${difficulty}`}
+                    title={DIFFICULTY_LABELS[difficulty]}
+                    subtitle={
+                      done
+                        ? session?.user
+                          ? `Logged · ${done.score} pts`
+                          : "Completed today"
+                        : difficulty === "hard"
+                          ? "Featured above as Daily Detective"
+                          : `${DIFFICULTY_LABELS[difficulty]} escape`
+                    }
+                    done={Boolean(done)}
+                  />
+                );
+              })}
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+              Logic Grid
+            </h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              {DIFFICULTIES.map((difficulty) => {
+                const done = playedMap.get(`logic:${difficulty}`);
+                return (
+                  <PlayRow
+                    key={difficulty}
+                    href={`/play/logic/${difficulty}`}
+                    title={DIFFICULTY_LABELS[difficulty]}
+                    subtitle={
+                      done
+                        ? session?.user
+                          ? `Logged · ${done.score} pts`
+                          : "Completed today"
                         : difficulty === "medium"
-                          ? "Core clues · 3 attempts"
-                          : "Sparse hints · 2 attempts"
-                  }
-                  done={Boolean(done)}
-                />
-              );
-            })}
-          </div>
-        </article>
+                          ? "Featured above as Daily Logic"
+                          : difficulty === "easy"
+                            ? "3 suspects"
+                            : "4 suspects"
+                    }
+                    done={Boolean(done)}
+                  />
+                );
+              })}
+            </div>
+          </article>
 
-        <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6 lg:col-span-2">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-            Logic Grid
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-fog">
-            Classic detective deduction: mark a grid from the clues, then answer
-            who did it. Easy uses smaller 3×3 cases; medium and hard scale up.
-          </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {DIFFICULTIES.map((difficulty) => {
-              const done = playedMap.get(`logic:${difficulty}`);
-              return (
-                <PlayRow
-                  key={difficulty}
-                  href={`/play/logic/${difficulty}`}
-                  title={DIFFICULTY_LABELS[difficulty]}
-                  subtitle={
-                    done
-                      ? session?.user
-                        ? `Logged · ${done.score} pts`
-                        : "Completed today"
-                      : difficulty === "easy"
-                        ? "3 suspects"
-                        : "4 suspects"
-                  }
-                  done={Boolean(done)}
-                />
-              );
-            })}
-          </div>
-        </article>
-
-        <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6 lg:col-span-2">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-            Path Puzzle
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-fog">
-            Draw an unbroken path from S to E. Stay off walls, never revisit a
-            cell, and hit numbered checkpoints in order when they appear.
-          </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {DIFFICULTIES.map((difficulty) => {
-              const done = playedMap.get(`path:${difficulty}`);
-              return (
-                <PlayRow
-                  key={difficulty}
-                  href={`/play/path/${difficulty}`}
-                  title={DIFFICULTY_LABELS[difficulty]}
-                  subtitle={
-                    done
-                      ? session?.user
-                        ? `Logged · ${done.score} pts`
-                        : "Completed today"
-                      : difficulty === "easy"
-                        ? "Small board"
-                        : difficulty === "medium"
-                          ? "Checkpoints"
-                          : "Tight mazes"
-                  }
-                  done={Boolean(done)}
-                />
-              );
-            })}
-          </div>
-        </article>
+          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+              Path Puzzle
+            </h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              {DIFFICULTIES.map((difficulty) => {
+                const done = playedMap.get(`path:${difficulty}`);
+                return (
+                  <PlayRow
+                    key={difficulty}
+                    href={`/play/path/${difficulty}`}
+                    title={DIFFICULTY_LABELS[difficulty]}
+                    subtitle={
+                      done
+                        ? session?.user
+                          ? `Logged · ${done.score} pts`
+                          : "Completed today"
+                        : difficulty === "hard"
+                          ? "Featured above as Daily Mystery"
+                          : difficulty === "easy"
+                            ? "Small board"
+                            : "Checkpoints"
+                    }
+                    done={Boolean(done)}
+                  />
+                );
+              })}
+            </div>
+          </article>
+        </div>
       </section>
 
       {!session?.user && (
@@ -286,6 +375,21 @@ export default async function HomePage() {
       )}
     </div>
   );
+}
+
+function challengeSubtitle(id: string): string {
+  switch (id) {
+    case "daily-detective":
+      return "Hard escape · sparse clues";
+    case "daily-logic":
+      return "Medium grid · mark and deduce";
+    case "daily-word":
+      return "Easy word · warm-up board";
+    case "daily-mystery":
+      return "Unknown path · tight maze";
+    default:
+      return "Play today’s board";
+  }
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

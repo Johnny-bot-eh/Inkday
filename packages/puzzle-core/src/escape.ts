@@ -381,15 +381,14 @@ const ATTEMPTS: Record<Difficulty, number> = {
   easy: 5,
   medium: 3,
   hard: 2,
+  impossible: 1,
 };
 
 const TIERS_FOR: Record<Difficulty, Tier[]> = {
-  // Easy: full support + one worked example; light decoy optional
   easy: ["essential", "helpful", "spoiler"],
-  // Medium: solvable, but you assemble format yourself; decoys allowed
   medium: ["essential", "helpful", "decoy"],
-  // Hard: essentials only + decoys — no format rescue
   hard: ["essential", "decoy"],
+  impossible: ["essential"],
 };
 
 function cluesForDifficulty(
@@ -400,12 +399,12 @@ function cluesForDifficulty(
   const allowed = new Set(TIERS_FOR[difficulty]);
   let clues = template.cluePool.filter((c) => allowed.has(c.tier));
 
-  // Hard: keep every essential, at most one decoy
-  if (difficulty === "hard") {
+  // Hard / impossible: keep essentials, at most one decoy (impossible has none)
+  if (difficulty === "hard" || difficulty === "impossible") {
     const essentials = clues.filter((c) => c.tier === "essential");
     const decoys = clues.filter((c) => c.tier === "decoy");
     const decoy =
-      decoys.length === 0
+      difficulty === "impossible" || decoys.length === 0
         ? []
         : [
             [...decoys].sort(
@@ -458,15 +457,25 @@ export function normalizeEscapeAnswer(value: string): string {
 export function getEscapeRoom(
   dateKey: string,
   difficulty: Difficulty,
+  pack: "standard" | "exclusive" = "standard",
 ): EscapeRoom {
-  const seed = hashSeed("escape", dateKey, difficulty, dayIndex(dateKey));
+  const seed = hashSeed(
+    "escape",
+    pack,
+    dateKey,
+    difficulty,
+    dayIndex(dateKey),
+  );
   const template = ESCAPES[pickIndex(seed, ESCAPES.length)]!;
   const clues = cluesForDifficulty(template, difficulty, seed);
+  const exclusive = pack === "exclusive";
 
   return {
-    id: `${template.slug}-${dateKey}-${difficulty}`,
-    title: template.title,
-    briefing: template.briefing,
+    id: `${template.slug}-${pack}-${dateKey}-${difficulty}`,
+    title: exclusive ? `Exclusive: ${template.title}` : template.title,
+    briefing: exclusive
+      ? `Locked case file. ${template.briefing}`
+      : template.briefing,
     prompt: template.prompt,
     clues,
     answer: template.answer,

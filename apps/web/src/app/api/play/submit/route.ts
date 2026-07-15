@@ -7,20 +7,36 @@ import {
   getLogicPuzzle,
   getPathPuzzle,
   getWordleConfig,
+  isPerfectEscape,
+  isPerfectLogic,
+  isPerfectPath,
+  isPerfectWordle,
   isValidWordleGuess,
+  noHintsBonus,
+  perfectBonus,
   scoreEscape,
   scoreLogic,
   scorePath,
   scoreWordle,
+  sumScore,
   timeBonus,
   todayKey,
+  weeklyBonus,
+  monthlyBonus,
   type Difficulty,
   type PathCoord,
   type PuzzleType,
+  type ScoreBreakdown,
 } from "@daily-puzzle/puzzle-core";
-import { getExistingPlay, submitPlay } from "@/lib/game-service";
+import {
+  getExistingPlay,
+  getPlayRanks,
+  submitPlay,
+  userHasUnlock,
+} from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { NextResponse } from "next/server";
+import { unlockRequiredForDifficulty } from "@daily-puzzle/puzzle-core";
 
 type Body = {
   puzzleType: PuzzleType;
@@ -35,11 +51,38 @@ type Body = {
 };
 
 const TYPES: PuzzleType[] = ["wordle", "escape", "logic", "path"];
-const DIFFS: Difficulty[] = ["easy", "medium", "hard"];
+const DIFFS: Difficulty[] = ["easy", "medium", "hard", "impossible"];
 
 function clampElapsed(ms: unknown): number | undefined {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) return undefined;
   return Math.min(ms, 1000 * 60 * 60 * 6);
+}
+
+function buildBreakdown(opts: {
+  won: boolean;
+  difficulty: Difficulty;
+  base: number;
+  elapsedMs?: number;
+  isPerfect: boolean;
+}): ScoreBreakdown {
+  if (!opts.won) {
+    return sumScore({
+      base: 0,
+      timeBonus: 0,
+      perfectBonus: 0,
+      noHintsBonus: 0,
+      weeklyBonus: 0,
+      monthlyBonus: 0,
+    });
+  }
+  return sumScore({
+    base: opts.base,
+    timeBonus: timeBonus(opts.elapsedMs),
+    perfectBonus: perfectBonus(opts.isPerfect),
+    noHintsBonus: noHintsBonus(true),
+    weeklyBonus: weeklyBonus(),
+    monthlyBonus: monthlyBonus(),
+  });
 }
 
 export async function POST(req: Request) {
@@ -47,12 +90,12 @@ export async function POST(req: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = session.user.id;
 
   const body = (await req.json()) as Body;
   const dateKey = body.dateKey ?? todayKey();
   const { puzzleType, difficulty } = body;
   const elapsedMs = clampElapsed(body.elapsedMs);
-  const speed = timeBonus(elapsedMs);
 
   if (
     !puzzleType ||
@@ -64,16 +107,67 @@ export async function POST(req: Request) {
   }
 
   const existing = await getExistingPlay({
-    userId: session.user.id,
+    userId,
     puzzleType,
     difficulty,
     dateKey,
   });
   if (existing) {
+    const ranks = await getPlayRanks({
+      userId,
+      dateKey,
+    });
     return NextResponse.json(
-      { error: "Already played", play: existing },
+      { error: "Already played", play: existing, ranks },
       { status: 409 },
     );
+  }
+
+  const requiredUnlock = unlockRequiredForDifficulty(difficulty);
+  if (requiredUnlock) {
+    const ok = await userHasUnlock(userId, requiredUnlock);
+    if (!ok) {
+      return NextResponse.json(
+        { error: "Impossible mode is locked. Solve 100 puzzles to unlock it." },
+        { status: 403 },
+      );
+    }
+  }
+
+  async function finish(opts: {
+    scoreBreakdown: ScoreBreakdown;
+    won: boolean;
+    meta: Record<string, unknown>;
+    extra?: Record<string, unknown>;
+  }) {
+    const result = await submitPlay({
+      userId,
+      puzzleType,
+      difficulty,
+      dateKey,
+      score: opts.scoreBreakdown.total,
+      won: opts.won,
+      meta: {
+        ...opts.meta,
+        elapsedMs,
+        breakdown: opts.scoreBreakdown,
+      },
+    });
+    const ranks = await getPlayRanks({
+      userId,
+      dateKey,
+    });
+    return NextResponse.json({
+      ...result,
+      ...opts.extra,
+      score: opts.scoreBreakdown.total,
+      won: opts.won,
+      elapsedMs,
+      breakdown: opts.scoreBreakdown,
+      ranks,
+      newAchievements: result.ok ? result.newAchievements : [],
+      newUnlocks: result.ok ? result.newUnlocks : [],
+    });
   }
 
   if (puzzleType === "wordle") {
@@ -110,25 +204,19 @@ export async function POST(req: Request) {
       maxGuesses: config.maxGuesses,
       solved: won,
     });
-    const score = won ? base + speed : 0;
-
-    const result = await submitPlay({
-      userId: session.user.id,
-      puzzleType,
-      difficulty,
-      dateKey,
-      score,
+    const scoreBreakdown = buildBreakdown({
       won,
-      meta: { guessesUsed: guesses.length, elapsedMs, timeBonus: speed },
+      difficulty,
+      base,
+      elapsedMs,
+      isPerfect: won && isPerfectWordle(guesses.length),
     });
 
-    return NextResponse.json({
-      ...result,
-      answer: config.answer,
-      score,
+    return finish({
+      scoreBreakdown,
       won,
-      elapsedMs,
-      timeBonus: won ? speed : 0,
+      meta: { guessesUsed: guesses.length },
+      extra: { answer: config.answer },
     });
   }
 
@@ -157,25 +245,19 @@ export async function POST(req: Request) {
       attemptsUsed,
       maxAttempts: room.maxAttempts,
     });
-    const score = verdict.correct ? base + speed : 0;
-
-    const result = await submitPlay({
-      userId: session.user.id,
-      puzzleType,
-      difficulty,
-      dateKey,
-      score,
+    const scoreBreakdown = buildBreakdown({
       won: verdict.correct,
-      meta: { attemptsUsed, elapsedMs, timeBonus: speed },
+      difficulty,
+      base,
+      elapsedMs,
+      isPerfect: verdict.correct && isPerfectEscape(attemptsUsed),
     });
 
-    return NextResponse.json({
-      ...result,
-      score,
+    return finish({
+      scoreBreakdown,
       won: verdict.correct,
-      answer: room.answer,
-      elapsedMs,
-      timeBonus: verdict.correct ? speed : 0,
+      meta: { attemptsUsed },
+      extra: { answer: room.answer },
     });
   }
 
@@ -193,22 +275,17 @@ export async function POST(req: Request) {
       correct: true,
       pathLength: body.path.length,
     });
-    const score = base + speed;
-    const result = await submitPlay({
-      userId: session.user.id,
-      puzzleType,
+    const scoreBreakdown = buildBreakdown({
+      won: true,
       difficulty,
-      dateKey,
-      score,
-      won: true,
-      meta: { pathLength: body.path.length, elapsedMs, timeBonus: speed },
-    });
-    return NextResponse.json({
-      ...result,
-      score,
-      won: true,
+      base,
       elapsedMs,
-      timeBonus: speed,
+      isPerfect: isPerfectPath({ pathLength: body.path.length }),
+    });
+    return finish({
+      scoreBreakdown,
+      won: true,
+      meta: { pathLength: body.path.length },
     });
   }
 
@@ -221,25 +298,21 @@ export async function POST(req: Request) {
     difficulty,
     correct: verdict.correct,
   });
-  const score = verdict.correct ? base + speed : 0;
-
-  const result = await submitPlay({
-    userId: session.user.id,
-    puzzleType,
-    difficulty,
-    dateKey,
-    score,
+  const scoreBreakdown = buildBreakdown({
     won: verdict.correct,
-    meta: { answer: body.answer, elapsedMs, timeBonus: speed },
+    difficulty,
+    base,
+    elapsedMs,
+    isPerfect: isPerfectLogic(verdict.correct),
   });
 
-  return NextResponse.json({
-    ...result,
-    score,
+  return finish({
+    scoreBreakdown,
     won: verdict.correct,
-    answer: puzzle.answer,
-    solution: puzzle.solution,
-    elapsedMs,
-    timeBonus: verdict.correct ? speed : 0,
+    meta: { answer: body.answer },
+    extra: {
+      answer: puzzle.answer,
+      solution: puzzle.solution,
+    },
   });
 }

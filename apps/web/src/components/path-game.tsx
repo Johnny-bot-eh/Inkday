@@ -15,6 +15,11 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
+import {
+  PlayResultsCard,
+  type PlayRanks,
+} from "@/components/play-results-card";
+import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   difficulty: Difficulty;
@@ -44,6 +49,17 @@ export function PathGame({
       : "Tap adjacent cells to extend your path. Undo backs up one step.",
   );
   const [submitting, setSubmitting] = useState(false);
+  const [results, setResults] = useState<{
+    won: boolean;
+    elapsedMs?: number;
+    score?: number;
+    streak?: number;
+    breakdown?: ScoreBreakdown | null;
+    ranks?: PlayRanks | null;
+    answer?: string | null;
+    newAchievements?: Array<{ title: string; description: string }>;
+    newUnlocks?: Array<{ title: string; description: string }>;
+  } | null>(null);
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
     resetKey: `${dateKey}-${difficulty}`,
@@ -100,6 +116,7 @@ export function PathGame({
 
     if (!signedIn) {
       setDone(true);
+      setResults({ won: true, elapsedMs });
       setStatus(`Path complete in ${timeLabel}! Sign in to save your score.`);
       return;
     }
@@ -123,11 +140,17 @@ export function PathGame({
         return;
       }
       setDone(true);
-      setStatus(
-        data.won
-          ? `Clear in ${timeLabel} · ${data.score} pts · streak ${data.streak}`
-          : "Path was invalid on the server.",
-      );
+      setResults({
+        won: Boolean(data.won),
+        elapsedMs: data.elapsedMs ?? elapsedMs,
+        score: data.score,
+        streak: data.streak,
+        breakdown: data.breakdown,
+        ranks: data.ranks,
+        newAchievements: data.newAchievements,
+        newUnlocks: data.newUnlocks,
+      });
+      setStatus(null);
       router.refresh();
     } catch {
       setStatus("Network error saving result");
@@ -242,6 +265,8 @@ export function PathGame({
           {status}
         </p>
       )}
+
+      {results && <PlayResultsCard {...results} />}
     </div>
   );
 }
