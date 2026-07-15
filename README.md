@@ -56,3 +56,4 @@ Defaults in `apps/web/.env.local` work for local SQLite.
 - Friend invites use account email; Friends leaderboard scopes to accepted friends + you.
 
 # Inkday
+# Inkday
