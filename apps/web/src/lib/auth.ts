@@ -2,6 +2,29 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb, schema } from "@daily-puzzle/db";
 
+function trustedOrigins() {
+  const origins = new Set<string>();
+  for (const value of [
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  ]) {
+    if (!value) continue;
+    try {
+      origins.add(new URL(value).origin);
+    } catch {
+      // ignore invalid env values
+    }
+  }
+  if (origins.size === 0) {
+    origins.add("http://localhost:3000");
+  }
+  return [...origins];
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(getDb(), {
     provider: "sqlite",
@@ -24,7 +47,7 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [process.env.BETTER_AUTH_URL ?? "http://localhost:3000"],
+  trustedOrigins: trustedOrigins(),
 });
 
 export type Session = typeof auth.$Infer.Session;

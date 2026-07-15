@@ -37,7 +37,13 @@ export default function AuthPage() {
       router.push("/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(
+        /failed to fetch/i.test(message)
+          ? "Couldn’t reach the server. Check you’re on the live Inkday URL (not a stale link), then try again."
+          : message,
+      );
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,4 @@
 import { createAuthClient } from "better-auth/react";
 
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL,
-});
+/** Same-origin by default — avoids CORS "Failed to fetch" on preview/custom hosts. */
+export const authClient = createAuthClient();
