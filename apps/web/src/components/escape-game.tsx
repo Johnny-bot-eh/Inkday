@@ -22,7 +22,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
-  pack?: "standard" | "exclusive";
+  pack?: "standard" | "exclusive" | "premium";
   seasonId?: string | null;
 };
 
@@ -97,6 +97,7 @@ export function EscapeGame({
           attemptsUsed: opts.attemptsUsed,
           elapsedMs,
           seasonId: seasonId || undefined,
+          premium: pack === "premium" || undefined,
         }),
       });
       const data = await res.json();

@@ -24,6 +24,7 @@ type Props = {
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
   seasonId?: string | null;
+  premium?: boolean;
 };
 
 const CYCLE: GridMark[] = ["unknown", "yes", "no"];
@@ -34,11 +35,12 @@ export function LogicGame({
   alreadyPlayed,
   signedIn,
   seasonId = null,
+  premium = false,
 }: Props) {
   const router = useRouter();
   const puzzle = useMemo(
-    () => getLogicPuzzle(dateKey, difficulty, seasonId),
-    [dateKey, difficulty, seasonId],
+    () => getLogicPuzzle(dateKey, difficulty, seasonId ?? (premium ? "plus" : null)),
+    [dateKey, difficulty, seasonId, premium],
   );
 
   const [grid, setGrid] = useState(() => emptyLogicGrid(puzzle));
@@ -130,6 +132,7 @@ export function LogicGame({
           answer,
           elapsedMs,
           seasonId: seasonId || undefined,
+          premium: premium || undefined,
         }),
       });
       const data = await res.json();

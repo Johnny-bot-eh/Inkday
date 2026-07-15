@@ -21,6 +21,7 @@ import {
   scorePath,
   scoreWordle,
   seasonBonus,
+  plusBonus,
   sumScore,
   timeBonus,
   todayKey,
@@ -36,6 +37,7 @@ import {
   getExistingPlay,
   getPlayRanks,
   submitPlay,
+  userHasPremium,
   userHasUnlock,
 } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
@@ -46,6 +48,7 @@ type Body = {
   difficulty: Difficulty;
   dateKey?: string;
   seasonId?: string;
+  premium?: boolean;
   guesses?: string[];
   code?: string;
   attemptsUsed?: number;
@@ -69,6 +72,7 @@ function buildBreakdown(opts: {
   elapsedMs?: number;
   isPerfect: boolean;
   seasonActive?: boolean;
+  plusActive?: boolean;
 }): ScoreBreakdown {
   if (!opts.won) {
     return sumScore({
@@ -79,6 +83,7 @@ function buildBreakdown(opts: {
       weeklyBonus: 0,
       monthlyBonus: 0,
       seasonBonus: 0,
+      plusBonus: 0,
     });
   }
   return sumScore({
@@ -89,6 +94,7 @@ function buildBreakdown(opts: {
     weeklyBonus: weeklyBonus(),
     monthlyBonus: monthlyBonus(),
     seasonBonus: seasonBonus(Boolean(opts.seasonActive)),
+    plusBonus: plusBonus(Boolean(opts.plusActive)),
   });
 }
 
@@ -103,9 +109,13 @@ export async function POST(req: Request) {
   const dateKey = body.dateKey ?? todayKey();
   const { puzzleType, difficulty } = body;
   const elapsedMs = clampElapsed(body.elapsedMs);
-  const seasonId = normalizeSeasonId(body.seasonId);
+  const premiumBoard = Boolean(body.premium) || body.seasonId === "plus";
+  const seasonId = premiumBoard
+    ? null
+    : normalizeSeasonId(body.seasonId);
+  const playSeasonId = premiumBoard ? "plus" : (seasonId ?? "");
 
-  if (body.seasonId && !seasonId) {
+  if (!premiumBoard && body.seasonId && !seasonId) {
     return NextResponse.json({ error: "Unknown season" }, { status: 400 });
   }
   if (seasonId && !isSeasonActiveOn(seasonId, dateKey)) {
@@ -129,7 +139,7 @@ export async function POST(req: Request) {
     puzzleType,
     difficulty,
     dateKey,
-    seasonId,
+    seasonId: playSeasonId,
   });
   if (existing) {
     const ranks = await getPlayRanks({
@@ -153,6 +163,14 @@ export async function POST(req: Request) {
     }
   }
 
+  const plusActive = await userHasPremium(userId);
+  if (premiumBoard && !plusActive) {
+    return NextResponse.json(
+      { error: "Inkday Plus required for this board." },
+      { status: 403 },
+    );
+  }
+
   async function finish(opts: {
     scoreBreakdown: ScoreBreakdown;
     won: boolean;
@@ -164,14 +182,15 @@ export async function POST(req: Request) {
       puzzleType,
       difficulty,
       dateKey,
-      seasonId,
+      seasonId: playSeasonId,
       score: opts.scoreBreakdown.total,
       won: opts.won,
       meta: {
         ...opts.meta,
         elapsedMs,
         breakdown: opts.scoreBreakdown,
-        ...(seasonId ? { seasonId } : {}),
+        ...(playSeasonId ? { seasonId: playSeasonId } : {}),
+        ...(premiumBoard ? { premium: true } : {}),
       },
     });
     const ranks = await getPlayRanks({
@@ -232,6 +251,7 @@ export async function POST(req: Request) {
       elapsedMs,
       isPerfect: won && isPerfectWordle(guesses.length),
       seasonActive: Boolean(seasonId),
+      plusActive,
     });
 
     return finish({
@@ -243,7 +263,12 @@ export async function POST(req: Request) {
   }
 
   if (puzzleType === "escape") {
-    const room = getEscapeRoom(dateKey, difficulty, "standard", seasonId);
+    const room = getEscapeRoom(
+      dateKey,
+      difficulty,
+      premiumBoard ? "premium" : "standard",
+      seasonId,
+    );
     const attemptsUsed = Math.min(
       Math.max(1, body.attemptsUsed ?? 1),
       room.maxAttempts,
@@ -274,6 +299,7 @@ export async function POST(req: Request) {
       elapsedMs,
       isPerfect: verdict.correct && isPerfectEscape(attemptsUsed),
       seasonActive: Boolean(seasonId),
+      plusActive,
     });
 
     return finish({
@@ -305,6 +331,7 @@ export async function POST(req: Request) {
       elapsedMs,
       isPerfect: isPerfectPath({ pathLength: body.path.length }),
       seasonActive: Boolean(seasonId),
+      plusActive,
     });
     return finish({
       scoreBreakdown,
@@ -313,7 +340,11 @@ export async function POST(req: Request) {
     });
   }
 
-  const puzzle = getLogicPuzzle(dateKey, difficulty, seasonId);
+  const puzzle = getLogicPuzzle(
+    dateKey,
+    difficulty,
+    premiumBoard ? "plus" : seasonId,
+  );
   if (!body.answer) {
     return NextResponse.json({ error: "Missing answer" }, { status: 400 });
   }
@@ -329,6 +360,7 @@ export async function POST(req: Request) {
     elapsedMs,
     isPerfect: isPerfectLogic(verdict.correct),
     seasonActive: Boolean(seasonId),
+    plusActive,
   });
 
   return finish({

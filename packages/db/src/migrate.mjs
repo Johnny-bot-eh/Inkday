@@ -131,6 +131,39 @@ const statements = [
   `CREATE UNIQUE INDEX IF NOT EXISTS tournament_award_unique_idx ON tournament_award(week_start, scope, user_id)`,
   `CREATE INDEX IF NOT EXISTS tournament_award_user_idx ON tournament_award(user_id)`,
   `CREATE INDEX IF NOT EXISTS tournament_award_week_idx ON tournament_award(week_start, scope)`,
+  `CREATE TABLE IF NOT EXISTS user_premium (
+  user_id TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  tier TEXT NOT NULL DEFAULT 'plus',
+  status TEXT NOT NULL DEFAULT 'active',
+  source TEXT NOT NULL DEFAULT 'promo',
+  starts_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  ends_at INTEGER,
+  streak_freeze_used_week TEXT,
+  updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE TABLE IF NOT EXISTS notification_pref (
+  user_id TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  email_enabled INTEGER NOT NULL DEFAULT 1,
+  daily_reminder INTEGER NOT NULL DEFAULT 1,
+  streak_at_risk INTEGER NOT NULL DEFAULT 1,
+  friend_challenge INTEGER NOT NULL DEFAULT 1,
+  tournament_result INTEGER NOT NULL DEFAULT 1,
+  season_start INTEGER NOT NULL DEFAULT 1,
+  reminder_hour_utc INTEGER NOT NULL DEFAULT 14,
+  updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE TABLE IF NOT EXISTS notification_outbox (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  payload_json TEXT,
+  scheduled_for INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  sent_at INTEGER
+)`,
+  `CREATE INDEX IF NOT EXISTS notification_outbox_pending_idx ON notification_outbox(status, scheduled_for)`,
+  `CREATE INDEX IF NOT EXISTS notification_outbox_user_idx ON notification_outbox(user_id)`,
 ];
 
 /** Additive column migrations — safe to re-run (ignore duplicate-column errors). */

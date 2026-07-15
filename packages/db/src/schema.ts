@@ -336,6 +336,119 @@ export const tournamentAwardRelations = relations(tournamentAward, ({ one }) => 
   }),
 }));
 
+/** Inkday Plus membership (Stripe-ready; source can be promo/manual for now). */
+export const userPremium = sqliteTable("user_premium", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  tier: text("tier", { enum: ["plus"] })
+    .notNull()
+    .default("plus"),
+  status: text("status", {
+    enum: ["active", "canceled", "expired"],
+  })
+    .notNull()
+    .default("active"),
+  source: text("source", {
+    enum: ["promo", "manual", "stripe"],
+  })
+    .notNull()
+    .default("promo"),
+  startsAt: integer("starts_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  /** null = no fixed expiry */
+  endsAt: integer("ends_at", { mode: "timestamp_ms" }),
+  streakFreezeUsedWeek: text("streak_freeze_used_week"),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+});
+
+/** Per-user email / reminder preferences for future delivery jobs. */
+export const notificationPref = sqliteTable("notification_pref", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  emailEnabled: integer("email_enabled", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  dailyReminder: integer("daily_reminder", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  streakAtRisk: integer("streak_at_risk", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  friendChallenge: integer("friend_challenge", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  tournamentResult: integer("tournament_result", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  seasonStart: integer("season_start", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  /** Preferred UTC hour 0–23 for daily digests */
+  reminderHourUtc: integer("reminder_hour_utc").notNull().default(14),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+});
+
+/**
+ * Outbox for future email/push delivery (cron drains this).
+ * Status: pending → sent | failed | canceled
+ */
+export const notificationOutbox = sqliteTable(
+  "notification_outbox",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    payloadJson: text("payload_json"),
+    scheduledFor: integer("scheduled_for", { mode: "timestamp_ms" }).notNull(),
+    status: text("status", {
+      enum: ["pending", "sent", "failed", "canceled"],
+    })
+      .notNull()
+      .default("pending"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    sentAt: integer("sent_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [
+    index("notification_outbox_pending_idx").on(t.status, t.scheduledFor),
+    index("notification_outbox_user_idx").on(t.userId),
+  ],
+);
+
+export const userPremiumRelations = relations(userPremium, ({ one }) => ({
+  user: one(user, {
+    fields: [userPremium.userId],
+    references: [user.id],
+  }),
+}));
+
+export const notificationPrefRelations = relations(notificationPref, ({ one }) => ({
+  user: one(user, {
+    fields: [notificationPref.userId],
+    references: [user.id],
+  }),
+}));
+
+export const notificationOutboxRelations = relations(
+  notificationOutbox,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [notificationOutbox.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
 export const schema = {
   user,
   session,
@@ -348,6 +461,9 @@ export const schema = {
   userUnlock,
   friendChallenge,
   tournamentAward,
+  userPremium,
+  notificationPref,
+  notificationOutbox,
   userRelations,
   userStatsRelations,
   playResultRelations,
@@ -356,4 +472,7 @@ export const schema = {
   userUnlockRelations,
   friendChallengeRelations,
   tournamentAwardRelations,
+  userPremiumRelations,
+  notificationPrefRelations,
+  notificationOutboxRelations,
 };

@@ -52,6 +52,7 @@ export type ScoreBreakdown = {
   weeklyBonus: number;
   monthlyBonus: number;
   seasonBonus: number;
+  plusBonus: number;
   total: number;
 };
 
@@ -63,7 +64,8 @@ export function sumScore(parts: Omit<ScoreBreakdown, "total">): ScoreBreakdown {
     parts.noHintsBonus +
     parts.weeklyBonus +
     parts.monthlyBonus +
-    parts.seasonBonus;
+    parts.seasonBonus +
+    parts.plusBonus;
   return { ...parts, total };
 }
 

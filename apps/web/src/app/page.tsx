@@ -237,6 +237,35 @@ export default async function HomePage() {
           </p>
         </div>
 
+        {session?.user && (
+          <div className="rounded-2xl border border-ember/30 bg-ember/10 p-5">
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+              Inkday Plus
+            </h3>
+            <p className="mt-1 text-sm text-fog">
+              {profile?.premium?.active
+                ? "You’re on Plus — open member boards and claim a weekly streak freeze from Profile."
+                : "Plus adds vault cases, +10 on every clear, and a weekly streak freeze. Redeem a promo on Profile (Stripe later)."}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link
+                href="/profile"
+                className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember"
+              >
+                {profile?.premium?.active ? "Manage Plus" : "Redeem / preferences"}
+              </Link>
+              {profile?.premium?.active && (
+                <Link
+                  href="/play/escape/hard?pack=premium"
+                  className="rounded-lg border border-ember/40 px-4 py-2 text-sm font-semibold text-ember"
+                >
+                  Plus Vault →
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         {session?.user && profile?.insights?.unlocks && (
           <div className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-5">
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">

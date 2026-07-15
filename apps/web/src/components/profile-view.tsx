@@ -69,7 +69,13 @@ function categoryLabel(type: string | null): string {
   return PUZZLE_LABELS[type as PuzzleType] ?? type;
 }
 
-export function ProfileView({ user, stats, insights, recent }: Props) {
+export function ProfileView({
+  user,
+  stats,
+  insights,
+  recent,
+  isPlus = false,
+}: Props & { isPlus?: boolean }) {
   const router = useRouter();
   const earnedCount = insights.achievements.filter((a) => a.earned).length;
 
@@ -86,6 +92,11 @@ export function ProfileView({ user, stats, insights, recent }: Props) {
           <p className="text-xs uppercase tracking-[0.22em] text-ember">Profile</p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-4xl font-bold">
             {user.displayName || user.name}
+            {isPlus && (
+              <span className="ml-2 align-middle text-sm font-semibold text-ember">
+                Plus
+              </span>
+            )}
           </h1>
           <p className="mt-1 text-sm text-fog">{user.email}</p>
         </div>

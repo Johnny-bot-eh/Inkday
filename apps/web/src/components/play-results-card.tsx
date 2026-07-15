@@ -94,6 +94,9 @@ export function PlayResultsCard({
           {(breakdown.seasonBonus ?? 0) > 0 && (
             <Bonus label="Season" value={breakdown.seasonBonus} />
           )}
+          {(breakdown.plusBonus ?? 0) > 0 && (
+            <Bonus label="Plus" value={breakdown.plusBonus} />
+          )}
         </div>
       )}
 

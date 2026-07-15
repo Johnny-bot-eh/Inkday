@@ -8,9 +8,11 @@ import {
   UNLOCKS,
   WEEKLY_TOURNAMENT_BADGES,
   WEEKLY_TOURNAMENT_BONUS,
+  DEFAULT_NOTIFICATION_PREFS,
   evaluateAchievements,
   evaluateUnlocks,
   isNightOwlClear,
+  isPremiumActive,
   isSpeedClear,
   isWeekComplete,
   nextMonthlyStreak,
@@ -20,16 +22,22 @@ import {
   previousWeekStartKey,
   unlockRequiredForDifficulty,
   weekStartKey,
+  todayKey,
+  type NotificationPrefView,
+  type PremiumStatusView,
   type ProgressCounters,
 } from "@daily-puzzle/puzzle-core";
 import {
   friendChallenge,
   friendship,
   getDb,
+  notificationOutbox,
+  notificationPref,
   playResult,
   tournamentAward,
   user,
   userAchievement,
+  userPremium,
   userStats,
   userUnlock,
 } from "@daily-puzzle/db";
@@ -682,11 +690,17 @@ export async function getProfile(userId: string) {
 
   const earned = new Set(achievementIds);
   const unlocked = new Set(unlockIds);
+  const [premium, notifications] = await Promise.all([
+    getPremiumStatus(userId),
+    ensureNotificationPrefs(userId),
+  ]);
 
   return {
     user: profileUser,
     stats,
     recent,
+    premium,
+    notifications,
     insights: {
       averageCompletionMs:
         timedPlays > 0 ? Math.round(totalElapsed / timedPlays) : null,
@@ -1119,5 +1133,242 @@ export async function getCurrentWeekTournamentPreview(opts: {
     rows: board.rows,
     rangeLabel: board.rangeLabel,
   };
+}
+
+export async function getPremiumStatus(userId: string): Promise<PremiumStatusView> {
+  const db = getDb();
+  const row = await db.query.userPremium.findFirst({
+    where: eq(userPremium.userId, userId),
+  });
+  if (!row) {
+    return {
+      active: false,
+      tier: null,
+      source: null,
+      endsAt: null,
+      streakFreezeAvailable: false,
+    };
+  }
+  const active = isPremiumActive({
+    status: row.status,
+    endsAt: row.endsAt,
+  });
+  const thisWeek = weekStartKey();
+  return {
+    active,
+    tier: active ? "plus" : null,
+    source: row.source,
+    endsAt: row.endsAt ? new Date(row.endsAt).toISOString() : null,
+    streakFreezeAvailable:
+      active && row.streakFreezeUsedWeek !== thisWeek,
+  };
+}
+
+export async function userHasPremium(userId: string): Promise<boolean> {
+  const status = await getPremiumStatus(userId);
+  return status.active;
+}
+
+export async function grantPremium(opts: {
+  userId: string;
+  source: "promo" | "manual" | "stripe";
+  /** Days of Plus; omit for open-ended */
+  days?: number;
+}) {
+  const db = getDb();
+  const now = new Date();
+  const endsAt =
+    opts.days != null
+      ? new Date(now.getTime() + opts.days * 86_400_000)
+      : null;
+  const existing = await db.query.userPremium.findFirst({
+    where: eq(userPremium.userId, opts.userId),
+  });
+  if (existing) {
+    await db
+      .update(userPremium)
+      .set({
+        status: "active",
+        source: opts.source,
+        startsAt: now,
+        endsAt,
+        updatedAt: now,
+      })
+      .where(eq(userPremium.userId, opts.userId));
+  } else {
+    await db.insert(userPremium).values({
+      userId: opts.userId,
+      tier: "plus",
+      status: "active",
+      source: opts.source,
+      startsAt: now,
+      endsAt,
+    });
+  }
+  return getPremiumStatus(opts.userId);
+}
+
+export async function redeemPremiumPromo(userId: string, code: string) {
+  const expected = (process.env.PREMIUM_PROMO_CODE ?? "inkday-plus")
+    .trim()
+    .toLowerCase();
+  if (code.trim().toLowerCase() !== expected) {
+    return { ok: false as const, reason: "invalid_code" as const };
+  }
+  const premium = await grantPremium({
+    userId,
+    source: "promo",
+    days: 30,
+  });
+  return { ok: true as const, premium };
+}
+
+export async function claimStreakFreeze(userId: string) {
+  const db = getDb();
+  const premium = await getPremiumStatus(userId);
+  if (!premium.active) {
+    return { ok: false as const, reason: "not_premium" as const };
+  }
+  if (!premium.streakFreezeAvailable) {
+    return { ok: false as const, reason: "already_used" as const };
+  }
+
+  const stats = await ensureUserStats(userId);
+  const dateKey = todayKey();
+  if (stats?.lastPlayDate === dateKey) {
+    return { ok: false as const, reason: "already_played_today" as const };
+  }
+
+  // Apply freeze: stamp yesterday as last play so the current streak stays bridgeable.
+  const yesterday = todayKey(new Date(Date.now() - 86_400_000));
+  const thisWeek = weekStartKey();
+
+  await db
+    .update(userStats)
+    .set({
+      lastPlayDate: yesterday,
+      updatedAt: new Date(),
+    })
+    .where(eq(userStats.userId, userId));
+
+  await db
+    .update(userPremium)
+    .set({
+      streakFreezeUsedWeek: thisWeek,
+      updatedAt: new Date(),
+    })
+    .where(eq(userPremium.userId, userId));
+
+  return {
+    ok: true as const,
+    streak: stats?.currentStreak ?? 0,
+    protectedThrough: yesterday,
+  };
+}
+
+export async function ensureNotificationPrefs(
+  userId: string,
+): Promise<NotificationPrefView> {
+  const db = getDb();
+  const existing = await db.query.notificationPref.findFirst({
+    where: eq(notificationPref.userId, userId),
+  });
+  if (existing) {
+    return {
+      emailEnabled: existing.emailEnabled,
+      dailyReminder: existing.dailyReminder,
+      streakAtRisk: existing.streakAtRisk,
+      friendChallenge: existing.friendChallenge,
+      tournamentResult: existing.tournamentResult,
+      seasonStart: existing.seasonStart,
+      reminderHourUtc: existing.reminderHourUtc,
+    };
+  }
+  await db.insert(notificationPref).values({
+    userId,
+    ...DEFAULT_NOTIFICATION_PREFS,
+  });
+  return { ...DEFAULT_NOTIFICATION_PREFS };
+}
+
+export async function updateNotificationPrefs(
+  userId: string,
+  patch: Partial<NotificationPrefView>,
+): Promise<NotificationPrefView> {
+  await ensureNotificationPrefs(userId);
+  const db = getDb();
+  const next = {
+    emailEnabled: patch.emailEnabled,
+    dailyReminder: patch.dailyReminder,
+    streakAtRisk: patch.streakAtRisk,
+    friendChallenge: patch.friendChallenge,
+    tournamentResult: patch.tournamentResult,
+    seasonStart: patch.seasonStart,
+    reminderHourUtc:
+      patch.reminderHourUtc != null
+        ? Math.max(0, Math.min(23, Math.floor(patch.reminderHourUtc)))
+        : undefined,
+    updatedAt: new Date(),
+  };
+  // Remove undefined keys
+  const clean = Object.fromEntries(
+    Object.entries(next).filter(([, v]) => v !== undefined),
+  );
+  await db
+    .update(notificationPref)
+    .set(clean)
+    .where(eq(notificationPref.userId, userId));
+  return ensureNotificationPrefs(userId);
+}
+
+/**
+ * Queue daily-reminder outbox rows for the current UTC hour.
+ * Delivery (email/push) is intentionally not wired yet.
+ */
+export async function enqueueDailyReminders(opts?: { hourUtc?: number }) {
+  const hour = opts?.hourUtc ?? new Date().getUTCHours();
+  const db = getDb();
+  const prefs = await db
+    .select({
+      userId: notificationPref.userId,
+      email: user.email,
+    })
+    .from(notificationPref)
+    .innerJoin(user, eq(user.id, notificationPref.userId))
+    .where(
+      and(
+        eq(notificationPref.emailEnabled, true),
+        eq(notificationPref.dailyReminder, true),
+        eq(notificationPref.reminderHourUtc, hour),
+      ),
+    );
+
+  const dateKey = todayKey();
+  let queued = 0;
+  for (const row of prefs) {
+    const played = await db.query.playResult.findFirst({
+      where: and(
+        eq(playResult.userId, row.userId),
+        eq(playResult.dateKey, dateKey),
+      ),
+    });
+    if (played) continue;
+
+    const id = randomUUID();
+    await db.insert(notificationOutbox).values({
+      id,
+      userId: row.userId,
+      kind: "daily_reminder",
+      payloadJson: JSON.stringify({
+        email: row.email,
+        dateKey,
+        subject: "Today’s Inkday boards are waiting",
+      }),
+      scheduledFor: new Date(),
+      status: "pending",
+    });
+    queued += 1;
+  }
+  return { hour, candidates: prefs.length, queued };
 }
 

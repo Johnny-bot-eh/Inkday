@@ -457,7 +457,7 @@ export function normalizeEscapeAnswer(value: string): string {
 export function getEscapeRoom(
   dateKey: string,
   difficulty: Difficulty,
-  pack: "standard" | "exclusive" = "standard",
+  pack: "standard" | "exclusive" | "premium" = "standard",
   seasonId: string | null = null,
 ): EscapeRoom {
   const seed = hashSeed(
@@ -471,6 +471,7 @@ export function getEscapeRoom(
   const template = ESCAPES[pickIndex(seed, ESCAPES.length)]!;
   const clues = cluesForDifficulty(template, difficulty, seed);
   const exclusive = pack === "exclusive";
+  const premium = pack === "premium";
   const seasonPrefix = seasonId
     ? seasonId
         .split("-")
@@ -483,6 +484,10 @@ export function getEscapeRoom(
   if (exclusive) {
     title = `Exclusive: ${title}`;
     briefing = `Locked case file. ${briefing}`;
+  }
+  if (premium) {
+    title = `Plus: ${title}`;
+    briefing = `Inkday Plus case file. ${briefing}`;
   }
   if (seasonPrefix) {
     title = `${seasonPrefix}: ${title}`;
