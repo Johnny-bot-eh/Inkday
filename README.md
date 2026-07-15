@@ -55,3 +55,4 @@ Defaults in `apps/web/.env.local` work for local SQLite.
 - **Daily streak** in the header: win at least one puzzle per day to keep it going.
 - Friend invites use account email; Friends leaderboard scopes to accepted friends + you.
 
+# Inkday
