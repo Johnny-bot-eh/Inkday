@@ -78,12 +78,13 @@ const statements = [
   puzzle_type TEXT NOT NULL,
   difficulty TEXT NOT NULL,
   date_key TEXT NOT NULL,
+  season_id TEXT NOT NULL DEFAULT '',
   score INTEGER NOT NULL,
   won INTEGER NOT NULL,
   meta_json TEXT,
   created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS play_once_per_day_idx ON play_result(user_id, puzzle_type, difficulty, date_key)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS play_once_per_day_idx ON play_result(user_id, puzzle_type, difficulty, date_key, season_id)`,
   `CREATE INDEX IF NOT EXISTS play_leaderboard_idx ON play_result(date_key, puzzle_type, difficulty)`,
   `CREATE TABLE IF NOT EXISTS user_achievement (
   id TEXT PRIMARY KEY NOT NULL,
@@ -141,6 +142,13 @@ const alters = [
   `ALTER TABLE user_stats ADD COLUMN last_win_week_start TEXT`,
   `ALTER TABLE user_stats ADD COLUMN last_win_month_start TEXT`,
   `ALTER TABLE user_stats ADD COLUMN challenge_wins INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE play_result ADD COLUMN season_id TEXT NOT NULL DEFAULT ''`,
+];
+
+/** Index rebuilds that must replace older definitions. */
+const indexRebuilds = [
+  `DROP INDEX IF EXISTS play_once_per_day_idx`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS play_once_per_day_idx ON play_result(user_id, puzzle_type, difficulty, date_key, season_id)`,
 ];
 
 function createDbClient() {
@@ -180,6 +188,10 @@ for (const statement of alters) {
       throw err;
     }
   }
+}
+
+for (const statement of indexRebuilds) {
+  await client.execute(statement);
 }
 
 console.log(`Migrated database: ${label}`);

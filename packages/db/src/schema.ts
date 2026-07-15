@@ -243,6 +243,8 @@ export const playResult = sqliteTable(
       enum: ["easy", "medium", "hard", "impossible"],
     }).notNull(),
     dateKey: text("date_key").notNull(),
+    /** Empty string for standard dailies; season slug for limited-time boards */
+    seasonId: text("season_id").notNull().default(""),
     score: integer("score").notNull(),
     won: integer("won", { mode: "boolean" }).notNull(),
     metaJson: text("meta_json"),
@@ -256,6 +258,7 @@ export const playResult = sqliteTable(
       t.puzzleType,
       t.difficulty,
       t.dateKey,
+      t.seasonId,
     ),
     index("play_leaderboard_idx").on(t.dateKey, t.puzzleType, t.difficulty),
   ],

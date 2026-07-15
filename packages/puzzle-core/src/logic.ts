@@ -306,12 +306,19 @@ const SIZE_FOR: Record<Difficulty, number[]> = {
 export function getLogicPuzzle(
   dateKey: string,
   difficulty: Difficulty,
+  seasonId: string | null = null,
 ): LogicPuzzle {
   const sizes = SIZE_FOR[difficulty];
   const pool = LOGIC_PUZZLES.filter((p) =>
     sizes.includes(p.subjects.values.length),
   );
-  const seed = hashSeed("logic", dateKey, difficulty, dayIndex(dateKey));
+  const seed = hashSeed(
+    "logic",
+    seasonId ?? "",
+    dateKey,
+    difficulty,
+    dayIndex(dateKey),
+  );
   const template = pool[pickIndex(seed, pool.length)]!;
 
   let clues = [...template.clues];
@@ -323,10 +330,17 @@ export function getLogicPuzzle(
     clues = clues.slice(0, -1);
   }
 
+  const title = seasonId
+    ? `Seasonal: ${template.title}`
+    : template.title;
+  const synopsis = seasonId
+    ? `Limited-time event. ${template.synopsis}`
+    : template.synopsis;
+
   return {
-    id: `${template.slug}-${dateKey}-${difficulty}`,
-    title: template.title,
-    synopsis: template.synopsis,
+    id: `${template.slug}-${seasonId ?? "std"}-${dateKey}-${difficulty}`,
+    title,
+    synopsis,
     subjects: template.subjects,
     traits: template.traits,
     clues,

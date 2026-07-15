@@ -23,6 +23,7 @@ type Props = {
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
   pack?: "standard" | "exclusive";
+  seasonId?: string | null;
 };
 
 export function EscapeGame({
@@ -31,11 +32,12 @@ export function EscapeGame({
   alreadyPlayed,
   signedIn,
   pack = "standard",
+  seasonId = null,
 }: Props) {
   const router = useRouter();
   const room = useMemo(
-    () => getEscapeRoom(dateKey, difficulty, pack),
-    [dateKey, difficulty, pack],
+    () => getEscapeRoom(dateKey, difficulty, pack, seasonId),
+    [dateKey, difficulty, pack, seasonId],
   );
 
   const [code, setCode] = useState("");
@@ -94,6 +96,7 @@ export function EscapeGame({
           code: opts.code,
           attemptsUsed: opts.attemptsUsed,
           elapsedMs,
+          seasonId: seasonId || undefined,
         }),
       });
       const data = await res.json();

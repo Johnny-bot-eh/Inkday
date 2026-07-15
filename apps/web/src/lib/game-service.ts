@@ -55,14 +55,17 @@ export async function getExistingPlay(opts: {
   puzzleType: PuzzleType;
   difficulty: Difficulty;
   dateKey: string;
+  seasonId?: string | null;
 }) {
   const db = getDb();
+  const seasonId = opts.seasonId ?? "";
   return db.query.playResult.findFirst({
     where: and(
       eq(playResult.userId, opts.userId),
       eq(playResult.puzzleType, opts.puzzleType),
       eq(playResult.difficulty, opts.difficulty),
       eq(playResult.dateKey, opts.dateKey),
+      eq(playResult.seasonId, seasonId),
     ),
   });
 }
@@ -85,10 +88,18 @@ export async function submitPlay(opts: {
   dateKey: string;
   score: number;
   won: boolean;
+  seasonId?: string | null;
   meta?: Record<string, unknown>;
 }) {
   const db = getDb();
-  const existing = await getExistingPlay(opts);
+  const seasonId = opts.seasonId ?? "";
+  const existing = await getExistingPlay({
+    userId: opts.userId,
+    puzzleType: opts.puzzleType,
+    difficulty: opts.difficulty,
+    dateKey: opts.dateKey,
+    seasonId,
+  });
   if (existing) {
     return { ok: false as const, reason: "already_played" as const, play: existing };
   }
@@ -108,9 +119,17 @@ export async function submitPlay(opts: {
     puzzleType: opts.puzzleType,
     difficulty: opts.difficulty,
     dateKey: opts.dateKey,
+    seasonId,
     score: opts.score,
     won: opts.won,
-    metaJson: opts.meta ? JSON.stringify(opts.meta) : null,
+    metaJson: opts.meta
+      ? JSON.stringify({
+          ...opts.meta,
+          ...(seasonId ? { seasonId } : {}),
+        })
+      : seasonId
+        ? JSON.stringify({ seasonId })
+        : null,
   });
 
   const stats = await ensureUserStats(opts.userId);
@@ -262,6 +281,7 @@ async function buildProgressCounters(
     db
       .select({
         puzzleType: playResult.puzzleType,
+        seasonId: playResult.seasonId,
         metaJson: playResult.metaJson,
         createdAt: playResult.createdAt,
       })
@@ -289,6 +309,8 @@ async function buildProgressCounters(
   let speedClears = 0;
   let perfectClears = 0;
   let nightOwlClears = 0;
+  let seasonWins = 0;
+  const seasonWinsById: Partial<Record<string, number>> = {};
 
   for (const play of wins) {
     if (play.puzzleType === "escape") escapeWins += 1;
@@ -296,16 +318,30 @@ async function buildProgressCounters(
     if (play.createdAt && isNightOwlClear(new Date(play.createdAt))) {
       nightOwlClears += 1;
     }
-    if (!play.metaJson) continue;
+
+    let seasonId = play.seasonId || "";
+    if (!play.metaJson) {
+      if (seasonId) {
+        seasonWins += 1;
+        seasonWinsById[seasonId] = (seasonWinsById[seasonId] ?? 0) + 1;
+      }
+      continue;
+    }
     try {
       const meta = JSON.parse(play.metaJson) as {
         elapsedMs?: number;
         breakdown?: { perfectBonus?: number };
+        seasonId?: string;
       };
       if (isSpeedClear(meta.elapsedMs)) speedClears += 1;
       if ((meta.breakdown?.perfectBonus ?? 0) > 0) perfectClears += 1;
+      if (!seasonId && meta.seasonId) seasonId = meta.seasonId;
     } catch {
       /* ignore */
+    }
+    if (seasonId) {
+      seasonWins += 1;
+      seasonWinsById[seasonId] = (seasonWinsById[seasonId] ?? 0) + 1;
     }
   }
 
@@ -322,6 +358,8 @@ async function buildProgressCounters(
     bestDailyStreak: streakOverlay?.bestDailyStreak ?? stats?.bestStreak ?? 0,
     challengeWins: challengeWinRows.length,
     weeklyChampionships: champRows.length,
+    seasonWins,
+    seasonWinsById: seasonWinsById as ProgressCounters["seasonWinsById"],
   };
 }
 

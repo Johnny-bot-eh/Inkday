@@ -25,7 +25,6 @@ export function perfectBonus(isPerfect: boolean): number {
 
 /**
  * Stub for week-completion bonuses (e.g. cleared all featured dailies).
- * Wired later with tournament / season jobs.
  */
 export function weeklyBonus(_opts?: { clearedFeatured?: boolean }): number {
   return 0;
@@ -38,6 +37,13 @@ export function monthlyBonus(_opts?: { clearedFeatured?: boolean }): number {
   return 0;
 }
 
+/** Extra points while solving a live seasonal board */
+export const SEASON_EVENT_BONUS = 35;
+
+export function seasonBonus(activeSeason: boolean): number {
+  return activeSeason ? SEASON_EVENT_BONUS : 0;
+}
+
 export type ScoreBreakdown = {
   base: number;
   timeBonus: number;
@@ -45,6 +51,7 @@ export type ScoreBreakdown = {
   noHintsBonus: number;
   weeklyBonus: number;
   monthlyBonus: number;
+  seasonBonus: number;
   total: number;
 };
 
@@ -55,7 +62,8 @@ export function sumScore(parts: Omit<ScoreBreakdown, "total">): ScoreBreakdown {
     parts.perfectBonus +
     parts.noHintsBonus +
     parts.weeklyBonus +
-    parts.monthlyBonus;
+    parts.monthlyBonus +
+    parts.seasonBonus;
   return { ...parts, total };
 }
 

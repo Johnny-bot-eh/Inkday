@@ -458,10 +458,12 @@ export function getEscapeRoom(
   dateKey: string,
   difficulty: Difficulty,
   pack: "standard" | "exclusive" = "standard",
+  seasonId: string | null = null,
 ): EscapeRoom {
   const seed = hashSeed(
     "escape",
     pack,
+    seasonId ?? "",
     dateKey,
     difficulty,
     dayIndex(dateKey),
@@ -469,13 +471,28 @@ export function getEscapeRoom(
   const template = ESCAPES[pickIndex(seed, ESCAPES.length)]!;
   const clues = cluesForDifficulty(template, difficulty, seed);
   const exclusive = pack === "exclusive";
+  const seasonPrefix = seasonId
+    ? seasonId
+        .split("-")
+        .map((w) => w[0]!.toUpperCase() + w.slice(1))
+        .join(" ")
+    : null;
+
+  let title = template.title;
+  let briefing = template.briefing;
+  if (exclusive) {
+    title = `Exclusive: ${title}`;
+    briefing = `Locked case file. ${briefing}`;
+  }
+  if (seasonPrefix) {
+    title = `${seasonPrefix}: ${title}`;
+    briefing = `Seasonal event board. ${briefing}`;
+  }
 
   return {
-    id: `${template.slug}-${pack}-${dateKey}-${difficulty}`,
-    title: exclusive ? `Exclusive: ${template.title}` : template.title,
-    briefing: exclusive
-      ? `Locked case file. ${template.briefing}`
-      : template.briefing,
+    id: `${template.slug}-${pack}-${seasonId ?? "std"}-${dateKey}-${difficulty}`,
+    title,
+    briefing,
     prompt: template.prompt,
     clues,
     answer: template.answer,

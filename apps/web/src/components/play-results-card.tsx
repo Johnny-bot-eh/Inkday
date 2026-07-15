@@ -91,6 +91,9 @@ export function PlayResultsCard({
           <Bonus label="Base" value={breakdown.base} />
           <Bonus label="Speed" value={breakdown.timeBonus} />
           <Bonus label="Perfect" value={breakdown.perfectBonus} />
+          {(breakdown.seasonBonus ?? 0) > 0 && (
+            <Bonus label="Season" value={breakdown.seasonBonus} />
+          )}
         </div>
       )}
 

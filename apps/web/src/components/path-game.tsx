@@ -26,6 +26,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  seasonId?: string | null;
 };
 
 export function PathGame({
@@ -33,11 +34,12 @@ export function PathGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  seasonId = null,
 }: Props) {
   const router = useRouter();
   const puzzle = useMemo(
-    () => getPathPuzzle(dateKey, difficulty),
-    [dateKey, difficulty],
+    () => getPathPuzzle(dateKey, difficulty, seasonId),
+    [dateKey, difficulty, seasonId],
   );
   const start = useMemo(() => findStart(puzzle), [puzzle]);
 
@@ -132,6 +134,7 @@ export function PathGame({
           dateKey,
           path,
           elapsedMs,
+          seasonId: seasonId || undefined,
         }),
       });
       const data = await res.json();

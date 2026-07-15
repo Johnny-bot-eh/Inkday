@@ -3,16 +3,17 @@ import { LockedPuzzle } from "@/components/locked-puzzle";
 import { loadPlayPage } from "@/lib/play-page";
 import { userHasUnlock } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
+import { getSeason } from "@daily-puzzle/puzzle-core";
 
 export default async function EscapePlayPage({
   params,
   searchParams,
 }: {
   params: Promise<{ difficulty: string }>;
-  searchParams: Promise<{ pack?: string }>;
+  searchParams: Promise<{ pack?: string; season?: string }>;
 }) {
   const { difficulty: raw } = await params;
-  const { pack: packRaw } = await searchParams;
+  const { pack: packRaw, season: seasonRaw } = await searchParams;
   const pack = packRaw === "exclusive" ? "exclusive" : "standard";
 
   if (pack === "exclusive") {
@@ -39,11 +40,16 @@ export default async function EscapePlayPage({
   const page = await loadPlayPage({
     puzzleType: "escape",
     difficultyRaw: raw,
+    seasonRaw,
   });
 
   if (page.locked) {
+    const season = page.seasonId ? getSeason(page.seasonId) : null;
     return (
-      <LockedPuzzle title="Impossible Escape" reason={page.lockReason!} />
+      <LockedPuzzle
+        title={season?.title ?? "Impossible Escape"}
+        reason={page.lockReason!}
+      />
     );
   }
 
@@ -54,6 +60,7 @@ export default async function EscapePlayPage({
       signedIn={page.signedIn}
       alreadyPlayed={page.alreadyPlayed}
       pack={pack}
+      seasonId={page.seasonId}
     />
   );
 }

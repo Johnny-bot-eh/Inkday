@@ -1,5 +1,10 @@
 import type { Difficulty, PuzzleType } from "./types";
 import { weekStartKey, monthStartKey } from "./types";
+import {
+  SEASONS,
+  seasonAdeptAchievementId,
+  type SeasonId,
+} from "./seasons";
 
 export type AchievementId =
   | "sherlock"
@@ -10,7 +15,11 @@ export type AchievementId =
   | "night_owl"
   | "legend"
   | "weekly_champion"
-  | "challenge_victor";
+  | "challenge_victor"
+  | "seasonal_starter"
+  | "seasonal_regular"
+  | "season_devotee"
+  | `season_${string}_adept`;
 
 export type AchievementDef = {
   id: AchievementId;
@@ -64,6 +73,26 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: "Challenge Victor",
     description: "Win 10 friend puzzle challenges.",
   },
+  {
+    id: "seasonal_starter",
+    title: "Seasonal Starter",
+    description: "Clear your first limited-time seasonal puzzle.",
+  },
+  {
+    id: "seasonal_regular",
+    title: "Seasonal Regular",
+    description: "Clear 5 seasonal event puzzles.",
+  },
+  {
+    id: "season_devotee",
+    title: "Season Devotee",
+    description: "Clear 15 seasonal event puzzles.",
+  },
+  ...SEASONS.map((season) => ({
+    id: seasonAdeptAchievementId(season.id) as AchievementId,
+    title: `${season.shortLabel} Adept`,
+    description: `Clear ${season.adeptWins} ${season.title} boards during the event.`,
+  })),
 ];
 
 /** Bonus points for finishing a weekly tournament 1st / 2nd / 3rd */
@@ -129,6 +158,8 @@ export type ProgressCounters = {
   bestDailyStreak: number;
   challengeWins: number;
   weeklyChampionships: number;
+  seasonWins: number;
+  seasonWinsById: Partial<Record<SeasonId, number>>;
 };
 
 export function evaluateAchievements(
@@ -149,6 +180,17 @@ export function evaluateAchievements(
   check("legend", counters.dailyStreak >= 365 || counters.bestDailyStreak >= 365);
   check("challenge_victor", counters.challengeWins >= 10);
   check("weekly_champion", counters.weeklyChampionships >= 1);
+  check("seasonal_starter", counters.seasonWins >= 1);
+  check("seasonal_regular", counters.seasonWins >= 5);
+  check("season_devotee", counters.seasonWins >= 15);
+
+  for (const season of SEASONS) {
+    const wins = counters.seasonWinsById[season.id] ?? 0;
+    check(
+      seasonAdeptAchievementId(season.id) as AchievementId,
+      wins >= season.adeptWins,
+    );
+  }
   return next;
 }
 

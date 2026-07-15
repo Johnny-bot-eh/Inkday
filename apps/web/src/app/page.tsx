@@ -6,16 +6,27 @@ import {
   HIDDEN_CHALLENGES,
   TODAYS_CHALLENGES,
   WORD_DAILY_DIFFICULTY,
+  getActiveSeason,
+  getUpcomingSeason,
+  playMapKey,
   todayKey,
   wordleTitle,
+  type Difficulty,
+  type PuzzleType,
 } from "@daily-puzzle/puzzle-core";
 import { getProfile, listPlaysForDate } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { ChallengeCountdown } from "@/components/challenge-countdown";
+import {
+  SeasonBanner,
+  UpcomingSeasonNote,
+} from "@/components/season-banner";
 
 export default async function HomePage() {
   const session = await getSession();
   const dateKey = todayKey();
+  const activeSeason = getActiveSeason();
+  const upcomingSeason = activeSeason ? null : getUpcomingSeason();
 
   let profile: Awaited<ReturnType<typeof getProfile>> | null = null;
   let playedMap = new Map<
@@ -31,7 +42,14 @@ export default async function HomePage() {
       ]);
       profile = nextProfile;
       playedMap = new Map(
-        plays.map((play) => [`${play.puzzleType}:${play.difficulty}`, play]),
+        plays.map((play) => [
+          playMapKey(
+            play.puzzleType as PuzzleType,
+            play.difficulty as Difficulty,
+            play.seasonId,
+          ),
+          play,
+        ]),
       );
     } catch (err) {
       console.error("Home signed-in data failed", err);
@@ -92,6 +110,11 @@ export default async function HomePage() {
         )}
       </section>
 
+      {activeSeason && <SeasonBanner season={activeSeason} />}
+      {!activeSeason && upcomingSeason && (
+        <UpcomingSeasonNote season={upcomingSeason} />
+      )}
+
       <section className="animate-rise-delay space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -108,7 +131,7 @@ export default async function HomePage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {TODAYS_CHALLENGES.map((challenge) => {
             const done = playedMap.get(
-              `${challenge.puzzleType}:${challenge.difficulty}`,
+              playMapKey(challenge.puzzleType, challenge.difficulty),
             );
             return (
               <PlayRow
@@ -129,6 +152,45 @@ export default async function HomePage() {
           })}
         </div>
 
+        {activeSeason && (
+          <div className="mt-6 space-y-3">
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+              {activeSeason.shortLabel} Event Boards
+            </h3>
+            <p className="text-sm text-fog">
+              Limited-time {activeSeason.title} puzzles — separate from today’s
+              regular dailies.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {activeSeason.challenges.map((challenge) => {
+                const done = playedMap.get(
+                  playMapKey(
+                    challenge.puzzleType,
+                    challenge.difficulty,
+                    activeSeason.id,
+                  ),
+                );
+                return (
+                  <PlayRow
+                    key={challenge.id}
+                    href={challenge.href}
+                    title={challenge.title}
+                    subtitle={
+                      done
+                        ? session?.user
+                          ? `Logged · ${done.score} pts`
+                          : "Completed"
+                        : `${challenge.difficultyLabel} · seasonal`
+                    }
+                    done={Boolean(done)}
+                    featured
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {session?.user &&
           profile?.insights?.unlockIds?.includes("hidden_challenges") && (
             <div className="mt-6 space-y-3">
@@ -141,7 +203,7 @@ export default async function HomePage() {
               <div className="grid gap-3 sm:grid-cols-3">
                 {HIDDEN_CHALLENGES.map((challenge) => {
                   const done = playedMap.get(
-                    `${challenge.puzzleType}:${challenge.difficulty}`,
+                    playMapKey(challenge.puzzleType, challenge.difficulty),
                   );
                   return (
                     <PlayRow
@@ -225,16 +287,16 @@ export default async function HomePage() {
                 href={`/play/wordle/${WORD_DAILY_DIFFICULTY}`}
                 title="Word Daily"
                 subtitle={
-                  playedMap.get(`wordle:${WORD_DAILY_DIFFICULTY}`)
+                  playedMap.get(playMapKey('wordle', WORD_DAILY_DIFFICULTY))
                     ? session?.user
-                      ? `Logged · ${playedMap.get(`wordle:${WORD_DAILY_DIFFICULTY}`)!.score} pts`
+                      ? `Logged · ${playedMap.get(playMapKey('wordle', WORD_DAILY_DIFFICULTY))!.score} pts`
                       : "Completed today"
                     : "Medium · main daily board"
                 }
-                done={Boolean(playedMap.get(`wordle:${WORD_DAILY_DIFFICULTY}`))}
+                done={Boolean(playedMap.get(playMapKey('wordle', WORD_DAILY_DIFFICULTY)))}
               />
               {EXTRA_WORDLE_DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(`wordle:${difficulty}`);
+                const done = playedMap.get(playMapKey('wordle', difficulty));
                 return (
                   <PlayRow
                     key={difficulty}
@@ -262,7 +324,7 @@ export default async function HomePage() {
             </h3>
             <div className="mt-4 grid gap-3">
               {DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(`escape:${difficulty}`);
+                const done = playedMap.get(playMapKey('escape', difficulty));
                 return (
                   <PlayRow
                     key={difficulty}
@@ -290,7 +352,7 @@ export default async function HomePage() {
             </h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
               {DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(`logic:${difficulty}`);
+                const done = playedMap.get(playMapKey('logic', difficulty));
                 return (
                   <PlayRow
                     key={difficulty}
@@ -320,7 +382,7 @@ export default async function HomePage() {
             </h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
               {DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(`path:${difficulty}`);
+                const done = playedMap.get(playMapKey('path', difficulty));
                 return (
                   <PlayRow
                     key={difficulty}

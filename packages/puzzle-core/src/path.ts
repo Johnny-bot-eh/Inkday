@@ -271,16 +271,25 @@ const BY_DIFFICULTY: Record<Difficulty, (t: PathTemplate) => boolean> = {
 export function getPathPuzzle(
   dateKey: string,
   difficulty: Difficulty,
+  seasonId: string | null = null,
 ): PathPuzzle {
   const pool = TEMPLATES.filter(BY_DIFFICULTY[difficulty]);
-  const seed = hashSeed("path", dateKey, difficulty, dayIndex(dateKey));
+  const seed = hashSeed(
+    "path",
+    seasonId ?? "",
+    dateKey,
+    difficulty,
+    dayIndex(dateKey),
+  );
   const template = pool[pickIndex(seed, pool.length)]!;
   const grid = parseMap(template.map);
 
   return {
-    id: `${template.slug}-${dateKey}-${difficulty}`,
-    title: template.title,
-    briefing: template.briefing,
+    id: `${template.slug}-${seasonId ?? "std"}-${dateKey}-${difficulty}`,
+    title: seasonId ? `Seasonal: ${template.title}` : template.title,
+    briefing: seasonId
+      ? `Limited-time event. ${template.briefing}`
+      : template.briefing,
     rows: template.rows,
     cols: template.cols,
     grid,

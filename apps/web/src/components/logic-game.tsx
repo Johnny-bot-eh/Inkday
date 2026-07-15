@@ -23,6 +23,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  seasonId?: string | null;
 };
 
 const CYCLE: GridMark[] = ["unknown", "yes", "no"];
@@ -32,11 +33,12 @@ export function LogicGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  seasonId = null,
 }: Props) {
   const router = useRouter();
   const puzzle = useMemo(
-    () => getLogicPuzzle(dateKey, difficulty),
-    [dateKey, difficulty],
+    () => getLogicPuzzle(dateKey, difficulty, seasonId),
+    [dateKey, difficulty, seasonId],
   );
 
   const [grid, setGrid] = useState(() => emptyLogicGrid(puzzle));
@@ -127,6 +129,7 @@ export function LogicGame({
           dateKey,
           answer,
           elapsedMs,
+          seasonId: seasonId || undefined,
         }),
       });
       const data = await res.json();

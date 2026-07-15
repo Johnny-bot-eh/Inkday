@@ -11,13 +11,16 @@ import {
   isPerfectLogic,
   isPerfectPath,
   isPerfectWordle,
+  isSeasonActiveOn,
   isValidWordleGuess,
+  normalizeSeasonId,
   noHintsBonus,
   perfectBonus,
   scoreEscape,
   scoreLogic,
   scorePath,
   scoreWordle,
+  seasonBonus,
   sumScore,
   timeBonus,
   todayKey,
@@ -27,6 +30,7 @@ import {
   type PathCoord,
   type PuzzleType,
   type ScoreBreakdown,
+  unlockRequiredForDifficulty,
 } from "@daily-puzzle/puzzle-core";
 import {
   getExistingPlay,
@@ -36,12 +40,12 @@ import {
 } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { NextResponse } from "next/server";
-import { unlockRequiredForDifficulty } from "@daily-puzzle/puzzle-core";
 
 type Body = {
   puzzleType: PuzzleType;
   difficulty: Difficulty;
   dateKey?: string;
+  seasonId?: string;
   guesses?: string[];
   code?: string;
   attemptsUsed?: number;
@@ -64,6 +68,7 @@ function buildBreakdown(opts: {
   base: number;
   elapsedMs?: number;
   isPerfect: boolean;
+  seasonActive?: boolean;
 }): ScoreBreakdown {
   if (!opts.won) {
     return sumScore({
@@ -73,6 +78,7 @@ function buildBreakdown(opts: {
       noHintsBonus: 0,
       weeklyBonus: 0,
       monthlyBonus: 0,
+      seasonBonus: 0,
     });
   }
   return sumScore({
@@ -82,6 +88,7 @@ function buildBreakdown(opts: {
     noHintsBonus: noHintsBonus(true),
     weeklyBonus: weeklyBonus(),
     monthlyBonus: monthlyBonus(),
+    seasonBonus: seasonBonus(Boolean(opts.seasonActive)),
   });
 }
 
@@ -96,6 +103,17 @@ export async function POST(req: Request) {
   const dateKey = body.dateKey ?? todayKey();
   const { puzzleType, difficulty } = body;
   const elapsedMs = clampElapsed(body.elapsedMs);
+  const seasonId = normalizeSeasonId(body.seasonId);
+
+  if (body.seasonId && !seasonId) {
+    return NextResponse.json({ error: "Unknown season" }, { status: 400 });
+  }
+  if (seasonId && !isSeasonActiveOn(seasonId, dateKey)) {
+    return NextResponse.json(
+      { error: "Season is not active today" },
+      { status: 400 },
+    );
+  }
 
   if (
     !puzzleType ||
@@ -111,6 +129,7 @@ export async function POST(req: Request) {
     puzzleType,
     difficulty,
     dateKey,
+    seasonId,
   });
   if (existing) {
     const ranks = await getPlayRanks({
@@ -145,12 +164,14 @@ export async function POST(req: Request) {
       puzzleType,
       difficulty,
       dateKey,
+      seasonId,
       score: opts.scoreBreakdown.total,
       won: opts.won,
       meta: {
         ...opts.meta,
         elapsedMs,
         breakdown: opts.scoreBreakdown,
+        ...(seasonId ? { seasonId } : {}),
       },
     });
     const ranks = await getPlayRanks({
@@ -210,6 +231,7 @@ export async function POST(req: Request) {
       base,
       elapsedMs,
       isPerfect: won && isPerfectWordle(guesses.length),
+      seasonActive: Boolean(seasonId),
     });
 
     return finish({
@@ -221,7 +243,7 @@ export async function POST(req: Request) {
   }
 
   if (puzzleType === "escape") {
-    const room = getEscapeRoom(dateKey, difficulty);
+    const room = getEscapeRoom(dateKey, difficulty, "standard", seasonId);
     const attemptsUsed = Math.min(
       Math.max(1, body.attemptsUsed ?? 1),
       room.maxAttempts,
@@ -251,6 +273,7 @@ export async function POST(req: Request) {
       base,
       elapsedMs,
       isPerfect: verdict.correct && isPerfectEscape(attemptsUsed),
+      seasonActive: Boolean(seasonId),
     });
 
     return finish({
@@ -262,7 +285,7 @@ export async function POST(req: Request) {
   }
 
   if (puzzleType === "path") {
-    const puzzle = getPathPuzzle(dateKey, difficulty);
+    const puzzle = getPathPuzzle(dateKey, difficulty, seasonId);
     if (!body.path || !Array.isArray(body.path)) {
       return NextResponse.json({ error: "Missing path" }, { status: 400 });
     }
@@ -281,6 +304,7 @@ export async function POST(req: Request) {
       base,
       elapsedMs,
       isPerfect: isPerfectPath({ pathLength: body.path.length }),
+      seasonActive: Boolean(seasonId),
     });
     return finish({
       scoreBreakdown,
@@ -289,7 +313,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const puzzle = getLogicPuzzle(dateKey, difficulty);
+  const puzzle = getLogicPuzzle(dateKey, difficulty, seasonId);
   if (!body.answer) {
     return NextResponse.json({ error: "Missing answer" }, { status: 400 });
   }
@@ -304,6 +328,7 @@ export async function POST(req: Request) {
     base,
     elapsedMs,
     isPerfect: isPerfectLogic(verdict.correct),
+    seasonActive: Boolean(seasonId),
   });
 
   return finish({
