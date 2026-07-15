@@ -14,6 +14,7 @@ import {
 } from "@daily-puzzle/puzzle-core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { markBoardPlayed } from "@/lib/played-boards";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -114,6 +115,7 @@ export function PathGame({
     }
 
     const elapsedMs = timer.freeze();
+    markBoardPlayed(dateKey, "path", difficulty, seasonId);
     const timeLabel = formatDuration(elapsedMs);
 
     if (!signedIn) {

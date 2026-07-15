@@ -1,14 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Difficulty, LetterMark } from "@daily-puzzle/puzzle-core";
+import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
   DIFFICULTY_LABELS,
-  evaluateGuess,
-  getWordleConfig,
-  isValidWordleGuess,
+  checkWordLadder,
+  getWordLadderPuzzle,
+  isKnownLadderWord,
   todayKey,
-  wordleTitle,
 } from "@daily-puzzle/puzzle-core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,7 +17,6 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
-import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   difficulty: Difficulty;
@@ -27,29 +25,27 @@ type Props = {
   signedIn: boolean;
 };
 
-export function WordleGame({
+export function WordLadderGame({
   difficulty,
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
 }: Props) {
   const router = useRouter();
-  const config = useMemo(
-    () => getWordleConfig(dateKey, difficulty),
+  const puzzle = useMemo(
+    () => getWordLadderPuzzle(dateKey, difficulty),
     [dateKey, difficulty],
   );
 
-  const [guesses, setGuesses] = useState<string[]>([]);
-  const [marks, setMarks] = useState<LetterMark[][]>([]);
+  const [chain, setChain] = useState<string[]>([puzzle.start]);
   const [current, setCurrent] = useState("");
+  const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
       ? `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
-  const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [submitting, setSubmitting] = useState(false);
-  const [revealAnswer, setRevealAnswer] = useState<string | null>(null);
   const [results, setResults] = useState<{
     won: boolean;
     elapsedMs?: number;
@@ -67,45 +63,24 @@ export function WordleGame({
     resetKey: `${dateKey}-${difficulty}`,
   });
 
-  function submitGuess() {
-    if (done) return;
-    const valid = isValidWordleGuess(current, config);
-    if (!valid.ok) {
-      setStatus(valid.reason);
-      return;
-    }
-    const nextGuesses = [...guesses, valid.guess];
-    const nextMarks = [...marks, evaluateGuess(config.answer, valid.guess)];
-    setGuesses(nextGuesses);
-    setMarks(nextMarks);
-    setCurrent("");
+  const stepsUsed = Math.max(0, chain.length - 1);
 
-    const won = valid.guess === config.answer;
-    const exhausted = nextGuesses.length >= config.maxGuesses;
-    if (won || exhausted) {
-      setDone(true);
-      void finish(nextGuesses, won);
-    } else {
-      setStatus(null);
-    }
-  }
-
-  async function finish(finalGuesses: string[], won: boolean) {
+  async function finish(finalChain: string[], won: boolean) {
     const elapsedMs = timer.freeze();
-    markBoardPlayed(dateKey, "wordle", difficulty);
+    markBoardPlayed(dateKey, "wordladder", difficulty);
     const timeLabel = formatDuration(elapsedMs);
 
     if (!signedIn) {
-      setRevealAnswer(config.answer);
+      setDone(true);
       setResults({
         won,
         elapsedMs,
-        answer: config.answer,
+        answer: puzzle.solution.join(" → "),
       });
       setStatus(
         won
-          ? `Solved in ${timeLabel}! Sign in to save your score.`
-          : `Out of guesses (${timeLabel}). Answer: ${config.answer}`,
+          ? `Ladder complete in ${timeLabel}! Sign in to save.`
+          : `Could not finish (${timeLabel}).`,
       );
       return;
     }
@@ -116,20 +91,19 @@ export function WordleGame({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          puzzleType: "wordle",
+          puzzleType: "wordladder",
           difficulty,
           dateKey,
-          guesses: finalGuesses,
+          guesses: finalChain,
           elapsedMs,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         setStatus(data.error ?? "Could not save");
-        if (data.answer) setRevealAnswer(data.answer);
         return;
       }
-      setRevealAnswer(data.answer);
+      setDone(true);
       setResults({
         won,
         elapsedMs: data.elapsedMs ?? elapsedMs,
@@ -150,33 +124,78 @@ export function WordleGame({
     }
   }
 
-  const rows = Array.from({ length: config.maxGuesses }, (_, i) => {
-    if (guesses[i]) {
-      return { letters: guesses[i]!.split(""), marks: marks[i]! };
+  function addStep() {
+    if (done || submitting) return;
+    const word = current.toLowerCase().replace(/[^a-z]/g, "");
+    if (!word) {
+      setStatus("Enter a word.");
+      return;
     }
-    if (i === guesses.length && !done) {
-      const letters = current
-        .padEnd(config.wordLength, " ")
-        .slice(0, config.wordLength)
-        .split("");
-      return { letters, marks: null };
+    if (word.length !== puzzle.start.length) {
+      setStatus(`Need a ${puzzle.start.length}-letter word.`);
+      return;
     }
-    return {
-      letters: Array(config.wordLength).fill(""),
-      marks: null as LetterMark[] | null,
-    };
-  });
+
+    const prev = chain[chain.length - 1]!;
+    let diffs = 0;
+    for (let i = 0; i < prev.length; i++) {
+      if (prev[i] !== word[i]) diffs += 1;
+    }
+    if (diffs !== 1) {
+      setStatus("Change exactly one letter.");
+      return;
+    }
+
+    const next = [...chain, word];
+    const nextSteps = next.length - 1;
+
+    if (word === puzzle.end) {
+      const verdict = checkWordLadder(puzzle, next);
+      if (!verdict.ok) {
+        setStatus(verdict.reason);
+        return;
+      }
+      setChain(next);
+      setCurrent("");
+      void finish(next, true);
+      return;
+    }
+
+    if (nextSteps > puzzle.maxSteps) {
+      setStatus(`Max ${puzzle.maxSteps} steps.`);
+      return;
+    }
+
+    if (!isKnownLadderWord(word)) {
+      setStatus("Try a more common English word.");
+      return;
+    }
+
+    setChain(next);
+    setCurrent("");
+    setStatus(null);
+
+    if (nextSteps >= puzzle.maxSteps) {
+      setDone(true);
+      void finish(next, false);
+    }
+  }
+
+  function undo() {
+    if (done || chain.length <= 1) return;
+    setChain(chain.slice(0, -1));
+    setStatus(null);
+  }
 
   return (
     <div className="mx-auto max-w-lg animate-rise">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-ember">
-            {wordleTitle(difficulty)} · {DIFFICULTY_LABELS[difficulty]}
+            Word Ladder · {DIFFICULTY_LABELS[difficulty]}
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
-            {config.wordLength}-letter{" "}
-            {wordleTitle(difficulty) === "Word Daily" ? "day" : "board"}
+            {puzzle.start.toUpperCase()} → {puzzle.end.toUpperCase()}
           </h1>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -189,43 +208,25 @@ export function WordleGame({
         </div>
       </div>
 
-      <div className="space-y-2">
-        {rows.map((row, ri) => (
-          <div
-            key={ri}
-            className="grid gap-2"
-            style={{
-              gridTemplateColumns: `repeat(${config.wordLength}, minmax(0, 1fr))`,
-            }}
+      <p className="mb-4 text-sm text-fog">{puzzle.hint}</p>
+      <p className="mb-4 text-xs text-fog">
+        Steps used {stepsUsed} / {puzzle.maxSteps}
+      </p>
+
+      <ol className="space-y-2">
+        {chain.map((word, i) => (
+          <li
+            key={`${word}-${i}`}
+            className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-panel/60 px-4 py-2 font-mono text-lg uppercase tracking-widest"
           >
-            {row.letters.map((ch, ci) => {
-              const mark = row.marks?.[ci];
-              return (
-                <div
-                  key={ci}
-                  className={[
-                    "flex aspect-square items-center justify-center rounded-md border text-xl font-bold uppercase",
-                    mark
-                      ? "tile-flip border-transparent text-paper"
-                      : "border-[var(--line)] bg-panel/50",
-                    mark === "correct" && "bg-correct",
-                    mark === "present" && "bg-present text-on-ember",
-                    mark === "absent" && "bg-absent text-fog",
-                    !mark && ch.trim() && "border-ember/50",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  {ch.trim()}
-                </div>
-              );
-            })}
-          </div>
+            <span className="w-6 text-xs text-fog">{i + 1}</span>
+            {word}
+          </li>
         ))}
-      </div>
+      </ol>
 
       {!done && (
-        <div className="mt-6 flex gap-2">
+        <div className="mt-6 flex flex-wrap gap-2">
           <input
             value={current}
             onChange={(e) =>
@@ -233,23 +234,30 @@ export function WordleGame({
                 e.target.value
                   .toLowerCase()
                   .replace(/[^a-z]/g, "")
-                  .slice(0, config.wordLength),
+                  .slice(0, puzzle.start.length),
               )
             }
             onKeyDown={(e) => {
-              if (e.key === "Enter") submitGuess();
+              if (e.key === "Enter") addStep();
             }}
-            className="flex-1 rounded-lg border border-[var(--line)] bg-ink-2 px-3 py-3 uppercase tracking-[0.3em] outline-none ring-ember/40 focus:ring-2"
-            placeholder={"·".repeat(config.wordLength)}
+            className="min-w-[12rem] flex-1 rounded-lg border border-[var(--line)] bg-ink-2 px-3 py-3 uppercase tracking-[0.3em] outline-none ring-ember/40 focus:ring-2"
+            placeholder={"·".repeat(puzzle.start.length)}
             autoFocus
             disabled={submitting}
           />
           <button
             type="button"
-            onClick={submitGuess}
+            onClick={addStep}
             className="rounded-lg bg-ember px-4 font-semibold text-on-ember hover:bg-ember-deep"
           >
-            Guess
+            Add step
+          </button>
+          <button
+            type="button"
+            onClick={undo}
+            className="rounded-lg border border-[var(--line)] px-4 text-fog hover:text-paper"
+          >
+            Undo
           </button>
         </div>
       )}
@@ -257,9 +265,6 @@ export function WordleGame({
       {status && (
         <p className="mt-4 rounded-lg border border-[var(--line)] bg-panel/60 px-4 py-3 text-sm">
           {status}
-          {revealAnswer && done && !results ? (
-            <span className="mt-1 block text-fog">Answer: {revealAnswer}</span>
-          ) : null}
         </p>
       )}
 

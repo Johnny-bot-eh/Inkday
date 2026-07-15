@@ -150,7 +150,16 @@ export const friendChallenge = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     puzzleType: text("puzzle_type", {
-      enum: ["wordle", "escape", "logic", "path"],
+      enum: [
+        "wordle",
+        "escape",
+        "logic",
+        "path",
+        "anagram",
+        "cryptogram",
+        "acrostic",
+        "wordladder",
+      ],
     }).notNull(),
     difficulty: text("difficulty", {
       enum: ["easy", "medium", "hard", "impossible"],
@@ -237,7 +246,17 @@ export const playResult = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     puzzleType: text("puzzle_type", {
-      enum: ["wordle", "escape", "logic", "path", "detective"],
+      enum: [
+        "wordle",
+        "escape",
+        "logic",
+        "path",
+        "detective",
+        "anagram",
+        "cryptogram",
+        "acrostic",
+        "wordladder",
+      ],
     }).notNull(),
     difficulty: text("difficulty", {
       enum: ["easy", "medium", "hard", "impossible"],

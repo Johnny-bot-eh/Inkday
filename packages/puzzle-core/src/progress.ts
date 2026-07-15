@@ -1,4 +1,4 @@
-import type { Difficulty, PuzzleType } from "./types";
+import type { Difficulty } from "./types";
 import { weekStartKey, monthStartKey } from "./types";
 import {
   SEASONS,
@@ -7,72 +7,123 @@ import {
 } from "./seasons";
 
 export type AchievementId =
+  | "gumshoe_trainee"
+  | "filing_cabinet_hero"
   | "sherlock"
+  | "spreadsheet_suspect"
+  | "cross_reference_cactus"
   | "einstein"
+  | "puzzle_tourist"
+  | "halfway_there"
+  | "triple_digits"
   | "puzzle_master"
   | "speed_demon"
   | "perfectionist"
   | "night_owl"
+  | "three_day_wonder"
+  | "weeklong_wanderer"
   | "legend"
   | "weekly_champion"
   | "challenge_victor"
   | "seasonal_starter"
   | "seasonal_regular"
   | "season_devotee"
+  | "ink_blot_connoisseur"
   | `season_${string}_adept`;
 
 export type AchievementDef = {
   id: AchievementId;
   title: string;
   description: string;
+  /**
+   * Visible once this achievement is earned (or always if omitted).
+   * Already-earned achievements are always shown.
+   */
+  revealAfter?: AchievementId;
+  /** Completely invisible until earned — quirky secrets */
+  secretUntilEarned?: boolean;
 };
 
 export const ACHIEVEMENTS: AchievementDef[] = [
+  // Escape ladder
+  {
+    id: "gumshoe_trainee",
+    title: "Gumshoe Trainee",
+    description: "Crack 10 Escape Room cases. The lobby badge still smells like toner.",
+  },
+  {
+    id: "filing_cabinet_hero",
+    title: "Filing Cabinet Hero",
+    description: "Solve 25 detective puzzles. Someone has to alphabetize the confessions.",
+    revealAfter: "gumshoe_trainee",
+  },
   {
     id: "sherlock",
     title: "Sherlock",
-    description: "Solve 50 detective (Escape Room) puzzles.",
+    description: "Solve 50 detective puzzles. The pipe is metaphorical. Probably.",
+    revealAfter: "filing_cabinet_hero",
+  },
+  // Logic ladder
+  {
+    id: "spreadsheet_suspect",
+    title: "Spreadsheet Suspect",
+    description: "Clear 15 logic grids. Columns never confess first.",
+  },
+  {
+    id: "cross_reference_cactus",
+    title: "Cross-Reference Cactus",
+    description: "Clear 50 logic puzzles. Spiky, but oddly satisfying.",
+    revealAfter: "spreadsheet_suspect",
   },
   {
     id: "einstein",
     title: "Einstein",
-    description: "Solve 100 logic grid puzzles.",
+    description: "Solve 100 logic grids. Relativity optional; consistency mandatory.",
+    revealAfter: "cross_reference_cactus",
+  },
+  // Volume ladder → Impossible
+  {
+    id: "puzzle_tourist",
+    title: "Puzzle Tourist",
+    description: "Complete 25 puzzles. Take photos. Don’t touch the velvet rope.",
+  },
+  {
+    id: "halfway_there",
+    title: "Halfway There",
+    description: "Complete 50 puzzles. The gift shop is a lie; keep solving.",
+    revealAfter: "puzzle_tourist",
+  },
+  {
+    id: "triple_digits",
+    title: "Triple Digits",
+    description: "Complete 100 puzzles. Round numbers taste better with coffee.",
+    revealAfter: "halfway_there",
   },
   {
     id: "puzzle_master",
     title: "Puzzle Master",
-    description: "Complete 500 puzzles.",
+    description: "Complete 500 puzzles. We ran out of adjectives. Here’s a title.",
+    revealAfter: "triple_digits",
+  },
+  // Streak ladder
+  {
+    id: "three_day_wonder",
+    title: "Three-Day Wonder",
+    description: "Hold a 3-day daily streak. Momentum looks good on you.",
   },
   {
-    id: "speed_demon",
-    title: "Speed Demon",
-    description: "Clear 25 puzzles in under 2 minutes.",
-  },
-  {
-    id: "perfectionist",
-    title: "Perfectionist",
-    description: "Earn 50 perfect clears.",
-  },
-  {
-    id: "night_owl",
-    title: "Night Owl",
-    description: "Complete 10 puzzles after midnight UTC.",
+    id: "weeklong_wanderer",
+    title: "Weeklong Wanderer",
+    description: "Hold a 7-day streak. The hallway lights stay on for you now.",
+    revealAfter: "three_day_wonder",
   },
   {
     id: "legend",
     title: "Legend",
-    description: "Reach a 365-day daily streak.",
+    description: "Reach a 365-day daily streak. Calendar printers fear you.",
+    revealAfter: "weeklong_wanderer",
   },
-  {
-    id: "weekly_champion",
-    title: "Weekly Champion",
-    description: "Finish #1 in a weekly tournament (global or friends).",
-  },
-  {
-    id: "challenge_victor",
-    title: "Challenge Victor",
-    description: "Win 10 friend puzzle challenges.",
-  },
+  // Seasonal ladder
   {
     id: "seasonal_starter",
     title: "Seasonal Starter",
@@ -81,18 +132,59 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: "seasonal_regular",
     title: "Seasonal Regular",
-    description: "Clear 5 seasonal event puzzles.",
+    description: "Clear 5 seasonal event puzzles. You know where the coats go.",
+    revealAfter: "seasonal_starter",
   },
   {
     id: "season_devotee",
     title: "Season Devotee",
-    description: "Clear 15 seasonal event puzzles.",
+    description: "Clear 15 seasonal event puzzles. The mascot waves back now.",
+    revealAfter: "seasonal_regular",
   },
   ...SEASONS.map((season) => ({
     id: seasonAdeptAchievementId(season.id) as AchievementId,
     title: `${season.shortLabel} Adept`,
     description: `Clear ${season.adeptWins} ${season.title} boards during the event.`,
+    revealAfter: "seasonal_regular" as AchievementId,
   })),
+  // Quirky secrets — invisible until earned
+  {
+    id: "speed_demon",
+    title: "Speed Demon",
+    description: "Clear 25 puzzles in under 2 minutes. Blurs in the margins.",
+    secretUntilEarned: true,
+  },
+  {
+    id: "perfectionist",
+    title: "Perfectionist",
+    description: "Earn 50 perfect clears. Eraser sales plummeted.",
+    secretUntilEarned: true,
+  },
+  {
+    id: "night_owl",
+    title: "Night Owl",
+    description: "Complete 10 puzzles after midnight UTC. The janitor knows your name.",
+    secretUntilEarned: true,
+  },
+  {
+    id: "challenge_victor",
+    title: "Challenge Victor",
+    description: "Win 10 friend puzzle challenges. Sportsmanship optional; wins aren’t.",
+    secretUntilEarned: true,
+  },
+  {
+    id: "weekly_champion",
+    title: "Weekly Champion",
+    description: "Finish #1 in a weekly tournament. Temporary immortality.",
+    secretUntilEarned: true,
+  },
+  {
+    id: "ink_blot_connoisseur",
+    title: "Ink-Blot Connoisseur",
+    description:
+      "Earn 10 perfect Escape clears. You taste toner notes of oak and suspicion.",
+    secretUntilEarned: true,
+  },
 ];
 
 /** Bonus points for finishing a weekly tournament 1st / 2nd / 3rd */
@@ -125,23 +217,30 @@ export type UnlockDef = {
   id: UnlockId;
   title: string;
   description: string;
+  /** Shown after this achievement is earned (or when the unlock itself is owned). */
+  revealAfter?: AchievementId;
+  secretUntilEarned?: boolean;
 };
 
 export const UNLOCKS: UnlockDef[] = [
   {
     id: "exclusive_cases",
     title: "Exclusive Cases",
-    description: "Solve 50 detective puzzles to unlock exclusive Escape Room cases.",
+    description:
+      "Solve 50 detective puzzles to unlock exclusive Escape Room case files.",
+    revealAfter: "filing_cabinet_hero",
   },
   {
     id: "hidden_challenges",
     title: "Hidden Challenges",
-    description: "Hold a 7-day streak to unlock hidden daily challenges.",
+    description: "Hold a 7-day streak to unlock night-only challenge boards.",
+    revealAfter: "three_day_wonder",
   },
   {
     id: "impossible_mode",
     title: "Impossible Mode",
     description: "Solve 100 puzzles to unlock Impossible difficulty.",
+    revealAfter: "halfway_there",
   },
 ];
 
@@ -160,6 +259,8 @@ export type ProgressCounters = {
   weeklyChampionships: number;
   seasonWins: number;
   seasonWinsById: Partial<Record<SeasonId, number>>;
+  /** Perfect Escape clears — for quirky secret */
+  escapePerfectClears?: number;
 };
 
 export function evaluateAchievements(
@@ -171,18 +272,40 @@ export function evaluateAchievements(
     if (ok && !alreadyEarned.has(id)) next.push(id);
   };
 
+  check("gumshoe_trainee", counters.escapeWins >= 10);
+  check("filing_cabinet_hero", counters.escapeWins >= 25);
   check("sherlock", counters.escapeWins >= 50);
+
+  check("spreadsheet_suspect", counters.logicWins >= 15);
+  check("cross_reference_cactus", counters.logicWins >= 50);
   check("einstein", counters.logicWins >= 100);
+
+  check("puzzle_tourist", counters.totalWins >= 25);
+  check("halfway_there", counters.totalWins >= 50);
+  check("triple_digits", counters.totalWins >= 100);
   check("puzzle_master", counters.totalWins >= 500);
+
   check("speed_demon", counters.speedClears >= 25);
   check("perfectionist", counters.perfectClears >= 50);
   check("night_owl", counters.nightOwlClears >= 10);
-  check("legend", counters.dailyStreak >= 365 || counters.bestDailyStreak >= 365);
+  check(
+    "legend",
+    counters.dailyStreak >= 365 || counters.bestDailyStreak >= 365,
+  );
+  check("three_day_wonder", counters.dailyStreak >= 3 || counters.bestDailyStreak >= 3);
+  check(
+    "weeklong_wanderer",
+    counters.dailyStreak >= 7 || counters.bestDailyStreak >= 7,
+  );
   check("challenge_victor", counters.challengeWins >= 10);
   check("weekly_champion", counters.weeklyChampionships >= 1);
   check("seasonal_starter", counters.seasonWins >= 1);
   check("seasonal_regular", counters.seasonWins >= 5);
   check("season_devotee", counters.seasonWins >= 15);
+  check(
+    "ink_blot_connoisseur",
+    (counters.escapePerfectClears ?? 0) >= 10,
+  );
 
   for (const season of SEASONS) {
     const wins = counters.seasonWinsById[season.id] ?? 0;
@@ -207,6 +330,29 @@ export function evaluateUnlocks(
   check("hidden_challenges", counters.dailyStreak >= 7);
   check("impossible_mode", counters.totalWins >= 100);
   return next;
+}
+
+/** Whether an achievement should appear in profile / home lists. */
+export function isAchievementVisible(
+  def: AchievementDef,
+  earned: ReadonlySet<string>,
+): boolean {
+  if (earned.has(def.id)) return true;
+  if (def.secretUntilEarned) return false;
+  if (def.revealAfter && !earned.has(def.revealAfter)) return false;
+  return true;
+}
+
+/** Whether an unlock should appear in UI. */
+export function isUnlockVisible(
+  def: UnlockDef,
+  earnedAchievements: ReadonlySet<string>,
+  unlocked: ReadonlySet<string>,
+): boolean {
+  if (unlocked.has(def.id)) return true;
+  if (def.secretUntilEarned) return false;
+  if (def.revealAfter && !earnedAchievements.has(def.revealAfter)) return false;
+  return true;
 }
 
 export function isNightOwlClear(createdAt: Date): boolean {

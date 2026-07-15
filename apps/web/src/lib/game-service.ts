@@ -11,9 +11,11 @@ import {
   DEFAULT_NOTIFICATION_PREFS,
   evaluateAchievements,
   evaluateUnlocks,
+  isAchievementVisible,
   isNightOwlClear,
   isPremiumActive,
   isSpeedClear,
+  isUnlockVisible,
   isWeekComplete,
   nextMonthlyStreak,
   nextStreak,
@@ -316,6 +318,7 @@ async function buildProgressCounters(
   let logicWins = 0;
   let speedClears = 0;
   let perfectClears = 0;
+  let escapePerfectClears = 0;
   let nightOwlClears = 0;
   let seasonWins = 0;
   const seasonWinsById: Partial<Record<string, number>> = {};
@@ -342,7 +345,11 @@ async function buildProgressCounters(
         seasonId?: string;
       };
       if (isSpeedClear(meta.elapsedMs)) speedClears += 1;
-      if ((meta.breakdown?.perfectBonus ?? 0) > 0) perfectClears += 1;
+      const wasPerfect = (meta.breakdown?.perfectBonus ?? 0) > 0;
+      if (wasPerfect) {
+        perfectClears += 1;
+        if (play.puzzleType === "escape") escapePerfectClears += 1;
+      }
       if (!seasonId && meta.seasonId) seasonId = meta.seasonId;
     } catch {
       /* ignore */
@@ -359,6 +366,7 @@ async function buildProgressCounters(
     totalWins: wins.length,
     speedClears,
     perfectClears,
+    escapePerfectClears,
     nightOwlClears,
     dailyStreak: streakOverlay?.dailyStreak ?? stats?.currentStreak ?? 0,
     weeklyStreak: streakOverlay?.weeklyStreak ?? stats?.weeklyStreak ?? 0,
@@ -707,11 +715,15 @@ export async function getProfile(userId: string) {
       favoriteCategory,
       favoriteCount,
       friends: acceptedFriends,
-      achievements: ACHIEVEMENTS.map((a) => ({
+      achievements: ACHIEVEMENTS.filter((a) =>
+        isAchievementVisible(a, earned),
+      ).map((a) => ({
         ...a,
         earned: earned.has(a.id),
       })),
-      unlocks: UNLOCKS.map((u) => ({
+      unlocks: UNLOCKS.filter((u) =>
+        isUnlockVisible(u, earned, unlocked),
+      ).map((u) => ({
         ...u,
         unlocked: unlocked.has(u.id),
       })),

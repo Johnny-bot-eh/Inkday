@@ -39,6 +39,10 @@ const CHALLENGE_OPTIONS: Array<{
   { puzzleType: "escape", difficulty: "hard", label: "Detective Hard" },
   { puzzleType: "logic", difficulty: "medium", label: "Logic Medium" },
   { puzzleType: "path", difficulty: "medium", label: "Path Medium" },
+  { puzzleType: "anagram", difficulty: "medium", label: "Anagram Medium" },
+  { puzzleType: "cryptogram", difficulty: "medium", label: "Cryptogram Medium" },
+  { puzzleType: "acrostic", difficulty: "medium", label: "Acrostic Medium" },
+  { puzzleType: "wordladder", difficulty: "medium", label: "Word Ladder Medium" },
 ];
 
 export function FriendsPanel({ signedIn }: { signedIn: boolean }) {

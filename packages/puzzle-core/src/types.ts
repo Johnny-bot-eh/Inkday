@@ -1,5 +1,13 @@
 export type Difficulty = "easy" | "medium" | "hard" | "impossible";
-export type PuzzleType = "wordle" | "escape" | "logic" | "path";
+export type PuzzleType =
+  | "wordle"
+  | "escape"
+  | "logic"
+  | "path"
+  | "anagram"
+  | "cryptogram"
+  | "acrostic"
+  | "wordladder";
 
 export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 export const ALL_DIFFICULTIES: Difficulty[] = [
@@ -8,7 +16,16 @@ export const ALL_DIFFICULTIES: Difficulty[] = [
   "hard",
   "impossible",
 ];
-export const PUZZLE_TYPES: PuzzleType[] = ["wordle", "escape", "logic", "path"];
+export const PUZZLE_TYPES: PuzzleType[] = [
+  "wordle",
+  "escape",
+  "logic",
+  "path",
+  "anagram",
+  "cryptogram",
+  "acrostic",
+  "wordladder",
+];
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
@@ -23,11 +40,20 @@ export const WORD_DAILY_DIFFICULTY: Difficulty = "medium";
 export const EXTRA_WORDLE_DIFFICULTIES: Difficulty[] = ["easy", "hard"];
 
 export const PUZZLE_LABELS: Record<PuzzleType, string> = {
-  wordle: "Word puzzles",
+  wordle: "Word Daily",
   escape: "Escape Room",
   logic: "Logic Grid",
   path: "Path Puzzle",
+  anagram: "Anagrams",
+  cryptogram: "Cryptograms",
+  acrostic: "Acrostics",
+  wordladder: "Word Ladders",
 };
+
+/** Extra word games listed under “Word games” on the home page */
+export const WORD_GAME_TYPES: Array<
+  Extract<PuzzleType, "anagram" | "cryptogram" | "acrostic" | "wordladder">
+> = ["anagram", "cryptogram", "acrostic", "wordladder"];
 
 export function wordleTitle(difficulty: Difficulty): string {
   return difficulty === WORD_DAILY_DIFFICULTY ? "Word Daily" : "Word Extra";

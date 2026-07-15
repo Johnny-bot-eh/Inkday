@@ -10,6 +10,7 @@ import {
 } from "@daily-puzzle/puzzle-core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { markBoardPlayed } from "@/lib/played-boards";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -67,6 +68,7 @@ export function EscapeGame({
 
   async function finish(opts: { won: boolean; attemptsUsed: number; code: string }) {
     const elapsedMs = timer.freeze();
+    markBoardPlayed(dateKey, "escape", difficulty, pack === "premium" ? "plus" : seasonId);
     const timeLabel = formatDuration(elapsedMs);
 
     if (!signedIn) {

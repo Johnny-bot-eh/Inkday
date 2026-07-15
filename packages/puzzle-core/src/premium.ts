@@ -1,18 +1,13 @@
 import type { DailyChallenge } from "./types";
 
-/** Points of Inkday Plus beyond the free game. */
-export const PLUS_SCORE_BONUS = 10;
+/** Points of Inkday Plus beyond the free game — no score bonus (anti pay-to-win). */
+export const PLUS_SCORE_BONUS = 0;
 
 export const PREMIUM_PERKS = [
   {
     id: "plus_boards",
     title: "Plus case files",
     description: "Extra daily Escape boards reserved for Plus members.",
-  },
-  {
-    id: "plus_bonus",
-    title: "+10 Plus bonus",
-    description: "Every cleared puzzle earns an extra 10 points.",
   },
   {
     id: "streak_freeze",
@@ -68,8 +63,9 @@ export function isPremiumActive(opts: {
   return end > (opts.now ?? new Date()).getTime();
 }
 
-export function plusBonus(active: boolean): number {
-  return active ? PLUS_SCORE_BONUS : 0;
+export function plusBonus(_active: boolean): number {
+  // Kept for ScoreBreakdown compat — Plus never adds points.
+  return 0;
 }
 
 export type NotificationPrefView = {

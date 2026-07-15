@@ -136,6 +136,68 @@ export function isPerfectPath(opts: {
   return opts.pathLength > 0 && opts.pathLength <= opts.optimalHint;
 }
 
+export function scoreAnagram(opts: {
+  difficulty: Difficulty;
+  correct: boolean;
+  attemptsUsed: number;
+  maxAttempts: number;
+}): number {
+  if (!opts.correct) return 0;
+  const remaining = Math.max(0, opts.maxAttempts - opts.attemptsUsed);
+  return BASE_POINTS[opts.difficulty] + remaining * 12;
+}
+
+export function isPerfectAnagram(attemptsUsed: number): boolean {
+  return attemptsUsed === 1;
+}
+
+export function scoreCryptogram(opts: {
+  difficulty: Difficulty;
+  correct: boolean;
+  attemptsUsed: number;
+  maxAttempts: number;
+}): number {
+  if (!opts.correct) return 0;
+  const remaining = Math.max(0, opts.maxAttempts - opts.attemptsUsed);
+  return BASE_POINTS[opts.difficulty] + remaining * 12;
+}
+
+export function isPerfectCryptogram(attemptsUsed: number): boolean {
+  return attemptsUsed === 1;
+}
+
+export function scoreAcrostic(opts: {
+  difficulty: Difficulty;
+  correct: boolean;
+  attemptsUsed: number;
+}): number {
+  if (!opts.correct) return 0;
+  const efficiency = Math.max(0, 30 - Math.max(0, opts.attemptsUsed - 1) * 5);
+  return BASE_POINTS[opts.difficulty] + efficiency;
+}
+
+export function isPerfectAcrostic(attemptsUsed: number): boolean {
+  return attemptsUsed === 1;
+}
+
+export function scoreWordLadder(opts: {
+  difficulty: Difficulty;
+  correct: boolean;
+  stepsUsed: number;
+  maxSteps: number;
+}): number {
+  if (!opts.correct) return 0;
+  const remaining = Math.max(0, opts.maxSteps - opts.stepsUsed);
+  return BASE_POINTS[opts.difficulty] + remaining * 8;
+}
+
+export function isPerfectWordLadder(opts: {
+  stepsUsed: number;
+  optimalSteps: number;
+}): boolean {
+  return opts.stepsUsed > 0 && opts.stepsUsed <= opts.optimalSteps;
+}
+
 /** Speed bonus from elapsed solve time (ms). */
 export function timeBonus(elapsedMs: number | undefined | null): number {
   if (elapsedMs == null || elapsedMs < 0) return 0;

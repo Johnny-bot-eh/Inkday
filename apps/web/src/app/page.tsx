@@ -4,20 +4,22 @@ import {
   DIFFICULTY_LABELS,
   EXTRA_WORDLE_DIFFICULTIES,
   HIDDEN_CHALLENGES,
+  PUZZLE_LABELS,
   TODAYS_CHALLENGES,
   WORD_DAILY_DIFFICULTY,
+  WORD_GAME_TYPES,
   dailyChallengeHeadline,
+  findPlayForBoard,
   getActiveSeason,
   getUpcomingSeason,
-  playMapKey,
   todayKey,
   wordleTitle,
   type Difficulty,
-  type PuzzleType,
 } from "@daily-puzzle/puzzle-core";
 import { getProfile, listPlaysForDate } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { ChallengeCountdown } from "@/components/challenge-countdown";
+import { ChallengePlayRow } from "@/components/challenge-play-row";
 import {
   SeasonBanner,
   UpcomingSeasonNote,
@@ -26,6 +28,8 @@ import {
 /** Always render with the current UTC day — never serve a stale cached “yesterday”. */
 export const dynamic = "force-dynamic";
 
+type DayPlay = Awaited<ReturnType<typeof listPlaysForDate>>[number];
+
 export default async function HomePage() {
   const session = await getSession();
   const dateKey = todayKey();
@@ -33,31 +37,38 @@ export default async function HomePage() {
   const upcomingSeason = activeSeason ? null : getUpcomingSeason();
 
   let profile: Awaited<ReturnType<typeof getProfile>> | null = null;
-  let playedMap = new Map<
-    string,
-    Awaited<ReturnType<typeof listPlaysForDate>>[number]
-  >();
+  let plays: DayPlay[] = [];
 
   if (session?.user) {
     try {
-      const [nextProfile, plays] = await Promise.all([
+      const [nextProfile, dayPlays] = await Promise.all([
         getProfile(session.user.id),
         listPlaysForDate(session.user.id, dateKey),
       ]);
       profile = nextProfile;
-      playedMap = new Map(
-        plays.map((play) => [
-          playMapKey(
-            play.puzzleType as PuzzleType,
-            play.difficulty as Difficulty,
-            play.seasonId,
-          ),
-          play,
-        ]),
-      );
+      plays = dayPlays;
     } catch (err) {
       console.error("Home signed-in data failed", err);
     }
+  }
+
+  function boardPlay(
+    puzzleType: DayPlay["puzzleType"] | string,
+    difficulty: Difficulty,
+    seasonId: string | null | undefined = "",
+  ) {
+    return findPlayForBoard(
+      plays,
+      puzzleType as Parameters<typeof findPlayForBoard>[1],
+      difficulty,
+      seasonId,
+    );
+  }
+
+  function doneCopy(play: DayPlay | undefined): string {
+    if (!play) return "Completed today";
+    if (session?.user) return `Logged · ${play.score} pts`;
+    return "Completed today";
   }
 
   return (
@@ -135,23 +146,19 @@ export default async function HomePage() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           {TODAYS_CHALLENGES.map((challenge) => {
-            const done = playedMap.get(
-              playMapKey(challenge.puzzleType, challenge.difficulty),
-            );
+            const play = boardPlay(challenge.puzzleType, challenge.difficulty);
             const headline = dailyChallengeHeadline(challenge, dateKey);
             return (
-              <PlayRow
+              <ChallengePlayRow
                 key={`${challenge.id}-${dateKey}`}
                 href={challenge.href}
                 title={`${challenge.title} · ${challenge.difficultyLabel}`}
-                subtitle={
-                  done
-                    ? session?.user
-                      ? `Logged · ${done.score} pts`
-                      : "Completed today"
-                    : headline
-                }
-                done={Boolean(done)}
+                openSubtitle={headline}
+                doneSubtitle={doneCopy(play)}
+                puzzleType={challenge.puzzleType}
+                difficulty={challenge.difficulty}
+                dateKey={dateKey}
+                serverDone={Boolean(play)}
                 featured
               />
             );
@@ -160,35 +167,37 @@ export default async function HomePage() {
 
         {activeSeason && (
           <div className="mt-6 space-y-3">
-            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
-              {activeSeason.shortLabel} Event Boards
-            </h3>
-            <p className="text-sm text-fog">
-              Limited-time {activeSeason.title} puzzles — separate from today’s
-              regular dailies.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+                  {activeSeason.shortLabel} Event Boards
+                </h3>
+                <p className="mt-1 text-sm text-fog">
+                  Limited-time {activeSeason.title} puzzles — separate from
+                  today’s regular dailies. Boards refresh at UTC midnight.
+                </p>
+              </div>
+              <ChallengeCountdown />
+            </div>
+            <div className="grid gap-3">
               {activeSeason.challenges.map((challenge) => {
-                const done = playedMap.get(
-                  playMapKey(
-                    challenge.puzzleType,
-                    challenge.difficulty,
-                    activeSeason.id,
-                  ),
+                const play = boardPlay(
+                  challenge.puzzleType,
+                  challenge.difficulty,
+                  activeSeason.id,
                 );
                 return (
-                  <PlayRow
+                  <ChallengePlayRow
                     key={challenge.id}
                     href={challenge.href}
                     title={challenge.title}
-                    subtitle={
-                      done
-                        ? session?.user
-                          ? `Logged · ${done.score} pts`
-                          : "Completed"
-                        : `${challenge.difficultyLabel} · seasonal`
-                    }
-                    done={Boolean(done)}
+                    openSubtitle={`${challenge.difficultyLabel} · seasonal`}
+                    doneSubtitle={doneCopy(play)}
+                    puzzleType={challenge.puzzleType}
+                    difficulty={challenge.difficulty}
+                    dateKey={dateKey}
+                    seasonId={activeSeason.id}
+                    serverDone={Boolean(play)}
                     featured
                   />
                 );
@@ -206,24 +215,23 @@ export default async function HomePage() {
               <p className="text-sm text-fog">
                 Unlocked by your 7-day streak — exclusive night boards.
               </p>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3">
                 {HIDDEN_CHALLENGES.map((challenge) => {
-                  const done = playedMap.get(
-                    playMapKey(challenge.puzzleType, challenge.difficulty),
+                  const play = boardPlay(
+                    challenge.puzzleType,
+                    challenge.difficulty,
                   );
                   return (
-                    <PlayRow
+                    <ChallengePlayRow
                       key={challenge.id}
                       href={challenge.href}
                       title={challenge.title}
-                      subtitle={
-                        done
-                          ? session?.user
-                            ? `Logged · ${done.score} pts`
-                            : "Completed"
-                          : challenge.difficultyLabel
-                      }
-                      done={Boolean(done)}
+                      openSubtitle={challenge.difficultyLabel}
+                      doneSubtitle={doneCopy(play)}
+                      puzzleType={challenge.puzzleType}
+                      difficulty={challenge.difficulty}
+                      dateKey={dateKey}
+                      serverDone={Boolean(play)}
                       featured
                     />
                   );
@@ -251,7 +259,7 @@ export default async function HomePage() {
             <p className="mt-1 text-sm text-fog">
               {profile?.premium?.active
                 ? "You’re on Plus — open member boards and claim a weekly streak freeze from Profile."
-                : "Plus adds vault cases, +10 on every clear, and a weekly streak freeze. Redeem a promo on Profile (Stripe later)."}
+                : "Plus adds vault cases and a weekly streak freeze — no score boosts. Redeem a promo on Profile (Stripe later)."}
             </p>
             <div className="mt-3 flex flex-wrap gap-3">
               <Link
@@ -277,7 +285,11 @@ export default async function HomePage() {
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
               Unlockables
             </h3>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <p className="mt-1 text-sm text-fog">
+              New doors appear after you clear the previous one. A few stay
+              invisible on purpose.
+            </p>
+            <div className="mt-3 grid gap-2">
               {profile.insights.unlocks.map((u) => (
                 <div
                   key={u.id}
@@ -318,35 +330,38 @@ export default async function HomePage() {
               Word puzzles
             </h3>
             <div className="mt-4 grid gap-3">
-              <PlayRow
-                href={`/play/wordle/${WORD_DAILY_DIFFICULTY}`}
-                title="Word Daily"
-                subtitle={
-                  playedMap.get(playMapKey('wordle', WORD_DAILY_DIFFICULTY))
-                    ? session?.user
-                      ? `Logged · ${playedMap.get(playMapKey('wordle', WORD_DAILY_DIFFICULTY))!.score} pts`
-                      : "Completed today"
-                    : "Medium · main daily board"
-                }
-                done={Boolean(playedMap.get(playMapKey('wordle', WORD_DAILY_DIFFICULTY)))}
-              />
-              {EXTRA_WORDLE_DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(playMapKey('wordle', difficulty));
+              {(() => {
+                const play = boardPlay("wordle", WORD_DAILY_DIFFICULTY);
                 return (
-                  <PlayRow
+                  <ChallengePlayRow
+                    href={`/play/wordle/${WORD_DAILY_DIFFICULTY}`}
+                    title="Word Daily"
+                    openSubtitle="Medium · main daily board"
+                    doneSubtitle={doneCopy(play)}
+                    puzzleType="wordle"
+                    difficulty={WORD_DAILY_DIFFICULTY}
+                    dateKey={dateKey}
+                    serverDone={Boolean(play)}
+                  />
+                );
+              })()}
+              {EXTRA_WORDLE_DIFFICULTIES.map((difficulty) => {
+                const play = boardPlay("wordle", difficulty);
+                return (
+                  <ChallengePlayRow
                     key={difficulty}
                     href={`/play/wordle/${difficulty}`}
                     title={`${wordleTitle(difficulty)} · ${DIFFICULTY_LABELS[difficulty]}`}
-                    subtitle={
-                      done
-                        ? session?.user
-                          ? `Logged · ${done.score} pts`
-                          : "Completed today"
-                        : difficulty === "easy"
-                          ? "Featured above as Daily Word"
-                          : "Longer words · 5 guesses"
+                    openSubtitle={
+                      difficulty === "easy"
+                        ? "Featured above as Daily Word"
+                        : "Longer words · 5 guesses"
                     }
-                    done={Boolean(done)}
+                    doneSubtitle={doneCopy(play)}
+                    puzzleType="wordle"
+                    difficulty={difficulty}
+                    dateKey={dateKey}
+                    serverDone={Boolean(play)}
                   />
                 );
               })}
@@ -359,22 +374,22 @@ export default async function HomePage() {
             </h3>
             <div className="mt-4 grid gap-3">
               {DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(playMapKey('escape', difficulty));
+                const play = boardPlay("escape", difficulty);
                 return (
-                  <PlayRow
+                  <ChallengePlayRow
                     key={difficulty}
                     href={`/play/escape/${difficulty}`}
                     title={DIFFICULTY_LABELS[difficulty]}
-                    subtitle={
-                      done
-                        ? session?.user
-                          ? `Logged · ${done.score} pts`
-                          : "Completed today"
-                        : difficulty === "hard"
-                          ? "Featured above as Daily Detective"
-                          : `${DIFFICULTY_LABELS[difficulty]} escape`
+                    openSubtitle={
+                      difficulty === "hard"
+                        ? "Featured above as Daily Detective"
+                        : `${DIFFICULTY_LABELS[difficulty]} escape`
                     }
-                    done={Boolean(done)}
+                    doneSubtitle={doneCopy(play)}
+                    puzzleType="escape"
+                    difficulty={difficulty}
+                    dateKey={dateKey}
+                    serverDone={Boolean(play)}
                   />
                 );
               })}
@@ -385,26 +400,26 @@ export default async function HomePage() {
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
               Logic Grid
             </h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <div className="mt-4 grid gap-3">
               {DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(playMapKey('logic', difficulty));
+                const play = boardPlay("logic", difficulty);
                 return (
-                  <PlayRow
+                  <ChallengePlayRow
                     key={difficulty}
                     href={`/play/logic/${difficulty}`}
                     title={DIFFICULTY_LABELS[difficulty]}
-                    subtitle={
-                      done
-                        ? session?.user
-                          ? `Logged · ${done.score} pts`
-                          : "Completed today"
-                        : difficulty === "medium"
-                          ? "Featured above as Daily Logic"
-                          : difficulty === "easy"
-                            ? "3 suspects"
-                            : "4 suspects"
+                    openSubtitle={
+                      difficulty === "medium"
+                        ? "Featured above as Daily Logic"
+                        : difficulty === "easy"
+                          ? "3 suspects"
+                          : "4 suspects"
                     }
-                    done={Boolean(done)}
+                    doneSubtitle={doneCopy(play)}
+                    puzzleType="logic"
+                    difficulty={difficulty}
+                    dateKey={dateKey}
+                    serverDone={Boolean(play)}
                   />
                 );
               })}
@@ -415,31 +430,60 @@ export default async function HomePage() {
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
               Path Puzzle
             </h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <div className="mt-4 grid gap-3">
               {DIFFICULTIES.map((difficulty) => {
-                const done = playedMap.get(playMapKey('path', difficulty));
+                const play = boardPlay("path", difficulty);
                 return (
-                  <PlayRow
+                  <ChallengePlayRow
                     key={difficulty}
                     href={`/play/path/${difficulty}`}
                     title={DIFFICULTY_LABELS[difficulty]}
-                    subtitle={
-                      done
-                        ? session?.user
-                          ? `Logged · ${done.score} pts`
-                          : "Completed today"
-                        : difficulty === "hard"
-                          ? "Featured above as Daily Mystery"
-                          : difficulty === "easy"
-                            ? "Small board"
-                            : "Checkpoints"
+                    openSubtitle={
+                      difficulty === "hard"
+                        ? "Featured above as Daily Mystery"
+                        : difficulty === "easy"
+                          ? "Small board"
+                          : "Checkpoints"
                     }
-                    done={Boolean(done)}
+                    doneSubtitle={doneCopy(play)}
+                    puzzleType="path"
+                    difficulty={difficulty}
+                    dateKey={dateKey}
+                    serverDone={Boolean(play)}
                   />
                 );
               })}
             </div>
           </article>
+
+          {WORD_GAME_TYPES.map((puzzleType) => (
+            <article
+              key={puzzleType}
+              className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
+            >
+              <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
+                {PUZZLE_LABELS[puzzleType]}
+              </h3>
+              <div className="mt-4 grid gap-3">
+                {DIFFICULTIES.map((difficulty) => {
+                  const play = boardPlay(puzzleType, difficulty);
+                  return (
+                    <ChallengePlayRow
+                      key={difficulty}
+                      href={`/play/${puzzleType}/${difficulty}`}
+                      title={DIFFICULTY_LABELS[difficulty]}
+                      openSubtitle={wordGameBlurb(puzzleType, difficulty)}
+                      doneSubtitle={doneCopy(play)}
+                      puzzleType={puzzleType}
+                      difficulty={difficulty}
+                      dateKey={dateKey}
+                      serverDone={Boolean(play)}
+                    />
+                  );
+                })}
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -467,34 +511,34 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PlayRow({
-  href,
-  title,
-  subtitle,
-  done,
-  featured,
-}: {
-  href: string;
-  title: string;
-  subtitle: string;
-  done: boolean;
-  featured?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={[
-        "flex items-center justify-between rounded-xl border px-4 py-3 transition hover:border-ember/40 hover:bg-panel",
-        featured
-          ? "border-ember/35 bg-ember/10"
-          : "border-[var(--line)] bg-panel/60",
-      ].join(" ")}
-    >
-      <div>
-        <div className="font-semibold">{title}</div>
-        <div className="text-xs text-fog">{subtitle}</div>
-      </div>
-      <span className="text-ember">{done ? "Replay" : "Play →"}</span>
-    </Link>
-  );
+function wordGameBlurb(
+  puzzleType: (typeof WORD_GAME_TYPES)[number],
+  difficulty: Difficulty,
+): string {
+  switch (puzzleType) {
+    case "anagram":
+      return difficulty === "easy"
+        ? "Unscramble a 5-letter word"
+        : difficulty === "medium"
+          ? "Six-letter scramble"
+          : "Longer scramble · fewer tries";
+    case "cryptogram":
+      return difficulty === "easy"
+        ? "Short phrase · letter hints"
+        : difficulty === "medium"
+          ? "Decode the cipher"
+          : "Sparse reveals";
+    case "acrostic":
+      return difficulty === "easy"
+        ? "Clues spell a short message"
+        : difficulty === "medium"
+          ? "Longer hidden word"
+          : "Tough clues · longer message";
+    case "wordladder":
+      return difficulty === "easy"
+        ? "Short transformation"
+        : difficulty === "medium"
+          ? "One letter at a time"
+          : "Longer chain";
+  }
 }

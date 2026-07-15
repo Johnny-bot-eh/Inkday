@@ -133,7 +133,10 @@ export function ProfileView({
         <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
           Achievements
         </h2>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <p className="mt-1 text-sm text-fog">
+          Cleared ones and the next door in each chain. Secrets stay secret.
+        </p>
+        <div className="mt-3 grid gap-2">
           {insights.achievements.map((a) => (
             <div
               key={a.id}
@@ -158,6 +161,9 @@ export function ProfileView({
         <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
           Unlocks
         </h2>
+        <p className="mt-1 text-sm text-fog">
+          Visible once you unlock the previous step in the chain.
+        </p>
         <div className="mt-3 grid gap-2">
           {insights.unlocks.map((u) => (
             <div

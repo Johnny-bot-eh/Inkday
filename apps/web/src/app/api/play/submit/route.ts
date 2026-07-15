@@ -1,24 +1,41 @@
 import {
+  checkAcrosticAnswers,
+  checkAcrosticMessage,
+  checkAnagramAnswer,
+  checkCryptogramAnswer,
   checkEscapeAnswer,
   checkLogicAnswer,
   checkPath,
+  checkWordLadder,
   evaluateGuess,
+  getAcrosticPuzzle,
+  getAnagramPuzzle,
+  getCryptogramPuzzle,
   getEscapeRoom,
   getLogicPuzzle,
   getPathPuzzle,
+  getWordLadderPuzzle,
   getWordleConfig,
+  isPerfectAcrostic,
+  isPerfectAnagram,
+  isPerfectCryptogram,
   isPerfectEscape,
   isPerfectLogic,
   isPerfectPath,
+  isPerfectWordLadder,
   isPerfectWordle,
   isSeasonActiveOn,
   isValidWordleGuess,
   normalizeSeasonId,
   noHintsBonus,
   perfectBonus,
+  scoreAcrostic,
+  scoreAnagram,
+  scoreCryptogram,
   scoreEscape,
   scoreLogic,
   scorePath,
+  scoreWordLadder,
   scoreWordle,
   seasonBonus,
   plusBonus,
@@ -57,7 +74,16 @@ type Body = {
   elapsedMs?: number;
 };
 
-const TYPES: PuzzleType[] = ["wordle", "escape", "logic", "path"];
+const TYPES: PuzzleType[] = [
+  "wordle",
+  "escape",
+  "logic",
+  "path",
+  "anagram",
+  "cryptogram",
+  "acrostic",
+  "wordladder",
+];
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "impossible"];
 
 function clampElapsed(ms: unknown): number | undefined {
@@ -337,6 +363,185 @@ export async function POST(req: Request) {
       scoreBreakdown,
       won: true,
       meta: { pathLength: body.path.length },
+    });
+  }
+
+  if (puzzleType === "anagram") {
+    const puzzle = getAnagramPuzzle(dateKey, difficulty);
+    const attemptsUsed = Math.min(
+      Math.max(1, body.attemptsUsed ?? 1),
+      puzzle.maxAttempts,
+    );
+    if (!body.answer) {
+      return NextResponse.json({ error: "Missing answer" }, { status: 400 });
+    }
+    const verdict = checkAnagramAnswer(puzzle, body.answer);
+    const failedOut = !verdict.correct && attemptsUsed >= puzzle.maxAttempts;
+    if (!verdict.correct && !failedOut) {
+      return NextResponse.json(
+        {
+          error: "Incorrect",
+          remaining: puzzle.maxAttempts - attemptsUsed,
+        },
+        { status: 400 },
+      );
+    }
+    const base = scoreAnagram({
+      difficulty,
+      correct: verdict.correct,
+      attemptsUsed,
+      maxAttempts: puzzle.maxAttempts,
+    });
+    const scoreBreakdown = buildBreakdown({
+      won: verdict.correct,
+      difficulty,
+      base,
+      elapsedMs,
+      isPerfect: verdict.correct && isPerfectAnagram(attemptsUsed),
+      seasonActive: Boolean(seasonId),
+      plusActive,
+    });
+    return finish({
+      scoreBreakdown,
+      won: verdict.correct,
+      meta: { attemptsUsed },
+      extra: { answer: puzzle.answer },
+    });
+  }
+
+  if (puzzleType === "cryptogram") {
+    const puzzle = getCryptogramPuzzle(dateKey, difficulty);
+    const attemptsUsed = Math.min(
+      Math.max(1, body.attemptsUsed ?? 1),
+      puzzle.maxAttempts,
+    );
+    if (!body.answer) {
+      return NextResponse.json({ error: "Missing answer" }, { status: 400 });
+    }
+    const verdict = checkCryptogramAnswer(puzzle, body.answer);
+    const failedOut = !verdict.correct && attemptsUsed >= puzzle.maxAttempts;
+    if (!verdict.correct && !failedOut) {
+      return NextResponse.json(
+        {
+          error: "Incorrect",
+          remaining: puzzle.maxAttempts - attemptsUsed,
+        },
+        { status: 400 },
+      );
+    }
+    const base = scoreCryptogram({
+      difficulty,
+      correct: verdict.correct,
+      attemptsUsed,
+      maxAttempts: puzzle.maxAttempts,
+    });
+    const scoreBreakdown = buildBreakdown({
+      won: verdict.correct,
+      difficulty,
+      base,
+      elapsedMs,
+      isPerfect: verdict.correct && isPerfectCryptogram(attemptsUsed),
+      seasonActive: Boolean(seasonId),
+      plusActive,
+    });
+    return finish({
+      scoreBreakdown,
+      won: verdict.correct,
+      meta: { attemptsUsed },
+      extra: { answer: puzzle.plaintext },
+    });
+  }
+
+  if (puzzleType === "acrostic") {
+    const puzzle = getAcrosticPuzzle(dateKey, difficulty);
+    const attemptsUsed = Math.min(
+      Math.max(1, body.attemptsUsed ?? 1),
+      puzzle.maxAttempts,
+    );
+    const byMessage = body.answer
+      ? checkAcrosticMessage(puzzle, body.answer)
+      : { correct: false };
+    const byClues =
+      body.guesses && Array.isArray(body.guesses)
+        ? checkAcrosticAnswers(puzzle, body.guesses)
+        : { correct: false, solved: [] as boolean[] };
+    const won = byMessage.correct || byClues.correct;
+    const failedOut = !won && attemptsUsed >= puzzle.maxAttempts;
+    if (!won && !failedOut) {
+      return NextResponse.json(
+        {
+          error: "Incorrect",
+          remaining: puzzle.maxAttempts - attemptsUsed,
+        },
+        { status: 400 },
+      );
+    }
+    const base = scoreAcrostic({
+      difficulty,
+      correct: won,
+      attemptsUsed,
+    });
+    const scoreBreakdown = buildBreakdown({
+      won,
+      difficulty,
+      base,
+      elapsedMs,
+      isPerfect: won && isPerfectAcrostic(attemptsUsed),
+      seasonActive: Boolean(seasonId),
+      plusActive,
+    });
+    return finish({
+      scoreBreakdown,
+      won,
+      meta: { attemptsUsed },
+      extra: { answer: puzzle.message, answers: puzzle.answers },
+    });
+  }
+
+  if (puzzleType === "wordladder") {
+    const puzzle = getWordLadderPuzzle(dateKey, difficulty);
+    const guesses = body.guesses ?? [];
+    const verdict = checkWordLadder(puzzle, guesses);
+    const stepsUsed = Math.max(0, guesses.length - 1);
+    const reachedEnd =
+      guesses.length > 0 &&
+      guesses[guesses.length - 1]!.toLowerCase() === puzzle.end;
+    const won = verdict.ok;
+    const exhausted = !won && stepsUsed >= puzzle.maxSteps;
+    if (!won && !exhausted && !reachedEnd) {
+      return NextResponse.json(
+        { error: verdict.ok ? "Incomplete ladder" : verdict.reason },
+        { status: 400 },
+      );
+    }
+    if (!won && reachedEnd && !verdict.ok) {
+      return NextResponse.json({ error: verdict.reason }, { status: 400 });
+    }
+    const base = scoreWordLadder({
+      difficulty,
+      correct: won,
+      stepsUsed,
+      maxSteps: puzzle.maxSteps,
+    });
+    const scoreBreakdown = buildBreakdown({
+      won,
+      difficulty,
+      base,
+      elapsedMs,
+      isPerfect:
+        won &&
+        isPerfectWordLadder({
+          stepsUsed,
+          optimalSteps: puzzle.solution.length - 1,
+        }),
+      seasonActive: Boolean(seasonId),
+      plusActive,
+    });
+    return finish({
+      scoreBreakdown,
+      won,
+      meta: { stepsUsed },
+      extra: { answer: puzzle.solution.join(" → ") },
     });
   }
 

@@ -25,6 +25,10 @@ const PUZZLE_TYPES = new Set<PuzzleType>([
   "escape",
   "logic",
   "path",
+  "anagram",
+  "cryptogram",
+  "acrostic",
+  "wordladder",
 ]);
 const DIFFICULTIES = new Set<Difficulty>([
   "easy",
