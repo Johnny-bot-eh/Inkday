@@ -1,0 +1,16 @@
+{
+  "name": "daily-puzzle",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @daily-puzzle/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "db:generate": "pnpm --filter @daily-puzzle/db generate",
+    "db:migrate": "pnpm --filter @daily-puzzle/web db:migrate",
+    "db:studio": "pnpm --filter @daily-puzzle/db studio"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.13.0"
+}

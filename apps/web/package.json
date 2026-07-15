@@ -1,0 +1,32 @@
+{
+  "name": "@daily-puzzle/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:migrate": "DATABASE_URL=file:./data/inkday.db node ../../packages/db/src/migrate.mjs"
+  },
+  "dependencies": {
+    "@daily-puzzle/db": "workspace:*",
+    "@daily-puzzle/puzzle-core": "workspace:*",
+    "@libsql/client": "^0.15.9",
+    "better-auth": "^1.2.12",
+    "drizzle-orm": "^0.44.2",
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
