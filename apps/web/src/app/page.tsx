@@ -6,6 +6,7 @@ import {
   HIDDEN_CHALLENGES,
   TODAYS_CHALLENGES,
   WORD_DAILY_DIFFICULTY,
+  dailyChallengeHeadline,
   getActiveSeason,
   getUpcomingSeason,
   playMapKey,
@@ -21,6 +22,9 @@ import {
   SeasonBanner,
   UpcomingSeasonNote,
 } from "@/components/season-banner";
+
+/** Always render with the current UTC day — never serve a stale cached “yesterday”. */
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await getSession();
@@ -122,7 +126,8 @@ export default async function HomePage() {
               Today’s Challenges
             </h2>
             <p className="mt-1 text-sm text-fog">
-              Featured boards for {dateKey}. Clear all four before reset.
+              New boards every day at <span className="text-paper">00:00 UTC</span>{" "}
+              · currently {dateKey}
             </p>
           </div>
           <ChallengeCountdown />
@@ -133,17 +138,18 @@ export default async function HomePage() {
             const done = playedMap.get(
               playMapKey(challenge.puzzleType, challenge.difficulty),
             );
+            const headline = dailyChallengeHeadline(challenge, dateKey);
             return (
               <PlayRow
-                key={challenge.id}
+                key={`${challenge.id}-${dateKey}`}
                 href={challenge.href}
-                title={`${challenge.title} (${challenge.difficultyLabel})`}
+                title={`${challenge.title} · ${challenge.difficultyLabel}`}
                 subtitle={
                   done
                     ? session?.user
                       ? `Logged · ${done.score} pts`
                       : "Completed today"
-                    : challengeSubtitle(challenge.id)
+                    : headline
                 }
                 done={Boolean(done)}
                 featured
@@ -448,21 +454,6 @@ export default async function HomePage() {
       )}
     </div>
   );
-}
-
-function challengeSubtitle(id: string): string {
-  switch (id) {
-    case "daily-detective":
-      return "Hard escape · sparse clues";
-    case "daily-logic":
-      return "Medium grid · mark and deduce";
-    case "daily-word":
-      return "Easy word · warm-up board";
-    case "daily-mystery":
-      return "Unknown path · tight maze";
-    default:
-      return "Play today’s board";
-  }
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

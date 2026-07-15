@@ -21,14 +21,18 @@ export type EscapeRoom = {
 
 /**
  * Clue reveal tiers:
- * - essential: always shown (puzzle is solvable from these alone, with work)
- * - helpful: easy + medium (format / confirmation, not the raw code)
- * - spoiler: easy only (almost gives it away)
- * - decoy: hard + medium add noise; easy may too for flavor
+ * - essential: always shown — facts you must synthesize (never the raw answer)
+ * - helpful: easy only — format / confirmations
+ * - spoiler: easy only — near-giveaways
+ * - decoy: medium + hard — convincing false trails (never label themselves as junk)
  */
 type Tier = "essential" | "helpful" | "spoiler" | "decoy";
 
-type TieredClue = EscapeClue & { tier: Tier };
+type TieredClue = EscapeClue & {
+  tier: Tier;
+  /** Shown on medium/hard when set — denser / less hand-holding */
+  cryptic?: string;
+};
 
 type EscapeTemplate = {
   slug: string;
@@ -55,12 +59,16 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Notebook",
         text: '"Safe = the day winter first interrupted the case."',
+        cryptic:
+          'Margin only: “Code follows the first interruption of the season.”',
       },
       {
         id: "calendar",
         tier: "essential",
         label: "Calendar",
         text: "A circled date mid-autumn: the 12th of the tenth month. Margin note: First flakes.",
+        cryptic:
+          "One day circled in autumn. Tiny ink: First flakes. No month name written — only the grid.",
       },
       {
         id: "sticky",
@@ -78,7 +86,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "mug",
         tier: "decoy",
         label: "Coffee mug",
-        text: "Mom's birthday is March 3 — charming, irrelevant.",
+        text: "Mom’s birthday — March 3 — written under the handle in nail polish.",
+      },
+      {
+        id: "blotter",
+        tier: "decoy",
+        label: "Desk blotter",
+        text: "Repeated doodle: 0312. Beside it: “spring check-in?”",
       },
     ],
   },
@@ -96,18 +110,21 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Plaque",
         text: '"Access = building number times the founding circle."',
+        cryptic: "Etched rule: number × circle.",
       },
       {
         id: "receipt",
         tier: "essential",
         label: "Facility card",
         text: "Building No. 14. Founding circle carved beneath the lobby busts.",
+        cryptic: "Building No. 14 stamped on the badge.",
       },
       {
         id: "photo",
         tier: "essential",
         label: "Lobby photo",
         text: "Three names on the brass rail: Ames · Bell · Crowe.",
+        cryptic: "Brass rail names: Ames · Bell · Crowe.",
       },
       {
         id: "math",
@@ -125,7 +142,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "junk",
         tier: "decoy",
         label: "Guard radio",
-        text: "Night-shift rumor still claims 0000. It never worked.",
+        text: "Shift change password rotation still includes 0000 on the laminated card.",
+      },
+      {
+        id: "postcard",
+        tier: "decoy",
+        label: "Gift shop postcard",
+        text: "Front reads “Est. 1914” under a watercolor of the atrium.",
       },
     ],
   },
@@ -143,12 +166,14 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Ticket stub",
         text: "Carriage 7 · Seat 3A · Depart 19:45",
+        cryptic: "Stub: 7 / 3A / 19:45",
       },
       {
         id: "chalk",
         tier: "essential",
         label: "Chalk on door",
         text: "Order: ride → berth digits → clock hour.",
+        cryptic: "Chalk arrows: ride → berth → hour.",
       },
       {
         id: "tag",
@@ -166,7 +191,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "poster",
         tier: "decoy",
         label: "Timetable scrap",
-        text: "Express to Riverton also leaves at 21:10 — wrong platform.",
+        text: "Express Riverton — Platform C — 21:10.",
+      },
+      {
+        id: "seatmap",
+        tier: "decoy",
+        label: "Seat map scrap",
+        text: "Car 9 row D circled in red for a different booking.",
       },
     ],
   },
@@ -184,12 +215,15 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Lab notes",
         text: "Sequence: the life element, then the breath element, then the buzzing gas — by nuclear count.",
+        cryptic:
+          "Order whispered in the notes: life → breath → buzz. Count, don’t name.",
       },
       {
         id: "poster",
         tier: "essential",
         label: "Periodic chart",
         text: "Ice-scraped corner still shows: C·6 · O·8 · Ne·10.",
+        cryptic: "Frost-cleared patch: C 6 · O 8 · Ne 10 among other scratched cells.",
       },
       {
         id: "magnet",
@@ -207,7 +241,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "spill",
         tier: "decoy",
         label: "Spill report",
-        text: "Helium tank logged empty at 02:00 — unrelated.",
+        text: "He tank pressure logged at 02:00 — gauge stuck on 02.",
+      },
+      {
+        id: "tray",
+        tier: "decoy",
+        label: "Sample tray",
+        text: "Labels H, N, Ar lined up under the hood light.",
       },
     ],
   },
@@ -225,12 +265,14 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Borrow slip",
         text: "Call number MYST-B-27. Year stamp ends …19.",
+        cryptic: "Slip edge: MYST-B-27 / …19",
       },
       {
         id: "card",
         tier: "essential",
         label: "Librarian card",
         text: "Vault recipe: letter's place → book number → year twin digits.",
+        cryptic: "Recipe shorthand: place · book · twin.",
       },
       {
         id: "alpha",
@@ -248,7 +290,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "noise",
         tier: "decoy",
         label: "Discard pile",
-        text: "Yesterday's failed tries: 2719 and 1927 — order matters.",
+        text: "Pencil trials stacked: 2719, 1927, 2279.",
+      },
+      {
+        id: "spine",
+        tier: "decoy",
+        label: "Nearby spine",
+        text: "HIST-C-19 with a gold '22 stamped on the flyleaf.",
       },
     ],
   },
@@ -266,12 +314,14 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Telegram",
         text: "MEET AT HALF PAST THE HOUR THE CLOCK FEARS.",
+        cryptic: "MEET · HALF PAST · THE HOUR IT FEARS",
       },
       {
         id: "clock",
         tier: "essential",
         label: "Clock face",
         text: "Short hand fixed at the crown. Long hand pinned straight down.",
+        cryptic: "Hands locked: short to the crown, long straight down.",
       },
       {
         id: "watch",
@@ -289,7 +339,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "ash",
         tier: "decoy",
         label: "Ashtray",
-        text: "A burnt scrap still shows 1230 — someone's midday guess.",
+        text: "Charred fragment still reads 1230 under soot.",
+      },
+      {
+        id: "estate",
+        tier: "decoy",
+        label: "Estate ledger",
+        text: "Midnight rounds initialed beside 0000 each night this week.",
       },
     ],
   },
@@ -307,12 +363,14 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Crate stencil",
         text: "LOT 58 / BAY 3 / SHIFT 2",
+        cryptic: "Stencil block: LOT 58 · BAY 3 · SHIFT 2",
       },
       {
         id: "ledger",
         tier: "essential",
         label: "Dock ledger",
         text: "Bolt cipher: bay, then lot, then shift — as written.",
+        cryptic: "Cipher column header: bay → lot → shift",
       },
       {
         id: "ink",
@@ -330,7 +388,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "siren",
         tier: "decoy",
         label: "Siren notice",
-        text: "Emergency override 911 — disabled on this pier.",
+        text: "Pier emergency kit lists override 911 in bold red.",
+      },
+      {
+        id: "manifest",
+        tier: "decoy",
+        label: "Cargo manifest",
+        text: "Adjacent crate: BAY 5 / LOT 82 / SHIFT 3.",
       },
     ],
   },
@@ -348,12 +412,14 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Specials ticket",
         text: "Table 4: two flat whites, one pour-over.",
+        cryptic: "Ticket stub: T4 — 2 flat · 1 pour",
       },
       {
         id: "receipt",
         tier: "essential",
         label: "Tip-jar note",
         text: "Back latch = table, then how many cups on that ticket.",
+        cryptic: "Latch shorthand: table + cups.",
       },
       {
         id: "apron",
@@ -371,7 +437,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "chalk",
         tier: "decoy",
         label: "Chalkboard",
-        text: "Wi-Fi: MochaMagic! — guests only. Not the door.",
+        text: "Guest Wi‑Fi password scrawled as MochaMagic!",
+      },
+      {
+        id: "register",
+        tier: "decoy",
+        label: "Register tape",
+        text: "Table 12 closed out with six drinks at 10:41.",
       },
     ],
   },
@@ -384,12 +456,25 @@ const ATTEMPTS: Record<Difficulty, number> = {
   impossible: 1,
 };
 
+/** Easy gets hand-holds; medium/hard must deduce format and discard red herrings. */
 const TIERS_FOR: Record<Difficulty, Tier[]> = {
   easy: ["essential", "helpful", "spoiler"],
-  medium: ["essential", "helpful", "decoy"],
+  medium: ["essential", "decoy"],
   hard: ["essential", "decoy"],
   impossible: ["essential"],
 };
+
+function clueTextForDifficulty(clue: TieredClue, difficulty: Difficulty): string {
+  if (
+    (difficulty === "medium" ||
+      difficulty === "hard" ||
+      difficulty === "impossible") &&
+    clue.cryptic
+  ) {
+    return clue.cryptic;
+  }
+  return clue.text;
+}
 
 function cluesForDifficulty(
   template: EscapeTemplate,
@@ -399,22 +484,6 @@ function cluesForDifficulty(
   const allowed = new Set(TIERS_FOR[difficulty]);
   let clues = template.cluePool.filter((c) => allowed.has(c.tier));
 
-  // Hard / impossible: keep essentials, at most one decoy (impossible has none)
-  if (difficulty === "hard" || difficulty === "impossible") {
-    const essentials = clues.filter((c) => c.tier === "essential");
-    const decoys = clues.filter((c) => c.tier === "decoy");
-    const decoy =
-      difficulty === "impossible" || decoys.length === 0
-        ? []
-        : [
-            [...decoys].sort(
-              (a, b) => hashSeed(seed, a.id) - hashSeed(seed, b.id),
-            )[0]!,
-          ];
-    clues = [...essentials, ...decoy];
-  }
-
-  // Easy: don't overwhelm — drop decoys (already excluded) and cap spoilers to 1
   if (difficulty === "easy") {
     const spoilers = clues.filter((c) => c.tier === "spoiler");
     const rest = clues.filter((c) => c.tier !== "spoiler");
@@ -429,8 +498,8 @@ function cluesForDifficulty(
     clues = [...rest, ...spoiler];
   }
 
-  // Medium: at most one decoy so it stays readable
   if (difficulty === "medium") {
+    // One convincing red herring among the essentials
     const decoys = clues.filter((c) => c.tier === "decoy");
     const rest = clues.filter((c) => c.tier !== "decoy");
     const decoy =
@@ -444,10 +513,28 @@ function cluesForDifficulty(
     clues = [...rest, ...decoy];
   }
 
+  if (difficulty === "hard") {
+    // Two red herrings; essentials use cryptic wording
+    const decoys = clues.filter((c) => c.tier === "decoy");
+    const rest = clues.filter((c) => c.tier !== "decoy");
+    const picked = [...decoys]
+      .sort((a, b) => hashSeed(seed, a.id) - hashSeed(seed, b.id))
+      .slice(0, Math.min(2, decoys.length));
+    clues = [...rest, ...picked];
+  }
+
+  if (difficulty === "impossible") {
+    clues = clues.filter((c) => c.tier === "essential");
+  }
+
   const orderSeed = hashSeed(seed, "order");
   return [...clues]
     .sort((a, b) => hashSeed(orderSeed, a.id) - hashSeed(orderSeed, b.id))
-    .map(({ id, label, text }) => ({ id, label, text }));
+    .map(({ id, label, text, cryptic, tier }) => ({
+      id,
+      label,
+      text: clueTextForDifficulty({ id, label, text, cryptic, tier }, difficulty),
+    }));
 }
 
 export function normalizeEscapeAnswer(value: string): string {
