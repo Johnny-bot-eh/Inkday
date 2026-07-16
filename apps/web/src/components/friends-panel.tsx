@@ -45,14 +45,46 @@ const CHALLENGE_OPTIONS: Array<{
   { puzzleType: "wordladder", difficulty: "medium", label: "Word Ladder Medium" },
 ];
 
-export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
+export function FriendsPanel({
+  signedIn,
+  userId,
+  invited,
+}: {
+  signedIn: boolean;
+  userId: string | null;
+  invited?: boolean;
+}) {
   const [friendships, setFriendships] = useState<Friendship[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(
+    invited ? "You’re friends now — say hi with a challenge." : null,
+  );
   const [loading, setLoading] = useState(false);
   const [challengeTarget, setChallengeTarget] = useState<string | null>(null);
   const [challengePick, setChallengePick] = useState(CHALLENGE_OPTIONS[0]!.label);
+  const [copied, setCopied] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState(
+    userId ? `/invite/${userId}` : null,
+  );
+
+  useEffect(() => {
+    if (!userId) return;
+    setInviteUrl(`${window.location.origin}/invite/${userId}`);
+  }, [userId]);
+
+  async function copyInviteLink() {
+    if (!userId) return;
+    const url = `${window.location.origin}/invite/${userId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setMessage("Invite link copied.");
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setMessage(url);
+    }
+  }
 
   async function load() {
     const res = await fetch("/api/social?view=friends");
@@ -198,6 +230,30 @@ export function FriendsPanel({ signedIn }: { signedIn: boolean }) {
           tournaments.
         </p>
       </div>
+
+      {userId && (
+        <div className="rounded-2xl border border-[var(--line)] bg-panel/60 p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-ember">
+            Invite link
+          </p>
+          <p className="mt-2 text-sm text-fog">
+            Share this link — anyone who joins (or signs in) becomes your friend
+            automatically.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <code className="flex-1 truncate rounded-lg border border-[var(--line)] bg-ink-2 px-3 py-2.5 text-xs text-paper">
+              {inviteUrl}
+            </code>
+            <button
+              type="button"
+              onClick={() => void copyInviteLink()}
+              className="rounded-lg bg-ember px-4 py-2.5 font-semibold text-on-ember hover:bg-ember-deep"
+            >
+              {copied ? "Copied" : "Copy link"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={requestFriend}

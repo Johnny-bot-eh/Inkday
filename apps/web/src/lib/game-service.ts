@@ -578,6 +578,66 @@ export async function requestFriendByEmail(userId: string, email: string) {
   return { ok: true as const, id };
 }
 
+/** Public preview for `/invite/[userId]` landing pages. */
+export async function getInvitePreview(inviterId: string) {
+  const db = getDb();
+  const inviter = await db.query.user.findFirst({
+    where: eq(user.id, inviterId),
+  });
+  if (!inviter) return null;
+  return {
+    id: inviter.id,
+    name: inviter.displayName?.trim() || inviter.name,
+  };
+}
+
+/**
+ * Accept a share-link invite: auto-friends the inviter and claimer.
+ * Safe to call repeatedly (idempotent when already friends).
+ */
+export async function claimFriendInvite(claimerId: string, inviterId: string) {
+  if (!inviterId || claimerId === inviterId) {
+    return { ok: false as const, reason: "self" as const };
+  }
+  const db = getDb();
+  const inviter = await db.query.user.findFirst({
+    where: eq(user.id, inviterId),
+  });
+  if (!inviter) return { ok: false as const, reason: "not_found" as const };
+
+  const existing = await db.query.friendship.findFirst({
+    where: or(
+      and(
+        eq(friendship.requesterId, inviterId),
+        eq(friendship.addresseeId, claimerId),
+      ),
+      and(
+        eq(friendship.requesterId, claimerId),
+        eq(friendship.addresseeId, inviterId),
+      ),
+    ),
+  });
+
+  if (existing) {
+    if (existing.status === "accepted") {
+      return { ok: true as const, already: true as const };
+    }
+    await db
+      .update(friendship)
+      .set({ status: "accepted" })
+      .where(eq(friendship.id, existing.id));
+    return { ok: true as const, already: false as const };
+  }
+
+  await db.insert(friendship).values({
+    id: randomUUID(),
+    requesterId: inviterId,
+    addresseeId: claimerId,
+    status: "accepted",
+  });
+  return { ok: true as const, already: false as const };
+}
+
 export async function respondFriend(
   userId: string,
   friendshipId: string,

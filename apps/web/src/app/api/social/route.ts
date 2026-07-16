@@ -1,4 +1,5 @@
 import {
+  claimFriendInvite,
   createFriendChallenge,
   getFriendIds,
   getLeaderboard,
@@ -124,7 +125,8 @@ export async function POST(req: Request) {
       | "request"
       | "respond"
       | "challenge"
-      | "challenge_respond";
+      | "challenge_respond"
+      | "claim_invite";
     email?: string;
     friendshipId?: string;
     accept?: boolean;
@@ -133,7 +135,19 @@ export async function POST(req: Request) {
     difficulty?: Difficulty;
     dateKey?: string;
     challengeId?: string;
+    inviterId?: string;
   };
+
+  if (body.action === "claim_invite") {
+    if (!body.inviterId) {
+      return NextResponse.json({ error: "Invite required" }, { status: 400 });
+    }
+    const result = await claimFriendInvite(session.user.id, body.inviterId);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+    return NextResponse.json(result);
+  }
 
   if (body.action === "request") {
     if (!body.email) {
