@@ -4,7 +4,7 @@ import { ensureUserStats } from "@/lib/game-service";
 import { getCoinBalance, getEquippedAvatar } from "@/lib/coin-service";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CoinBalanceChip } from "@/components/coin-balance-chip";
-import { AvatarMark } from "@/components/avatar-mark";
+import { HeaderAvatarChip } from "@/components/header-avatar-chip";
 
 const links = [
   { href: "/", label: "Today" },
@@ -21,7 +21,7 @@ export async function SiteHeader() {
     ? await ensureUserStats(session.user.id)
     : null;
   let coins: number | null = null;
-  let avatarId: string | null = null;
+  let avatarId = "avatar_default";
   if (session?.user) {
     try {
       coins = await getCoinBalance(session.user.id);
@@ -68,13 +68,10 @@ export async function SiteHeader() {
               >
                 Streak {stats?.currentStreak ?? 0}
               </Link>
-              <Link
-                href="/profile"
-                className="ml-1 hidden items-center gap-2 rounded-md border border-[var(--line)] px-2 py-1 text-xs text-mint md:inline-flex"
-              >
-                <AvatarMark avatarId={avatarId} size={22} />
-                {session.user.name.split(" ")[0]}
-              </Link>
+              <HeaderAvatarChip
+                initialAvatarId={avatarId}
+                name={session.user.name.split(" ")[0] ?? "You"}
+              />
             </>
           ) : (
             <Link

@@ -7,6 +7,7 @@ import {
 } from "@daily-puzzle/puzzle-core";
 import { AvatarMark } from "@/components/avatar-mark";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
+import { emitEquippedAvatar } from "@/components/header-avatar-chip";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -56,6 +57,7 @@ export function AvatarPicker({
       }
       setEquipped(item.id);
       setOwned((prev) => new Set([...prev, item.id]));
+      emitEquippedAvatar(item.id);
       if (typeof data.balance === "number") emitCoinBalance(data.balance);
       setMessage(`Equipped ${item.title}`);
       router.refresh();

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { emitEquippedAvatar } from "@/components/header-avatar-chip";
 
 export function InventoryAvatarActions({ avatarId }: { avatarId: string }) {
   const router = useRouter();
@@ -10,12 +11,15 @@ export function InventoryAvatarActions({ avatarId }: { avatarId: string }) {
   async function equip() {
     setBusy(true);
     try {
-      await fetch("/api/shop", {
+      const res = await fetch("/api/shop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "equip_avatar", avatarId }),
       });
-      router.refresh();
+      if (res.ok) {
+        emitEquippedAvatar(avatarId);
+        router.refresh();
+      }
     } finally {
       setBusy(false);
     }

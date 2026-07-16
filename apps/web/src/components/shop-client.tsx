@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import { AvatarMark } from "@/components/avatar-mark";
+import { emitEquippedAvatar } from "@/components/header-avatar-chip";
 import type { ShopItem } from "@daily-puzzle/puzzle-core";
 
 type InvRow = { itemId: string; qty: number };
@@ -111,6 +112,7 @@ export function ShopClient({
         return;
       }
       setEquippedAvatarId(avatarId);
+      emitEquippedAvatar(avatarId);
       setMessage("Portrait equipped.");
       if (typeof data.balance === "number") {
         setBalance(data.balance);
