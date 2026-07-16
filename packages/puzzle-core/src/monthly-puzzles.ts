@@ -1,4 +1,5 @@
 import type { Difficulty } from "./types";
+import { buildMonthlyExplanation } from "./puzzle-explanations";
 import { hashSeed, pickIndex } from "./types";
 import { normalizeWord } from "./words";
 
@@ -52,6 +53,7 @@ export type MonthlyDeduction = {
   clues: string[];
   options: string[];
   answerIndex: number;
+  explanation: string;
 };
 
 export type MonthlyOnlyPuzzle =
@@ -183,9 +185,10 @@ const DEDUCTIONS: Array<{
   clues: string[];
   options: string[];
   answerIndex: number;
+  explanation: string;
 }> = [
   {
-    briefing: "Three suspects: Ava, Ben, Cara. Who stole the ledger?",
+    briefing: "Three suspects: Ava, Ben, and Cara. Who stole the ledger?",
     clues: [
       "Ava was in the garden at the time.",
       "The thief left muddy boots indoors.",
@@ -193,26 +196,33 @@ const DEDUCTIONS: Array<{
     ],
     options: ["Ava", "Ben", "Cara", "No one"],
     answerIndex: 2,
+    explanation:
+      "The thief left muddy boots indoors, but Ben never wears boots, so Ben is ruled out. Ava was in the garden, so she is unlikely to have left indoor mud. Cara is the only remaining suspect.",
   },
   {
-    briefing: "Which box holds the key?",
+    briefing: "Three labeled boxes — A, B, and C. Exactly one holds the key.",
     clues: [
-      "Box A’s label is wrong.",
+      "Box A is labeled: “The key is in box B.”",
+      "Box B is labeled: “The key is in box C.”",
+      "Box C is labeled: “The key is in box C.”",
       "Exactly one label is true.",
-      "Box B says “the key is in A.” Box C says “the key is in C.”",
     ],
     options: ["A", "B", "C", "None"],
     answerIndex: 1,
+    explanation:
+      "If the key is in B, only A’s label (“key in B”) is true; B and C are false. If the key were in A or C, two labels would be true. So the key is in box B.",
   },
   {
-    briefing: "Who arrives first to the dock?",
+    briefing: "Three boats — Nora, Quinn, and Remy — dock one at a time. Who arrives first?",
     clues: [
       "Nora arrives after Quinn.",
-      "Quinn is not last.",
+      "Remy is the last to dock.",
       "There are only Nora, Quinn, and Remy.",
     ],
     options: ["Nora", "Quinn", "Remy", "Tie"],
     answerIndex: 1,
+    explanation:
+      "Remy is last, so the order ends with Remy. Nora is after Quinn, so Quinn docks before Nora. The only order that fits is Quinn → Nora → Remy; Quinn arrives first.",
   },
   {
     briefing: "Which day was the meeting?",
@@ -223,6 +233,8 @@ const DEDUCTIONS: Array<{
     ],
     options: ["Monday", "Tuesday", "Wednesday", "Friday"],
     answerIndex: 2,
+    explanation:
+      "Not Monday rules out Monday. Earlier than Thursday leaves Tuesday or Wednesday. After Tuesday leaves only Wednesday.",
   },
 ];
 
@@ -295,9 +307,16 @@ export function getMonthlyOnlyPuzzle(
         clues: [...pack.clues],
         options: [...pack.options],
         answerIndex: pack.answerIndex,
+        explanation: pack.explanation,
       };
     }
   }
+}
+
+export function getMonthlyOnlyExplanation(
+  puzzle: MonthlyOnlyPuzzle,
+): string | undefined {
+  return buildMonthlyExplanation(puzzle);
 }
 
 export function checkMonthlyOnlyAnswer(

@@ -341,7 +341,7 @@ export async function POST(req: Request) {
       scoreBreakdown,
       won: verdict.correct,
       meta: { attemptsUsed },
-      extra: { answer: room.answer },
+      extra: { answer: room.answer, explanation: room.explanation },
     });
   }
 
@@ -584,6 +584,7 @@ export async function POST(req: Request) {
     extra: {
       answer: puzzle.answer,
       solution: puzzle.solution,
+      explanation: puzzle.explanation,
     },
   });
 }

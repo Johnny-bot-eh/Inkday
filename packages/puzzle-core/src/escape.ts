@@ -1,4 +1,5 @@
 import type { Difficulty } from "./types";
+import { buildEscapeExplanation } from "./puzzle-explanations";
 import { dayIndex, hashSeed, pickIndex } from "./types";
 
 export type EscapeClue = {
@@ -17,6 +18,8 @@ export type EscapeRoom = {
   answer: string;
   placeholder: string;
   maxAttempts: number;
+  /** How the answer follows from the clues (shown after clear). */
+  explanation?: string;
 };
 
 /**
@@ -314,20 +317,24 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Telegram",
         text: "MEET AT HALF PAST THE HOUR THE CLOCK FEARS.",
-        cryptic: "MEET · HALF PAST · THE HOUR IT FEARS",
+        cryptic:
+          "MEET · HALF PAST · THE DEAD HOUR (midnight, not the hour on the frozen dial).",
       },
       {
         id: "clock",
         tier: "essential",
         label: "Clock face",
         text: "Short hand fixed at the crown. Long hand pinned straight down.",
-        cryptic: "Hands locked: short to the crown, long straight down.",
+        cryptic:
+          "Hands locked at noon on the dial — ignore the frozen face; trust the telegram.",
       },
       {
         id: "watch",
-        tier: "helpful",
+        tier: "essential",
         label: "Pocket watch note",
         text: "Drawer latch speaks only four digits — two for the hour, two for the minutes — from midnight's side of the day.",
+        cryptic:
+          "Latch wants HHMM counted from midnight (00–23), not from noon.",
       },
       {
         id: "spoiler",
@@ -345,7 +352,7 @@ const ESCAPES: EscapeTemplate[] = [
         id: "estate",
         tier: "decoy",
         label: "Estate ledger",
-        text: "Midnight rounds initialed beside 0000 each night this week.",
+        text: "Wine cellar key signed out at noon sharp yesterday.",
       },
     ],
   },
@@ -581,7 +588,7 @@ export function getEscapeRoom(
     briefing = `Seasonal event board. ${briefing}`;
   }
 
-  return {
+  const room: EscapeRoom = {
     id: `${template.slug}-${pack}-${seasonId ?? "std"}-${dateKey}-${difficulty}`,
     title,
     briefing,
@@ -591,6 +598,8 @@ export function getEscapeRoom(
     placeholder: template.placeholder,
     maxAttempts: ATTEMPTS[difficulty],
   };
+  room.explanation = buildEscapeExplanation(template.slug);
+  return room;
 }
 
 export function checkEscapeAnswer(

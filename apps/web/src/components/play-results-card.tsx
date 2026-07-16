@@ -29,6 +29,7 @@ type Props = {
   breakdown?: ScoreBreakdown | null;
   ranks?: PlayRanks | null;
   answer?: string | null;
+  explanation?: string | null;
   newAchievements?: ProgressToast[];
   newUnlocks?: ProgressToast[];
   coinsEarned?: number | null;
@@ -43,6 +44,7 @@ export function PlayResultsCard({
   breakdown,
   ranks,
   answer,
+  explanation,
   newAchievements,
   newUnlocks,
   coinsEarned,
@@ -82,6 +84,15 @@ export function PlayResultsCard({
           <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-paper sm:text-3xl">
             {answer}
           </p>
+        </div>
+      ) : null}
+
+      {explanation ? (
+        <div className="rounded-xl border border-[var(--line)] bg-ink-2/60 px-4 py-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-fog">
+            How it works
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-paper">{explanation}</p>
         </div>
       ) : null}
 

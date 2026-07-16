@@ -1,4 +1,5 @@
 import type { Difficulty } from "./types";
+import { buildLogicExplanation } from "./puzzle-explanations";
 import { dayIndex, hashSeed, pickIndex } from "./types";
 
 export type LogicCategory = {
@@ -18,6 +19,8 @@ export type LogicPuzzle = {
   answer: string;
   /** subject -> traitId -> value */
   solution: Record<string, Record<string, string>>;
+  /** How the answer follows from the clues (shown after clear). */
+  explanation?: string;
 };
 
 type LogicTemplate = Omit<LogicPuzzle, "id"> & { slug: string };
@@ -337,7 +340,7 @@ export function getLogicPuzzle(
     ? `Limited-time event. ${template.synopsis}`
     : template.synopsis;
 
-  return {
+  const puzzle: LogicPuzzle = {
     id: `${template.slug}-${seasonId ?? "std"}-${dateKey}-${difficulty}`,
     title,
     synopsis,
@@ -348,6 +351,8 @@ export function getLogicPuzzle(
     answer: template.answer,
     solution: template.solution,
   };
+  puzzle.explanation = buildLogicExplanation(puzzle);
+  return puzzle;
 }
 
 export function checkLogicAnswer(

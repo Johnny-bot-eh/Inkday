@@ -65,6 +65,7 @@ export function EscapeGame({
     breakdown?: ScoreBreakdown | null;
     ranks?: PlayRanks | null;
     answer?: string | null;
+    explanation?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
@@ -85,13 +86,13 @@ export function EscapeGame({
     if (monthly) {
       if (!opts.won) {
         setDone(true);
-        setResults({ won: false, elapsedMs, answer: room.answer });
+        setResults({ won: false, elapsedMs, answer: room.answer, explanation: room.explanation });
         setStatus(`Out of attempts (${timeLabel}).`);
         return;
       }
       if (!signedIn) {
         setDone(true);
-        setResults({ won: true, elapsedMs, answer: room.answer });
+        setResults({ won: true, elapsedMs, answer: room.answer, explanation: room.explanation });
         setStatus("Unlocked! Sign in to save Case File progress.");
         return;
       }
@@ -111,6 +112,7 @@ export function EscapeGame({
           elapsedMs,
           score: mres.data.score,
           answer: room.answer,
+          explanation: room.explanation,
           coinsEarned: mres.data.coinsEarned,
           coinBalance: mres.data.coinBalance,
         });
@@ -137,6 +139,7 @@ export function EscapeGame({
         won: opts.won,
         elapsedMs,
         answer: room.answer,
+        explanation: room.explanation,
       });
       setStatus(
         opts.won
@@ -180,6 +183,7 @@ export function EscapeGame({
         breakdown: data.breakdown,
         ranks: data.ranks,
         answer: data.answer,
+        explanation: data.explanation ?? room.explanation,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,

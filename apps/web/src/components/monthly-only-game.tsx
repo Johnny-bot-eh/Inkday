@@ -5,11 +5,14 @@ import type { Difficulty, MonthlyOnlyPuzzle } from "@daily-puzzle/puzzle-core";
 import {
   DIFFICULTY_LABELS,
   checkMonthlyOnlyAnswer,
+  getMonthlyOnlyExplanation,
   getMonthlyOnlyPuzzle,
+  monthlyAnswerLabel,
   type MonthlyOnlyType,
 } from "@daily-puzzle/puzzle-core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PlayResultsCard } from "@/components/play-results-card";
 
 type Props = {
   collectionId: string;
@@ -38,6 +41,11 @@ export function MonthlyOnlyGame({
   const puzzle = useMemo(
     () => getMonthlyOnlyPuzzle(kind, seedKey, difficulty),
     [kind, seedKey, difficulty],
+  );
+  const clearedAnswer = useMemo(() => monthlyAnswerLabel(puzzle), [puzzle]);
+  const clearedExplanation = useMemo(
+    () => getMonthlyOnlyExplanation(puzzle),
+    [puzzle],
   );
 
   const [status, setStatus] = useState<string | null>(
@@ -133,6 +141,16 @@ export function MonthlyOnlyGame({
           )}
         </p>
       )}
+
+      {(done || alreadyCleared) && clearedAnswer ? (
+        <div className="mt-4">
+          <PlayResultsCard
+            won
+            answer={clearedAnswer}
+            explanation={clearedExplanation}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

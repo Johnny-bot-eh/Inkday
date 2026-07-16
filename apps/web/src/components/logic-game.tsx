@@ -64,6 +64,7 @@ export function LogicGame({
     breakdown?: ScoreBreakdown | null;
     ranks?: PlayRanks | null;
     answer?: string | null;
+    explanation?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
     newUnlocks?: Array<{ title: string; description: string }>;
   } | null>(null);
@@ -113,13 +114,13 @@ export function LogicGame({
     if (monthly) {
       if (!correct) {
         setDone(true);
-        setResults({ won: false, elapsedMs, answer: puzzle.answer });
+        setResults({ won: false, elapsedMs, answer: puzzle.answer, explanation: puzzle.explanation });
         setStatus(`Not quite (${timeLabel}).`);
         return;
       }
       if (!signedIn) {
         setDone(true);
-        setResults({ won: true, elapsedMs, answer: puzzle.answer });
+        setResults({ won: true, elapsedMs, answer: puzzle.answer, explanation: puzzle.explanation });
         setStatus("Correct! Sign in to save Case File progress.");
         return;
       }
@@ -134,7 +135,13 @@ export function LogicGame({
           return;
         }
         setDone(true);
-        setResults({ won: true, elapsedMs, score: mres.data.score, answer: puzzle.answer });
+        setResults({
+          won: true,
+          elapsedMs,
+          score: mres.data.score,
+          answer: puzzle.answer,
+          explanation: puzzle.explanation,
+        });
         setStatus(
           mres.data.totalBonus
             ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
@@ -155,6 +162,7 @@ export function LogicGame({
         won: correct,
         elapsedMs,
         answer: puzzle.answer,
+        explanation: puzzle.explanation,
       });
       setStatus(
         correct
@@ -193,6 +201,7 @@ export function LogicGame({
         breakdown: data.breakdown,
         ranks: data.ranks,
         answer: data.answer,
+        explanation: data.explanation ?? puzzle.explanation,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
       });
