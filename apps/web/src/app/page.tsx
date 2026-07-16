@@ -25,6 +25,7 @@ import {
 import { getSession } from "@/lib/session";
 import { ChallengeCountdown } from "@/components/challenge-countdown";
 import { ChallengePlayRow } from "@/components/challenge-play-row";
+import { LocalTodayLabel } from "@/components/local-today-label";
 
 /** Always render with the current UTC day — never serve a stale cached “yesterday”. */
 export const dynamic = "force-dynamic";
@@ -83,7 +84,7 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute -right-16 top-0 h-64 w-64 rounded-full bg-ember/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-10 h-40 w-40 rounded-full bg-mint/15 blur-3xl" />
         <p className="text-xs uppercase tracking-[0.28em] text-ember">
-          {dateKey}
+          <LocalTodayLabel />
         </p>
         <h1 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
           Inkday
@@ -191,7 +192,7 @@ export default async function HomePage() {
             </h2>
             <p className="mt-1 text-sm text-fog">
               New boards every day at <span className="text-paper">00:00 UTC</span>{" "}
-              · currently {dateKey}
+              · today <LocalTodayLabel className="text-paper" />
             </p>
           </div>
           <ChallengeCountdown />
