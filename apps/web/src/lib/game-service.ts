@@ -507,6 +507,7 @@ export async function getLeaderboard(opts: {
       userId: playResult.userId,
       name: user.name,
       displayName: user.displayName,
+      equippedAvatarId: user.equippedAvatarId,
       dayScore: sql<number>`sum(${playResult.score})`.mapWith(Number),
       wins: sql<number>`sum(case when ${playResult.won} then 1 else 0 end)`.mapWith(
         Number,
@@ -515,7 +516,12 @@ export async function getLeaderboard(opts: {
     .from(playResult)
     .innerJoin(user, eq(user.id, playResult.userId))
     .where(and(...conditions))
-    .groupBy(playResult.userId, user.name, user.displayName)
+    .groupBy(
+      playResult.userId,
+      user.name,
+      user.displayName,
+      user.equippedAvatarId,
+    )
     .orderBy(desc(sql`sum(${playResult.score})`))
     .limit(limit);
 
@@ -778,6 +784,7 @@ export async function getProfile(userId: string) {
     .map((f) => ({
       id: f.other!.id,
       name: f.other!.displayName || f.other!.name,
+      equippedAvatarId: f.other!.equippedAvatarId ?? null,
     }));
 
   const earned = new Set(achievementIds);
@@ -787,12 +794,22 @@ export async function getProfile(userId: string) {
     ensureNotificationPrefs(userId),
   ]);
 
+  const { getEquippedAvatar, listOwnedAvatarIds } = await import(
+    "@/lib/coin-service"
+  );
+  const [equippedAvatarId, ownedAvatarIds] = await Promise.all([
+    getEquippedAvatar(userId),
+    listOwnedAvatarIds(userId),
+  ]);
+
   return {
     user: profileUser,
     stats,
     recent,
     premium,
     notifications,
+    equippedAvatarId,
+    ownedAvatarIds,
     insights: {
       averageCompletionMs:
         timedPlays > 0 ? Math.round(totalElapsed / timedPlays) : null,

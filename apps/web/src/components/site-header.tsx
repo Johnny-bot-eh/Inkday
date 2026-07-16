@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { ensureUserStats } from "@/lib/game-service";
-import { getCoinBalance } from "@/lib/coin-service";
+import { getCoinBalance, getEquippedAvatar } from "@/lib/coin-service";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CoinBalanceChip } from "@/components/coin-balance-chip";
+import { AvatarMark } from "@/components/avatar-mark";
 
 const links = [
   { href: "/", label: "Today" },
-  { href: "/monthly", label: "Case File" },
+  { href: "/monthly", label: "Monthly Case File" },
   { href: "/shop", label: "Shop" },
   { href: "/leaderboard", label: "Ranks" },
   { href: "/friends", label: "Friends" },
@@ -20,11 +21,17 @@ export async function SiteHeader() {
     ? await ensureUserStats(session.user.id)
     : null;
   let coins: number | null = null;
+  let avatarId: string | null = null;
   if (session?.user) {
     try {
       coins = await getCoinBalance(session.user.id);
     } catch {
       coins = null;
+    }
+    try {
+      avatarId = await getEquippedAvatar(session.user.id);
+    } catch {
+      avatarId = "avatar_default";
     }
   }
 
@@ -61,9 +68,13 @@ export async function SiteHeader() {
               >
                 Streak {stats?.currentStreak ?? 0}
               </Link>
-              <span className="ml-1 hidden rounded-md border border-[var(--line)] px-2.5 py-1.5 text-xs text-mint md:inline">
+              <Link
+                href="/profile"
+                className="ml-1 hidden items-center gap-2 rounded-md border border-[var(--line)] px-2 py-1 text-xs text-mint md:inline-flex"
+              >
+                <AvatarMark avatarId={avatarId} size={22} />
                 {session.user.name.split(" ")[0]}
-              </span>
+              </Link>
             </>
           ) : (
             <Link

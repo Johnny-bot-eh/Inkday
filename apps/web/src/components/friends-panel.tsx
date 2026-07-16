@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { todayKey, type Difficulty, type PuzzleType } from "@daily-puzzle/puzzle-core";
+import { AvatarMark } from "@/components/avatar-mark";
 
 type Friendship = {
   id: string;
@@ -13,6 +14,7 @@ type Friendship = {
     name: string;
     email: string;
     displayName: string | null;
+    equippedAvatarId?: string | null;
   } | null;
 };
 
@@ -342,7 +344,10 @@ export function FriendsPanel({
               key={f.id}
               className="flex items-center justify-between rounded-xl border border-[var(--line)] bg-ink-2/80 px-4 py-3"
             >
-              <span>{f.other?.displayName || f.other?.name}</span>
+              <span className="inline-flex items-center gap-2">
+                <AvatarMark avatarId={f.other?.equippedAvatarId} size={28} />
+                {f.other?.displayName || f.other?.name}
+              </span>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -387,9 +392,12 @@ export function FriendsPanel({
               key={f.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-panel/50 px-4 py-3"
             >
-              <div>
-                <div>{f.other?.displayName || f.other?.name}</div>
-                <div className="text-xs text-fog">{f.other?.email}</div>
+              <div className="flex items-center gap-3">
+                <AvatarMark avatarId={f.other?.equippedAvatarId} size={36} />
+                <div>
+                  <div>{f.other?.displayName || f.other?.name}</div>
+                  <div className="text-xs text-fog">{f.other?.email}</div>
+                </div>
               </div>
               {f.other && (
                 <button

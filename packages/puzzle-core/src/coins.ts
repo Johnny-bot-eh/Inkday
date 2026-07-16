@@ -33,6 +33,8 @@ export type CoinItemKind =
   | "decoration"
   | "pack";
 
+export type ShopItemSlot = "avatar";
+
 export type ShopItem = {
   id: string;
   title: string;
@@ -43,7 +45,13 @@ export type ShopItem = {
   effect?: "streak_restore" | "plus_stipend";
   comingSoon?: boolean;
   plusOnly?: boolean;
+  /** Cosmetic sub-slot (avatars equip on profile) */
+  slot?: ShopItemSlot;
+  /** Free starter avatars — always owned, never bought */
+  free?: boolean;
 };
+
+export const DEFAULT_AVATAR_ID = "avatar_default";
 
 export const SHOP_ITEMS: ShopItem[] = [
   {
@@ -74,6 +82,103 @@ export const SHOP_ITEMS: ShopItem[] = [
     kind: "consumable",
     price: COIN_SPEND.streakRestore,
     effect: "streak_restore",
+  },
+  // —— Free starter avatars ——
+  {
+    id: "avatar_default",
+    title: "Inkday mark",
+    description: "Classic ink blot — free for everyone.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    free: true,
+  },
+  {
+    id: "avatar_ink",
+    title: "Deep ink",
+    description: "A darker pour of midnight ink.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    free: true,
+  },
+  {
+    id: "avatar_quill",
+    title: "Quill tip",
+    description: "A sharp nib ready for the next clue.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    free: true,
+  },
+  // —— Coin exclusives ——
+  {
+    id: "avatar_ember",
+    title: "Ember seal",
+    description: "Warm ember rings for case-hardened solvers.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 200,
+  },
+  {
+    id: "avatar_vault",
+    title: "Vault key",
+    description: "Brass-and-ink keyhole for vault hunters.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 280,
+  },
+  {
+    id: "avatar_cipher",
+    title: "Cipher wheel",
+    description: "Rotating letter rings from the cryptogram desk.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 320,
+  },
+  {
+    id: "avatar_nocturne",
+    title: "Nocturne",
+    description: "Moonlit indigo for late-night streaks.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 400,
+  },
+  {
+    id: "avatar_mint",
+    title: "Mint ledger",
+    description: "Cool mint stamp from the scoring ledger.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 180,
+  },
+  // —— Plus exclusives (claim free while Plus) ——
+  {
+    id: "avatar_plus_seal",
+    title: "Plus seal",
+    description: "Official Inkday Plus emblem.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    plusOnly: true,
+  },
+  {
+    id: "avatar_plus_gold",
+    title: "Gilded Plus",
+    description: "Gold-rimmed portrait for Plus members.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    plusOnly: true,
+  },
+  {
+    id: "avatar_plus_case",
+    title: "Case File crest",
+    description: "Monthly Case File crest — Plus members only.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    plusOnly: true,
   },
   {
     id: "cosmetic_frame_ember",
@@ -118,6 +223,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
 ];
 
+export const AVATAR_ITEMS = SHOP_ITEMS.filter((i) => i.slot === "avatar");
+
 export const CONSUMABLE_ITEM_IDS = ["hint", "extra_attempt", "skip"] as const;
 export type ConsumableItemId = (typeof CONSUMABLE_ITEM_IDS)[number];
 
@@ -127,6 +234,24 @@ export function isConsumableItemId(id: string): id is ConsumableItemId {
 
 export function getShopItem(id: string): ShopItem | undefined {
   return SHOP_ITEMS.find((i) => i.id === id);
+}
+
+export function getAvatarItem(id: string): ShopItem | undefined {
+  const item = getShopItem(id);
+  return item?.slot === "avatar" ? item : undefined;
+}
+
+export function isFreeAvatar(id: string): boolean {
+  return Boolean(getAvatarItem(id)?.free);
+}
+
+export function isAvatarItemId(id: string): boolean {
+  return Boolean(getAvatarItem(id));
+}
+
+export function resolveAvatarId(id: string | null | undefined): string {
+  if (id && getAvatarItem(id)) return id;
+  return DEFAULT_AVATAR_ID;
 }
 
 export function applyPlusCoinBonus(base: number, isPlus: boolean): number {

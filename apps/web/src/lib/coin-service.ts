@@ -1,12 +1,16 @@
 import {
+  AVATAR_ITEMS,
   COIN_EARN,
   PLUS_MONTHLY_STIPEND,
   applyPlusCoinBonus,
+  getAvatarItem,
   getShopItem,
   isConsumableItemId,
+  isFreeAvatar,
   isPremiumActive,
   monthlyMilestoneCoins,
   monthStartKey,
+  resolveAvatarId,
   todayKey,
   type ConsumableItemId,
 } from "@daily-puzzle/puzzle-core";
@@ -17,6 +21,7 @@ import {
   coinStreakClaim,
   coinWallet,
   getDb,
+  user,
   userPremium,
   userStats,
 } from "@daily-puzzle/db";
@@ -264,9 +269,134 @@ async function consumeInventory(
 
 export async function buyShopItem(userId: string, itemId: string) {
   const item = getShopItem(itemId);
-  if (!item || item.comingSoon || item.price <= 0) {
+  if (!item || item.comingSoon) {
     return { ok: false as const, reason: "unavailable" as const };
   }
+
+  // Free starters are always owned — no purchase.
+  if (item.free) {
+    return { ok: false as const, reason: "unavailable" as const };
+  }
+
+  const isPlus = await userIsPlus(userId);
+  if (item.plusOnly && !isPlus) {
+    return { ok: false as const, reason: "plus_required" as const };
+  }
+
+  // Plus claim (price 0) or paid purchase.
+  const isPlusClaim = item.plusOnly && item.price === 0;
+  if (!isPlusClaim && item.price <= 0) {
+    return { ok: false as const, reason: "unavailable" as const };
+  }
+
+  if (item.effect === "streak_restore") {
+    return restoreStreakWithCoins(userId);
+  }
+
+  // Cosmetics / avatars: idempotent — already owned.
+  if (item.slot === "avatar" || item.kind === "cosmetic") {
+    const owned = await getInventoryQty(userId, itemId);
+    if (owned > 0) {
+      return {
+        ok: true as const,
+        itemId,
+        qty: owned,
+        balance: await getCoinBalance(userId),
+        spent: 0,
+        alreadyOwned: true as const,
+      };
+    }
+  }
+
+  let balance = await getCoinBalance(userId);
+  let spent = 0;
+
+  if (item.price > 0) {
+    const spend = await spendCoins({
+      userId,
+      amount: item.price,
+      reason: "shop_buy",
+      refType: "shop_item",
+      refId: `${itemId}:${randomUUID()}`,
+    });
+    if (!spend.ok) {
+      return {
+        ok: false as const,
+        reason: spend.reason ?? "insufficient",
+        balance: "balance" in spend ? spend.balance : undefined,
+      };
+    }
+    balance = spend.balance;
+    spent = item.price;
+  }
+
+  const qty = await addInventory(userId, itemId, 1);
+  // Cap cosmetics at 1
+  if ((item.slot === "avatar" || item.kind === "cosmetic") && qty > 1) {
+    const db = getDb();
+    const row = await db.query.coinInventory.findFirst({
+      where: and(
+        eq(coinInventory.userId, userId),
+        eq(coinInventory.itemId, itemId),
+      ),
+    });
+    if (row) {
+      await db
+        .update(coinInventory)
+        .set({ qty: 1 })
+        .where(eq(coinInventory.id, row.id));
+    }
+  }
+
+  return {
+    ok: true as const,
+    itemId,
+    qty: Math.min(qty, 1),
+    balance,
+    spent,
+  };
+}
+
+export async function userOwnsAvatar(userId: string, avatarId: string) {
+  if (isFreeAvatar(avatarId)) return true;
+  const item = getAvatarItem(avatarId);
+  if (!item) return false;
+  return (await getInventoryQty(userId, avatarId)) > 0;
+}
+
+export async function getEquippedAvatar(userId: string): Promise<string> {
+  const db = getDb();
+  const row = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { equippedAvatarId: true },
+  });
+  return resolveAvatarId(row?.equippedAvatarId);
+}
+
+export async function listOwnedAvatarIds(userId: string): Promise<string[]> {
+  const inv = await listCoinInventory(userId);
+  const owned = new Set<string>();
+  for (const item of inv) {
+    if (getAvatarItem(item.itemId)) owned.add(item.itemId);
+  }
+  // Free starters always owned
+  for (const a of AVATAR_ITEMS) {
+    if (a.free) owned.add(a.id);
+  }
+  return [...owned];
+}
+
+export async function equipAvatar(userId: string, avatarId: string) {
+  const item = getAvatarItem(avatarId);
+  if (!item) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+
+  const owns = await userOwnsAvatar(userId, avatarId);
+  if (!owns) {
+    return { ok: false as const, reason: "not_owned" as const };
+  }
+
   if (item.plusOnly) {
     const isPlus = await userIsPlus(userId);
     if (!isPlus) {
@@ -274,33 +404,37 @@ export async function buyShopItem(userId: string, itemId: string) {
     }
   }
 
-  if (item.effect === "streak_restore") {
-    return restoreStreakWithCoins(userId);
-  }
+  const db = getDb();
+  await db
+    .update(user)
+    .set({ equippedAvatarId: avatarId, updatedAt: new Date() })
+    .where(eq(user.id, userId));
 
-  const spend = await spendCoins({
-    userId,
-    amount: item.price,
-    reason: "shop_buy",
-    refType: "shop_item",
-    refId: `${itemId}:${randomUUID()}`,
-  });
-  if (!spend.ok) {
-    return {
-      ok: false as const,
-      reason: spend.reason ?? "insufficient",
-      balance: "balance" in spend ? spend.balance : undefined,
-    };
-  }
-
-  const qty = await addInventory(userId, itemId, 1);
   return {
     ok: true as const,
-    itemId,
-    qty,
-    balance: spend.balance,
-    spent: item.price,
+    avatarId,
   };
+}
+
+/** Buy/claim then equip in one step for the profile picker. */
+export async function claimAndEquipAvatar(userId: string, avatarId: string) {
+  const item = getAvatarItem(avatarId);
+  if (!item) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+
+  let balance = await getCoinBalance(userId);
+  if (!item.free && !(await userOwnsAvatar(userId, avatarId))) {
+    const buy = await buyShopItem(userId, avatarId);
+    if (!buy.ok) return buy;
+    if ("balance" in buy && typeof buy.balance === "number") {
+      balance = buy.balance;
+    }
+  }
+
+  const equipped = await equipAvatar(userId, avatarId);
+  if (!equipped.ok) return equipped;
+  return { ...equipped, balance };
 }
 
 export async function useConsumable(

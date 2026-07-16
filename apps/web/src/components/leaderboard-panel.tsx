@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { LeaderboardPeriod } from "@daily-puzzle/puzzle-core";
+import { AvatarMark } from "@/components/avatar-mark";
 
 type Row = {
   userId: string;
   name: string;
   displayName: string | null;
+  equippedAvatarId?: string | null;
   dayScore: number;
   wins: number;
 };
@@ -174,6 +176,7 @@ export function LeaderboardPanel({ signedIn }: { signedIn: boolean }) {
             <div className="w-8 font-[family-name:var(--font-display)] text-xl font-bold text-ember">
               {index + 1}
             </div>
+            <AvatarMark avatarId={row.equippedAvatarId} size={32} />
             <div className="flex-1">
               <div className="font-semibold">
                 {row.displayName || row.name}

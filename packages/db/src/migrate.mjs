@@ -10,6 +10,7 @@ const statements = [
   email_verified INTEGER NOT NULL DEFAULT 0,
   image TEXT,
   display_name TEXT,
+  equipped_avatar_id TEXT,
   created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
   updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 )`,
@@ -256,6 +257,7 @@ const alters = [
   `ALTER TABLE user_stats ADD COLUMN last_win_month_start TEXT`,
   `ALTER TABLE user_stats ADD COLUMN challenge_wins INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE play_result ADD COLUMN season_id TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE user ADD COLUMN equipped_avatar_id TEXT`,
 ];
 
 /** Index rebuilds that must replace older definitions. */

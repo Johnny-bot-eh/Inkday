@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { PUZZLE_LABELS, type PuzzleType } from "@daily-puzzle/puzzle-core";
 import { formatDuration } from "@/components/play-timer";
+import { AvatarPicker } from "@/components/avatar-picker";
+import { AvatarMark } from "@/components/avatar-mark";
 
 type Props = {
   user: {
@@ -27,7 +29,11 @@ type Props = {
     averageCompletionMs: number | null;
     favoriteCategory: string | null;
     favoriteCount: number;
-    friends: Array<{ id: string; name: string }>;
+    friends: Array<{
+      id: string;
+      name: string;
+      equippedAvatarId?: string | null;
+    }>;
     achievements: Array<{
       id: string;
       title: string;
@@ -51,6 +57,9 @@ type Props = {
     won: boolean;
     metaJson: string | null;
   }>;
+  equippedAvatarId?: string;
+  ownedAvatarIds?: string[];
+  coinBalance?: number | null;
 };
 
 function timeFromMeta(metaJson: string | null): string | null {
@@ -75,6 +84,9 @@ export function ProfileView({
   insights,
   recent,
   isPlus = false,
+  equippedAvatarId = "avatar_default",
+  ownedAvatarIds = [],
+  coinBalance = null,
 }: Props & { isPlus?: boolean }) {
   const router = useRouter();
   const earnedCount = insights.achievements.filter((a) => a.earned).length;
@@ -108,6 +120,13 @@ export function ProfileView({
           Sign out
         </button>
       </div>
+
+      <AvatarPicker
+        equippedAvatarId={equippedAvatarId}
+        ownedAvatarIds={ownedAvatarIds}
+        isPlus={isPlus}
+        balance={coinBalance}
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Tile label="Username" value={user.displayName || user.name} />
@@ -235,8 +254,9 @@ export function ProfileView({
             insights.friends.map((friend) => (
               <span
                 key={friend.id}
-                className="rounded-full border border-[var(--line)] bg-ink-2/80 px-3 py-1 text-sm"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-ink-2/80 px-3 py-1 text-sm"
               >
+                <AvatarMark avatarId={friend.equippedAvatarId} size={22} />
                 {friend.name}
               </span>
             ))
