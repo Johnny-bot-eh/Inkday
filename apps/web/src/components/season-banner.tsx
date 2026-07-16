@@ -54,7 +54,8 @@ export function SeasonBanner({ season }: { season: SeasonDef }) {
       </h2>
       <p className="mt-2 max-w-xl text-fog">{season.tagline}</p>
       <p className="mt-3 text-sm text-fog">
-        Limited boards · +35 seasonal bonus on clears · event achievements
+        Limited boards · new puzzle each UTC day · +35 seasonal bonus · event
+        achievements
       </p>
       {first && (
         <Link

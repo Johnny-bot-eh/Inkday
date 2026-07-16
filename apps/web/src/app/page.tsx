@@ -173,8 +173,9 @@ export default async function HomePage() {
                   {activeSeason.shortLabel} Event Boards
                 </h3>
                 <p className="mt-1 text-sm text-fog">
-                  Limited-time {activeSeason.title} puzzles — separate from
-                  today’s regular dailies. Boards refresh at UTC midnight.
+                  {activeSeason.title} runs all month, but these boards get a{" "}
+                  <span className="text-paper">new puzzle every day</span> at
+                  00:00 UTC — same cadence as today’s challenges.
                 </p>
               </div>
               <ChallengeCountdown />
