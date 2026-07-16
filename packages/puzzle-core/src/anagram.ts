@@ -1,6 +1,7 @@
 import type { Difficulty } from "./types";
 import { dayIndex, hashSeed, pickIndex } from "./types";
 import {
+  ALL_WORDS,
   WORDS_5,
   WORDS_6,
   WORDS_7,
@@ -58,8 +59,28 @@ export function getAnagramPuzzle(
 export function checkAnagramAnswer(
   puzzle: AnagramPuzzle,
   guess: string,
-): { correct: boolean; normalized: string } {
+): { correct: boolean; normalized: string; reason?: string } {
   const normalized = normalizeWord(guess);
+  if (!normalized) {
+    return { correct: false, normalized, reason: "Enter a word." };
+  }
+  if (normalized.length !== puzzle.answer.length) {
+    return {
+      correct: false,
+      normalized,
+      reason: `Need a ${puzzle.answer.length}-letter word.`,
+    };
+  }
+  if (!ALL_WORDS.has(normalized) && normalized !== puzzle.answer) {
+    return { correct: false, normalized, reason: "Not in the dictionary." };
+  }
+  if (!isAnagramOf(normalized, puzzle.answer)) {
+    return {
+      correct: false,
+      normalized,
+      reason: "Must use the same letters.",
+    };
+  }
   return {
     correct: normalized === puzzle.answer,
     normalized,

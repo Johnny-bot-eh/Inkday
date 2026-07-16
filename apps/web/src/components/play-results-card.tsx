@@ -62,10 +62,18 @@ export function PlayResultsCard({
             {typeof streak === "number" ? ` · streak ${streak}` : ""}
           </p>
         )}
-        {!won && answer && (
-          <p className="mt-1 text-sm text-fog">Answer was {answer}</p>
-        )}
       </div>
+
+      {answer ? (
+        <div className="rounded-xl border border-ember/40 bg-ember/15 px-4 py-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-ember">
+            Answer
+          </p>
+          <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-paper sm:text-3xl">
+            {answer}
+          </p>
+        </div>
+      ) : null}
 
       {((newAchievements && newAchievements.length > 0) ||
         (newUnlocks && newUnlocks.length > 0)) && (

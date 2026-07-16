@@ -129,6 +129,16 @@ export function ProfileView({
         <Tile label="Achievements" value={`${earnedCount}/${insights.achievements.length}`} />
       </div>
 
+      <p className="text-sm text-fog">
+        <Link href="/monthly" className="text-ember hover:underline">
+          Monthly Case File
+        </Link>
+        {" · "}
+        <Link href="/badges" className="text-ember hover:underline">
+          Badge collection
+        </Link>
+      </p>
+
       <section>
         <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
           Achievements

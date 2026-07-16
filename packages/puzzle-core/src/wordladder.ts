@@ -162,6 +162,12 @@ export function checkWordLadder(
         reason: `${prev.toUpperCase()} → ${next.toUpperCase()} changes more than one letter.`,
       };
     }
+    if (!ALL_WORDS.has(next)) {
+      return {
+        ok: false,
+        reason: `${next.toUpperCase()} is not in the dictionary.`,
+      };
+    }
   }
   return { ok: true };
 }

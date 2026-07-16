@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { href: "/", label: "Today" },
+  { href: "/monthly", label: "Case File" },
   { href: "/leaderboard", label: "Leaderboards" },
   { href: "/friends", label: "Friends" },
   { href: "/profile", label: "Profile" },

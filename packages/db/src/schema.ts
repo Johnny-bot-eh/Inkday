@@ -468,6 +468,115 @@ export const notificationOutboxRelations = relations(
   }),
 );
 
+/** Monthly Case File — slot completions (any-order, not day-locked). */
+export const monthlyCompletion = sqliteTable(
+  "monthly_completion",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    collectionId: text("collection_id").notNull(),
+    slotIndex: integer("slot_index").notNull(),
+    puzzleType: text("puzzle_type").notNull(),
+    difficulty: text("difficulty", {
+      enum: ["easy", "medium", "hard", "impossible"],
+    }).notNull(),
+    score: integer("score").notNull(),
+    won: integer("won", { mode: "boolean" }).notNull(),
+    metaJson: text("meta_json"),
+    completedAt: integer("completed_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("monthly_completion_unique_idx").on(
+      t.userId,
+      t.collectionId,
+      t.slotIndex,
+    ),
+    index("monthly_completion_user_collection_idx").on(
+      t.userId,
+      t.collectionId,
+    ),
+  ],
+);
+
+export const monthlyMilestone = sqliteTable(
+  "monthly_milestone",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    collectionId: text("collection_id").notNull(),
+    milestoneId: text("milestone_id").notNull(),
+    bonusPoints: integer("bonus_points").notNull(),
+    awardedAt: integer("awarded_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("monthly_milestone_unique_idx").on(
+      t.userId,
+      t.collectionId,
+      t.milestoneId,
+    ),
+    index("monthly_milestone_user_idx").on(t.userId),
+  ],
+);
+
+export const monthlyBadge = sqliteTable(
+  "monthly_badge",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    collectionId: text("collection_id").notNull(),
+    badgeId: text("badge_id").notNull(),
+    title: text("title").notNull(),
+    awardedAt: integer("awarded_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("monthly_badge_unique_idx").on(
+      t.userId,
+      t.collectionId,
+      t.badgeId,
+    ),
+    index("monthly_badge_user_idx").on(t.userId),
+  ],
+);
+
+export const monthlyCompletionRelations = relations(
+  monthlyCompletion,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [monthlyCompletion.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const monthlyMilestoneRelations = relations(
+  monthlyMilestone,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [monthlyMilestone.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const monthlyBadgeRelations = relations(monthlyBadge, ({ one }) => ({
+  user: one(user, {
+    fields: [monthlyBadge.userId],
+    references: [user.id],
+  }),
+}));
+
 export const schema = {
   user,
   session,
@@ -483,6 +592,9 @@ export const schema = {
   userPremium,
   notificationPref,
   notificationOutbox,
+  monthlyCompletion,
+  monthlyMilestone,
+  monthlyBadge,
   userRelations,
   userStatsRelations,
   playResultRelations,
@@ -494,4 +606,7 @@ export const schema = {
   userPremiumRelations,
   notificationPrefRelations,
   notificationOutboxRelations,
+  monthlyCompletionRelations,
+  monthlyMilestoneRelations,
+  monthlyBadgeRelations,
 };

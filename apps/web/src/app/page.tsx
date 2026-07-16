@@ -4,26 +4,27 @@ import {
   DIFFICULTY_LABELS,
   EXTRA_WORDLE_DIFFICULTIES,
   HIDDEN_CHALLENGES,
+  MONTHLY_SLOT_COUNT,
   PUZZLE_LABELS,
   TODAYS_CHALLENGES,
   WORD_DAILY_DIFFICULTY,
   WORD_GAME_TYPES,
+  collectionIdForDate,
   dailyChallengeHeadline,
   findPlayForBoard,
-  getActiveSeason,
-  getUpcomingSeason,
+  getMonthlyCollection,
   todayKey,
   wordleTitle,
   type Difficulty,
 } from "@daily-puzzle/puzzle-core";
-import { getProfile, listPlaysForDate } from "@/lib/game-service";
+import {
+  getMonthlyProgress,
+  getProfile,
+  listPlaysForDate,
+} from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { ChallengeCountdown } from "@/components/challenge-countdown";
 import { ChallengePlayRow } from "@/components/challenge-play-row";
-import {
-  SeasonBanner,
-  UpcomingSeasonNote,
-} from "@/components/season-banner";
 
 /** Always render with the current UTC day — never serve a stale cached “yesterday”. */
 export const dynamic = "force-dynamic";
@@ -33,20 +34,23 @@ type DayPlay = Awaited<ReturnType<typeof listPlaysForDate>>[number];
 export default async function HomePage() {
   const session = await getSession();
   const dateKey = todayKey();
-  const activeSeason = getActiveSeason();
-  const upcomingSeason = activeSeason ? null : getUpcomingSeason();
+  const collectionId = collectionIdForDate();
+  const monthly = getMonthlyCollection(collectionId);
 
   let profile: Awaited<ReturnType<typeof getProfile>> | null = null;
   let plays: DayPlay[] = [];
+  let monthlyCleared = 0;
 
   if (session?.user) {
     try {
-      const [nextProfile, dayPlays] = await Promise.all([
+      const [nextProfile, dayPlays, monthlyProgress] = await Promise.all([
         getProfile(session.user.id),
         listPlaysForDate(session.user.id, dateKey),
+        getMonthlyProgress(session.user.id, collectionId),
       ]);
       profile = nextProfile;
       plays = dayPlays;
+      monthlyCleared = monthlyProgress.cleared;
     } catch (err) {
       console.error("Home signed-in data failed", err);
     }
@@ -70,6 +74,8 @@ export default async function HomePage() {
     if (session?.user) return `Logged · ${play.score} pts`;
     return "Completed today";
   }
+
+  const monthlyPct = Math.round((monthlyCleared / MONTHLY_SLOT_COUNT) * 100);
 
   return (
     <div className="space-y-10">
@@ -125,10 +131,56 @@ export default async function HomePage() {
         )}
       </section>
 
-      {activeSeason && <SeasonBanner season={activeSeason} />}
-      {!activeSeason && upcomingSeason && (
-        <UpcomingSeasonNote season={upcomingSeason} />
-      )}
+      <section
+        className="animate-rise relative overflow-hidden rounded-[1.75rem] border px-6 py-8 sm:px-8"
+        style={{
+          borderColor: `${monthly.accent}55`,
+          background: `linear-gradient(135deg, ${monthly.accent}22, transparent 55%), var(--panel, rgba(20,24,32,0.7))`,
+        }}
+      >
+        <p
+          className="text-xs uppercase tracking-[0.28em]"
+          style={{ color: monthly.accent }}
+        >
+          Monthly Case File · {monthly.daysLeft}d left
+        </p>
+        <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">
+          {monthly.title}
+        </h2>
+        <p className="mt-2 max-w-xl text-fog">{monthly.tagline}</p>
+        <p className="mt-3 text-sm text-fog">
+          60 puzzles · any order · not day-locked · milestone detective ranks
+        </p>
+        <div className="mt-4 max-w-md">
+          <div className="mb-1 flex justify-between text-xs text-fog">
+            <span>
+              {monthlyCleared}/{MONTHLY_SLOT_COUNT} completed
+            </span>
+            <span>{monthlyPct}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--line)]">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${monthlyPct}%`, background: monthly.accent }}
+            />
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link
+            href="/monthly"
+            className="inline-block rounded-lg px-5 py-2.5 font-semibold text-on-ember transition"
+            style={{ background: monthly.accent }}
+          >
+            Open Case File →
+          </Link>
+          <Link
+            href="/badges"
+            className="inline-block rounded-lg border border-[var(--line)] px-5 py-2.5 text-sm font-semibold text-paper"
+          >
+            Badges
+          </Link>
+        </div>
+      </section>
 
       <section className="animate-rise-delay space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -164,48 +216,6 @@ export default async function HomePage() {
             );
           })}
         </div>
-
-        {activeSeason && (
-          <div className="mt-6 space-y-3">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
-                  {activeSeason.shortLabel} Event Boards
-                </h3>
-                <p className="mt-1 text-sm text-fog">
-                  {activeSeason.title} runs all month, but these boards get a{" "}
-                  <span className="text-paper">new puzzle every day</span> at
-                  00:00 UTC — same cadence as today’s challenges.
-                </p>
-              </div>
-              <ChallengeCountdown />
-            </div>
-            <div className="grid gap-3">
-              {activeSeason.challenges.map((challenge) => {
-                const play = boardPlay(
-                  challenge.puzzleType,
-                  challenge.difficulty,
-                  activeSeason.id,
-                );
-                return (
-                  <ChallengePlayRow
-                    key={challenge.id}
-                    href={challenge.href}
-                    title={challenge.title}
-                    openSubtitle={`${challenge.difficultyLabel} · seasonal`}
-                    doneSubtitle={doneCopy(play)}
-                    puzzleType={challenge.puzzleType}
-                    difficulty={challenge.difficulty}
-                    dateKey={dateKey}
-                    seasonId={activeSeason.id}
-                    serverDone={Boolean(play)}
-                    featured
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {session?.user &&
           profile?.insights?.unlockIds?.includes("hidden_challenges") && (

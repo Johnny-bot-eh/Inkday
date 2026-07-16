@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
+import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -25,6 +26,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  monthly?: MonthlyPlayContext | null;
 };
 
 export function WordleGame({
@@ -32,6 +34,7 @@ export function WordleGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  monthly = null,
 }: Props) {
   const router = useRouter();
   const config = useMemo(
@@ -92,8 +95,52 @@ export function WordleGame({
 
   async function finish(finalGuesses: string[], won: boolean) {
     const elapsedMs = timer.freeze();
-    markBoardPlayed(dateKey, "wordle", difficulty);
+    if (!monthly) markBoardPlayed(dateKey, "wordle", difficulty);
     const timeLabel = formatDuration(elapsedMs);
+
+    if (monthly) {
+      if (!won) {
+        setRevealAnswer(config.answer);
+        setResults({ won: false, elapsedMs, answer: config.answer });
+        setStatus(`Out of guesses (${timeLabel}).`);
+        return;
+      }
+      if (!signedIn) {
+        setRevealAnswer(config.answer);
+        setResults({ won: true, elapsedMs, answer: config.answer });
+        setStatus(`Solved! Sign in to save Case File progress.`);
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const mres = await submitMonthlyFromGame(monthly, {
+          guesses: finalGuesses,
+          elapsedMs,
+        });
+        if (!mres.ok) {
+          setStatus(mres.data.error ?? "Could not save");
+          return;
+        }
+        setRevealAnswer(config.answer);
+        setResults({
+          won: true,
+          elapsedMs,
+          score: mres.data.score,
+          answer: config.answer,
+        });
+        setStatus(
+          mres.data.totalBonus
+            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
+            : `Case File · ${mres.data.score} pts`,
+        );
+        router.refresh();
+      } catch {
+        setStatus("Network error saving result");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (!signedIn) {
       setRevealAnswer(config.answer);
@@ -105,7 +152,7 @@ export function WordleGame({
       setStatus(
         won
           ? `Solved in ${timeLabel}! Sign in to save your score.`
-          : `Out of guesses (${timeLabel}). Answer: ${config.answer}`,
+          : `Out of guesses (${timeLabel}).`,
       );
       return;
     }
@@ -257,11 +304,17 @@ export function WordleGame({
       {status && (
         <p className="mt-4 rounded-lg border border-[var(--line)] bg-panel/60 px-4 py-3 text-sm">
           {status}
-          {revealAnswer && done && !results ? (
-            <span className="mt-1 block text-fog">Answer: {revealAnswer}</span>
-          ) : null}
         </p>
       )}
+
+      {revealAnswer && done && !results ? (
+        <div className="mt-4 rounded-xl border border-ember/40 bg-ember/15 px-4 py-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-ember">Answer</p>
+          <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-paper sm:text-3xl">
+            {revealAnswer}
+          </p>
+        </div>
+      ) : null}
 
       {results && (
         <div className="mt-4">

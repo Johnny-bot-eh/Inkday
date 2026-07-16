@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
+import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -23,6 +24,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  monthly?: MonthlyPlayContext | null;
 };
 
 export function CryptogramGame({
@@ -30,6 +32,7 @@ export function CryptogramGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  monthly = null,
 }: Props) {
   const router = useRouter();
   const puzzle = useMemo(
@@ -66,8 +69,47 @@ export function CryptogramGame({
 
   async function finish(opts: { won: boolean; attemptsUsed: number; answer: string }) {
     const elapsedMs = timer.freeze();
-    markBoardPlayed(dateKey, "cryptogram", difficulty);
+    if (!monthly) markBoardPlayed(dateKey, "cryptogram", difficulty);
     const timeLabel = formatDuration(elapsedMs);
+
+    if (monthly) {
+      if (!opts.won) {
+        setDone(true);
+        setResults({ won: false, elapsedMs, answer: puzzle.plaintext });
+        setStatus(`Out of attempts (${timeLabel}).`);
+        return;
+      }
+      if (!signedIn) {
+        setDone(true);
+        setResults({ won: true, elapsedMs, answer: puzzle.plaintext });
+        setStatus("Decoded! Sign in to save Case File progress.");
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const mres = await submitMonthlyFromGame(monthly, {
+          answer: opts.answer,
+          elapsedMs,
+        });
+        if (!mres.ok) {
+          setStatus(mres.data.error ?? "Could not save");
+          return;
+        }
+        setDone(true);
+        setResults({ won: true, elapsedMs, score: mres.data.score, answer: puzzle.plaintext });
+        setStatus(
+          mres.data.totalBonus
+            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
+            : `Case File · ${mres.data.score} pts`,
+        );
+        router.refresh();
+      } catch {
+        setStatus("Network error saving result");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (!signedIn) {
       setDone(true);

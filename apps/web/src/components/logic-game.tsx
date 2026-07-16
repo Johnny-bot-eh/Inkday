@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
+import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -24,6 +25,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  monthly?: MonthlyPlayContext | null;
   seasonId?: string | null;
   premium?: boolean;
 };
@@ -35,6 +37,7 @@ export function LogicGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  monthly = null,
   seasonId = null,
   premium = false,
 }: Props) {
@@ -102,12 +105,51 @@ export function LogicGame({
   async function submitAnswer() {
     if (!answer || done) return;
     const elapsedMs = timer.freeze();
-    markBoardPlayed(dateKey, "logic", difficulty, seasonId ?? (premium ? "plus" : null));
+    if (!monthly) markBoardPlayed(dateKey, "logic", difficulty, seasonId ?? (premium ? "plus" : null));
     const timeLabel = formatDuration(elapsedMs);
+    const correct =
+      answer.trim().toLowerCase() === puzzle.answer.trim().toLowerCase();
+
+    if (monthly) {
+      if (!correct) {
+        setDone(true);
+        setResults({ won: false, elapsedMs, answer: puzzle.answer });
+        setStatus(`Not quite (${timeLabel}).`);
+        return;
+      }
+      if (!signedIn) {
+        setDone(true);
+        setResults({ won: true, elapsedMs, answer: puzzle.answer });
+        setStatus("Correct! Sign in to save Case File progress.");
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const mres = await submitMonthlyFromGame(monthly, {
+          answer,
+          elapsedMs,
+        });
+        if (!mres.ok) {
+          setStatus(mres.data.error ?? "Could not save");
+          return;
+        }
+        setDone(true);
+        setResults({ won: true, elapsedMs, score: mres.data.score, answer: puzzle.answer });
+        setStatus(
+          mres.data.totalBonus
+            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
+            : `Case File · ${mres.data.score} pts`,
+        );
+        router.refresh();
+      } catch {
+        setStatus("Network error saving result");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (!signedIn) {
-      const correct =
-        answer.trim().toLowerCase() === puzzle.answer.trim().toLowerCase();
       setDone(true);
       setResults({
         won: correct,

@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
+import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -22,6 +23,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  monthly?: MonthlyPlayContext | null;
 };
 
 export function AnagramGame({
@@ -29,6 +31,7 @@ export function AnagramGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  monthly = null,
 }: Props) {
   const router = useRouter();
   const puzzle = useMemo(
@@ -68,8 +71,47 @@ export function AnagramGame({
     answer: string;
   }) {
     const elapsedMs = timer.freeze();
-    markBoardPlayed(dateKey, "anagram", difficulty);
+    if (!monthly) markBoardPlayed(dateKey, "anagram", difficulty);
     const timeLabel = formatDuration(elapsedMs);
+
+    if (monthly) {
+      if (!opts.won) {
+        setDone(true);
+        setResults({ won: false, elapsedMs, answer: puzzle.answer });
+        setStatus(`Out of attempts (${timeLabel}).`);
+        return;
+      }
+      if (!signedIn) {
+        setDone(true);
+        setResults({ won: true, elapsedMs, answer: puzzle.answer });
+        setStatus("Solved! Sign in to save Case File progress.");
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const mres = await submitMonthlyFromGame(monthly, {
+          answer: opts.answer,
+          elapsedMs,
+        });
+        if (!mres.ok) {
+          setStatus(mres.data.error ?? "Could not save");
+          return;
+        }
+        setDone(true);
+        setResults({ won: true, elapsedMs, score: mres.data.score, answer: puzzle.answer });
+        setStatus(
+          mres.data.totalBonus
+            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
+            : `Case File · ${mres.data.score} pts`,
+        );
+        router.refresh();
+      } catch {
+        setStatus("Network error saving result");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (!signedIn) {
       setDone(true);
@@ -77,7 +119,7 @@ export function AnagramGame({
       setStatus(
         opts.won
           ? `Solved in ${timeLabel}! Sign in to save.`
-          : `Out of attempts (${timeLabel}). Answer: ${puzzle.answer}`,
+          : `Out of attempts (${timeLabel}).`,
       );
       return;
     }
@@ -125,8 +167,9 @@ export function AnagramGame({
   function submit() {
     if (done || submitting) return;
     const verdict = checkAnagramAnswer(puzzle, guess);
-    if (!verdict.normalized) {
-      setStatus("Enter a word.");
+    // Shape / dictionary failures do not burn an attempt.
+    if (!verdict.correct && verdict.reason) {
+      setStatus(verdict.reason);
       return;
     }
     const nextAttempts = attempts + 1;

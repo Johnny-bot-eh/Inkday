@@ -63,11 +63,14 @@ export function todayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Stable daily index from YYYY-MM-DD */
+/** Stable daily index from YYYY-MM-DD; other seed keys hash stably. */
 export function dayIndex(dateKey: string): number {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const utc = Date.UTC(y, m - 1, d);
-  return Math.floor(utc / 86_400_000);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    const [y, m, d] = dateKey.split("-").map(Number);
+    const utc = Date.UTC(y, m - 1, d);
+    return Math.floor(utc / 86_400_000);
+  }
+  return hashSeed("day-proxy", dateKey) % 1_000_000;
 }
 
 /** Monday (UTC) of the week containing `date`, as YYYY-MM-DD */

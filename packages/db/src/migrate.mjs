@@ -164,6 +164,40 @@ const statements = [
 )`,
   `CREATE INDEX IF NOT EXISTS notification_outbox_pending_idx ON notification_outbox(status, scheduled_for)`,
   `CREATE INDEX IF NOT EXISTS notification_outbox_user_idx ON notification_outbox(user_id)`,
+  `CREATE TABLE IF NOT EXISTS monthly_completion (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  collection_id TEXT NOT NULL,
+  slot_index INTEGER NOT NULL,
+  puzzle_type TEXT NOT NULL,
+  difficulty TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  won INTEGER NOT NULL,
+  meta_json TEXT,
+  completed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS monthly_completion_unique_idx ON monthly_completion(user_id, collection_id, slot_index)`,
+  `CREATE INDEX IF NOT EXISTS monthly_completion_user_collection_idx ON monthly_completion(user_id, collection_id)`,
+  `CREATE TABLE IF NOT EXISTS monthly_milestone (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  collection_id TEXT NOT NULL,
+  milestone_id TEXT NOT NULL,
+  bonus_points INTEGER NOT NULL,
+  awarded_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS monthly_milestone_unique_idx ON monthly_milestone(user_id, collection_id, milestone_id)`,
+  `CREATE INDEX IF NOT EXISTS monthly_milestone_user_idx ON monthly_milestone(user_id)`,
+  `CREATE TABLE IF NOT EXISTS monthly_badge (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  collection_id TEXT NOT NULL,
+  badge_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  awarded_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS monthly_badge_unique_idx ON monthly_badge(user_id, collection_id, badge_id)`,
+  `CREATE INDEX IF NOT EXISTS monthly_badge_user_idx ON monthly_badge(user_id)`,
 ];
 
 /** Additive column migrations — safe to re-run (ignore duplicate-column errors). */

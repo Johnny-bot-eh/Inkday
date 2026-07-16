@@ -9,14 +9,18 @@ import {
   WEEKLY_TOURNAMENT_BADGES,
   WEEKLY_TOURNAMENT_BONUS,
   DEFAULT_NOTIFICATION_PREFS,
+  collectionIdForDate,
   evaluateAchievements,
   evaluateUnlocks,
+  getMonthlyCollection,
   isAchievementVisible,
   isNightOwlClear,
   isPremiumActive,
   isSpeedClear,
   isUnlockVisible,
   isWeekComplete,
+  legendaryBadgeId,
+  milestonesForProgress,
   nextMonthlyStreak,
   nextStreak,
   nextWeeklyStreak,
@@ -25,6 +29,7 @@ import {
   unlockRequiredForDifficulty,
   weekStartKey,
   todayKey,
+  type MonthlyMilestoneDef,
   type NotificationPrefView,
   type PremiumStatusView,
   type ProgressCounters,
@@ -33,6 +38,9 @@ import {
   friendChallenge,
   friendship,
   getDb,
+  monthlyBadge,
+  monthlyCompletion,
+  monthlyMilestone,
   notificationOutbox,
   notificationPref,
   playResult,
@@ -1382,5 +1390,220 @@ export async function enqueueDailyReminders(opts?: { hourUtc?: number }) {
     queued += 1;
   }
   return { hour, candidates: prefs.length, queued };
+}
+
+export async function listMonthlyCompletions(
+  userId: string,
+  collectionId: string,
+) {
+  const db = getDb();
+  return db.query.monthlyCompletion.findMany({
+    where: and(
+      eq(monthlyCompletion.userId, userId),
+      eq(monthlyCompletion.collectionId, collectionId),
+      eq(monthlyCompletion.won, true),
+    ),
+  });
+}
+
+export async function getMonthlyCompletion(
+  userId: string,
+  collectionId: string,
+  slotIndex: number,
+) {
+  const db = getDb();
+  return db.query.monthlyCompletion.findFirst({
+    where: and(
+      eq(monthlyCompletion.userId, userId),
+      eq(monthlyCompletion.collectionId, collectionId),
+      eq(monthlyCompletion.slotIndex, slotIndex),
+    ),
+  });
+}
+
+export async function getMonthlyProgress(userId: string, collectionId?: string) {
+  const id = collectionId ?? collectionIdForDate();
+  const collection = getMonthlyCollection(id);
+  const [completions, milestones, badges] = await Promise.all([
+    listMonthlyCompletions(userId, id),
+    getDb().query.monthlyMilestone.findMany({
+      where: and(
+        eq(monthlyMilestone.userId, userId),
+        eq(monthlyMilestone.collectionId, id),
+      ),
+    }),
+    getDb().query.monthlyBadge.findMany({
+      where: and(
+        eq(monthlyBadge.userId, userId),
+        eq(monthlyBadge.collectionId, id),
+      ),
+    }),
+  ]);
+  const cleared = completions.length;
+  return {
+    collection,
+    cleared,
+    completions,
+    milestones,
+    badges,
+    earnedMilestones: milestonesForProgress(cleared),
+  };
+}
+
+export async function listAllMonthlyBadges(userId: string) {
+  const db = getDb();
+  return db.query.monthlyBadge.findMany({
+    where: eq(monthlyBadge.userId, userId),
+    orderBy: [desc(monthlyBadge.awardedAt)],
+  });
+}
+
+export async function submitMonthlyClear(opts: {
+  userId: string;
+  collectionId: string;
+  slotIndex: number;
+  puzzleType: string;
+  difficulty: Difficulty;
+  score: number;
+  won: boolean;
+  meta?: Record<string, unknown>;
+}): Promise<{
+  ok: true;
+  alreadyCleared: boolean;
+  score: number;
+  cleared: number;
+  newMilestones: MonthlyMilestoneDef[];
+  newBadges: Array<{ badgeId: string; title: string }>;
+  totalBonus: number;
+} | { ok: false; reason: string }> {
+  const db = getDb();
+  const existing = await getMonthlyCompletion(
+    opts.userId,
+    opts.collectionId,
+    opts.slotIndex,
+  );
+  if (existing?.won) {
+    const completions = await listMonthlyCompletions(
+      opts.userId,
+      opts.collectionId,
+    );
+    return {
+      ok: true,
+      alreadyCleared: true,
+      score: existing.score,
+      cleared: completions.length,
+      newMilestones: [],
+      newBadges: [],
+      totalBonus: 0,
+    };
+  }
+
+  if (!opts.won) {
+    return { ok: false, reason: "not_won" };
+  }
+
+  await ensureUserStats(opts.userId);
+
+  if (existing) {
+    await db
+      .update(monthlyCompletion)
+      .set({
+        score: opts.score,
+        won: true,
+        metaJson: opts.meta ? JSON.stringify(opts.meta) : null,
+        puzzleType: opts.puzzleType,
+        difficulty: opts.difficulty,
+      })
+      .where(eq(monthlyCompletion.id, existing.id));
+  } else {
+    await db.insert(monthlyCompletion).values({
+      id: randomUUID(),
+      userId: opts.userId,
+      collectionId: opts.collectionId,
+      slotIndex: opts.slotIndex,
+      puzzleType: opts.puzzleType,
+      difficulty: opts.difficulty,
+      score: opts.score,
+      won: true,
+      metaJson: opts.meta ? JSON.stringify(opts.meta) : null,
+    });
+  }
+
+  await db
+    .update(userStats)
+    .set({
+      totalScore: sql`${userStats.totalScore} + ${opts.score}`,
+      puzzlesSolved: sql`${userStats.puzzlesSolved} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(eq(userStats.userId, opts.userId));
+
+  const completions = await listMonthlyCompletions(
+    opts.userId,
+    opts.collectionId,
+  );
+  const cleared = completions.length;
+  const already = await db.query.monthlyMilestone.findMany({
+    where: and(
+      eq(monthlyMilestone.userId, opts.userId),
+      eq(monthlyMilestone.collectionId, opts.collectionId),
+    ),
+  });
+  const alreadyIds = new Set(already.map((m) => m.milestoneId));
+  const newlyEarned = milestonesForProgress(cleared).filter(
+    (m) => !alreadyIds.has(m.id),
+  );
+
+  const newBadges: Array<{ badgeId: string; title: string }> = [];
+  let totalBonus = 0;
+
+  for (const milestone of newlyEarned) {
+    await db.insert(monthlyMilestone).values({
+      id: randomUUID(),
+      userId: opts.userId,
+      collectionId: opts.collectionId,
+      milestoneId: milestone.id,
+      bonusPoints: milestone.bonusPoints,
+    });
+    totalBonus += milestone.bonusPoints;
+
+    const badgeId =
+      milestone.id === "legendary"
+        ? legendaryBadgeId(opts.collectionId)
+        : `${milestone.id}_${opts.collectionId}`;
+    const title =
+      milestone.id === "legendary"
+        ? `${milestone.badgeTitle} · ${opts.collectionId}`
+        : milestone.badgeTitle;
+
+    await db.insert(monthlyBadge).values({
+      id: randomUUID(),
+      userId: opts.userId,
+      collectionId: opts.collectionId,
+      badgeId,
+      title,
+    });
+    newBadges.push({ badgeId, title });
+  }
+
+  if (totalBonus > 0) {
+    await db
+      .update(userStats)
+      .set({
+        totalScore: sql`${userStats.totalScore} + ${totalBonus}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userStats.userId, opts.userId));
+  }
+
+  return {
+    ok: true,
+    alreadyCleared: false,
+    score: opts.score,
+    cleared,
+    newMilestones: newlyEarned,
+    newBadges,
+    totalBonus,
+  };
 }
 

@@ -14,3 +14,5 @@ export * from "./anagram";
 export * from "./cryptogram";
 export * from "./acrostic";
 export * from "./wordladder";
+export * from "./monthly-puzzles";
+export * from "./monthly";

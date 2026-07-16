@@ -1,5 +1,6 @@
 import type { Difficulty } from "./types";
 import { dayIndex, hashSeed, pickIndex } from "./types";
+import { ALL_WORDS, WORDS_5, WORDS_6, WORDS_7 } from "./words";
 
 export type LetterMark = "correct" | "present" | "absent";
 
@@ -10,22 +11,29 @@ export type WordleConfig = {
   allowedGuesses: string[];
 };
 
-const EASY_WORDS = [
-  "crane", "flame", "grape", "spice", "ocean", "plant", "sugar", "brave",
-  "cloud", "sword", "charm", "glass", "light", "mango", "pearl", "river",
-  "shine", "storm", "table", "unity", "vivid", "whale", "zebra", "bloom",
-];
-
-const MEDIUM_WORDS = [
-  "planet", "bridge", "castle", "forest", "guitar", "hammer", "island",
-  "jungle", "kitten", "ladder", "magnet", "nectar", "oracle", "puzzle",
-  "quartz", "rocket", "silver", "tunnel", "velvet", "window", "yellow",
-];
-
+const EASY_WORDS = WORDS_5;
+const MEDIUM_WORDS = WORDS_6;
 const HARD_WORDS = [
-  "alchemy", "beacon", "cipher", "destiny", "eclipse", "freedom", "glacier",
-  "harmony", "insight", "journey", "kindred", "liberty", "mystery", "network",
-  "ovation", "phoenix", "quantum", "radiant", "silence", "triumph", "voyage",
+  ...WORDS_7,
+  "alchemy",
+  "destiny",
+  "eclipse",
+  "freedom",
+  "glacier",
+  "harmony",
+  "insight",
+  "journey",
+  "kindred",
+  "liberty",
+  "mystery",
+  "network",
+  "ovation",
+  "phoenix",
+  "quantum",
+  "radiant",
+  "silence",
+  "triumph",
+  "voyage",
 ];
 
 const BY_DIFFICULTY: Record<Difficulty, string[]> = {
@@ -42,6 +50,10 @@ const GUESS_LIMIT: Record<Difficulty, number> = {
   impossible: 4,
 };
 
+function dictionaryForLength(length: number): string[] {
+  return [...ALL_WORDS].filter((w) => w.length === length);
+}
+
 export function getWordleConfig(
   dateKey: string,
   difficulty: Difficulty,
@@ -49,11 +61,13 @@ export function getWordleConfig(
   const pool = BY_DIFFICULTY[difficulty];
   const seed = hashSeed("wordle", dateKey, difficulty, dayIndex(dateKey));
   const answer = pool[pickIndex(seed, pool.length)]!;
+  const dict = dictionaryForLength(answer.length);
+  const allowed = Array.from(new Set([answer, ...pool, ...dict]));
   return {
     wordLength: answer.length,
     maxGuesses: GUESS_LIMIT[difficulty],
     answer,
-    allowedGuesses: pool,
+    allowedGuesses: allowed,
   };
 }
 
@@ -100,9 +114,12 @@ export function isValidWordleGuess(
   if (normalized.length !== config.wordLength) {
     return { ok: false, reason: `Need a ${config.wordLength}-letter word.` };
   }
-  // Accept dictionary pool + answer; also allow any alphabetic guess of right length for playability
   if (!/^[a-z]+$/.test(normalized)) {
     return { ok: false, reason: "Letters only." };
+  }
+  const allowed = new Set(config.allowedGuesses.map((w) => w.toLowerCase()));
+  if (!allowed.has(normalized)) {
+    return { ok: false, reason: "Not in the dictionary." };
   }
   return { ok: true, guess: normalized };
 }

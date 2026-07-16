@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
+import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -23,6 +24,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  monthly?: MonthlyPlayContext | null;
 };
 
 export function WordLadderGame({
@@ -30,6 +32,7 @@ export function WordLadderGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  monthly = null,
 }: Props) {
   const router = useRouter();
   const puzzle = useMemo(
@@ -67,8 +70,47 @@ export function WordLadderGame({
 
   async function finish(finalChain: string[], won: boolean) {
     const elapsedMs = timer.freeze();
-    markBoardPlayed(dateKey, "wordladder", difficulty);
+    if (!monthly) markBoardPlayed(dateKey, "wordladder", difficulty);
     const timeLabel = formatDuration(elapsedMs);
+
+    if (monthly) {
+      if (!won) {
+        setDone(true);
+        setResults({ won: false, elapsedMs });
+        setStatus(`Could not finish (${timeLabel}).`);
+        return;
+      }
+      if (!signedIn) {
+        setDone(true);
+        setResults({ won: true, elapsedMs });
+        setStatus("Ladder complete! Sign in to save Case File progress.");
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const mres = await submitMonthlyFromGame(monthly, {
+          guesses: finalChain,
+          elapsedMs,
+        });
+        if (!mres.ok) {
+          setStatus(mres.data.error ?? "Could not save");
+          return;
+        }
+        setDone(true);
+        setResults({ won: true, elapsedMs, score: mres.data.score });
+        setStatus(
+          mres.data.totalBonus
+            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
+            : `Case File · ${mres.data.score} pts`,
+        );
+        router.refresh();
+      } catch {
+        setStatus("Network error saving result");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (!signedIn) {
       setDone(true);
@@ -167,7 +209,7 @@ export function WordLadderGame({
     }
 
     if (!isKnownLadderWord(word)) {
-      setStatus("Try a more common English word.");
+      setStatus("Not in the dictionary.");
       return;
     }
 

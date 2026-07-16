@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
+import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -23,6 +24,7 @@ type Props = {
   dateKey?: string;
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
+  monthly?: MonthlyPlayContext | null;
 };
 
 export function AcrosticGame({
@@ -30,6 +32,7 @@ export function AcrosticGame({
   dateKey = todayKey(),
   alreadyPlayed,
   signedIn,
+  monthly = null,
 }: Props) {
   const router = useRouter();
   const puzzle = useMemo(
@@ -77,8 +80,48 @@ export function AcrosticGame({
     clueAnswers?: string[];
   }) {
     const elapsedMs = timer.freeze();
-    markBoardPlayed(dateKey, "acrostic", difficulty);
+    if (!monthly) markBoardPlayed(dateKey, "acrostic", difficulty);
     const timeLabel = formatDuration(elapsedMs);
+
+    if (monthly) {
+      if (!opts.won) {
+        setDone(true);
+        setResults({ won: false, elapsedMs, answer: puzzle.message });
+        setStatus(`Out of attempts (${timeLabel}).`);
+        return;
+      }
+      if (!signedIn) {
+        setDone(true);
+        setResults({ won: true, elapsedMs, answer: puzzle.message });
+        setStatus("Solved! Sign in to save Case File progress.");
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const mres = await submitMonthlyFromGame(monthly, {
+          answer: opts.answer,
+          guesses: opts.clueAnswers,
+          elapsedMs,
+        });
+        if (!mres.ok) {
+          setStatus(mres.data.error ?? "Could not save");
+          return;
+        }
+        setDone(true);
+        setResults({ won: true, elapsedMs, score: mres.data.score, answer: puzzle.message });
+        setStatus(
+          mres.data.totalBonus
+            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
+            : `Case File · ${mres.data.score} pts`,
+        );
+        router.refresh();
+      } catch {
+        setStatus("Network error saving result");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     if (!signedIn) {
       setDone(true);
@@ -86,7 +129,7 @@ export function AcrosticGame({
       setStatus(
         opts.won
           ? `Message found in ${timeLabel}! Sign in to save.`
-          : `Out of attempts (${timeLabel}). Message: ${puzzle.message}`,
+          : `Out of attempts (${timeLabel}).`,
       );
       return;
     }
