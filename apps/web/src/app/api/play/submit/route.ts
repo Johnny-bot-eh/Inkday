@@ -72,6 +72,8 @@ type Body = {
   answer?: string;
   path?: PathCoord[];
   elapsedMs?: number;
+  /** Skip / forfeit — allow loss without exhausting base attempts */
+  forfeit?: boolean;
 };
 
 const TYPES: PuzzleType[] = [
@@ -239,7 +241,12 @@ export async function POST(req: Request) {
   if (puzzleType === "wordle") {
     const config = getWordleConfig(dateKey, difficulty);
     const guesses = body.guesses ?? [];
-    if (guesses.length === 0 || guesses.length > config.maxGuesses) {
+    // Extra-attempt consumables may push a few guesses past the base max.
+    const maxAllowed = config.maxGuesses + 5;
+    if (guesses.length > maxAllowed) {
+      return NextResponse.json({ error: "Invalid guesses" }, { status: 400 });
+    }
+    if (guesses.length === 0 && !body.forfeit) {
       return NextResponse.json({ error: "Invalid guesses" }, { status: 400 });
     }
 
@@ -250,10 +257,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const last = guesses[guesses.length - 1]!.toLowerCase();
-    const won = last === config.answer;
-    const exhausted = guesses.length >= config.maxGuesses;
-    if (!won && !exhausted) {
+    const last = guesses.length
+      ? guesses[guesses.length - 1]!.toLowerCase()
+      : "";
+    const won = Boolean(last) && last === config.answer;
+    // Accept loss when base attempts used, bonus attempts used, or explicit skip/forfeit.
+    if (!won && !body.forfeit && guesses.length < config.maxGuesses) {
       return NextResponse.json(
         { error: "Game still in progress" },
         { status: 400 },

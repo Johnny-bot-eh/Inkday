@@ -15,6 +15,11 @@ export const PREMIUM_PERKS = [
     description: "Protect your daily streak once per UTC week if you miss a day.",
   },
   {
+    id: "ink_coins",
+    title: "Ink Coin boosts",
+    description: "+25% coins from puzzles and a monthly Ink Coin stipend.",
+  },
+  {
     id: "reminders",
     title: "Priority reminders",
     description: "Choose when Inkday should nudge you (email wiring comes next).",

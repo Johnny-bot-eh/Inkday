@@ -16,3 +16,4 @@ export * from "./acrostic";
 export * from "./wordladder";
 export * from "./monthly-puzzles";
 export * from "./monthly";
+export * from "./coins";

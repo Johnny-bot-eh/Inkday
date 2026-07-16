@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { ensureUserStats } from "@/lib/game-service";
+import { getCoinBalance } from "@/lib/coin-service";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CoinBalanceChip } from "@/components/coin-balance-chip";
 
 const links = [
   { href: "/", label: "Today" },
   { href: "/monthly", label: "Case File" },
-  { href: "/leaderboard", label: "Leaderboards" },
+  { href: "/shop", label: "Shop" },
+  { href: "/leaderboard", label: "Ranks" },
   { href: "/friends", label: "Friends" },
   { href: "/profile", label: "Profile" },
 ];
@@ -15,6 +18,9 @@ export async function SiteHeader() {
   const session = await getSession();
   const stats = session?.user
     ? await ensureUserStats(session.user.id)
+    : null;
+  const coins = session?.user
+    ? await getCoinBalance(session.user.id)
     : null;
 
   return (
@@ -29,7 +35,7 @@ export async function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1 text-sm sm:gap-2">
+        <nav className="flex flex-wrap items-center justify-end gap-1 text-sm sm:gap-2">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -42,6 +48,7 @@ export async function SiteHeader() {
           <ThemeToggle />
           {session?.user ? (
             <>
+              {coins != null && <CoinBalanceChip initial={coins} />}
               <Link
                 href="/profile"
                 className="ml-1 hidden items-center gap-1.5 rounded-md border border-ember/35 bg-ember/10 px-2.5 py-1.5 text-xs font-semibold text-ember sm:inline-flex"

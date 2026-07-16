@@ -71,6 +71,30 @@ export function AccountPanels({ premium: initialPremium, notifications: initialP
     }
   }
 
+  async function claimStipend() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/coins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "plus_stipend" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error ?? "Could not claim stipend");
+        return;
+      }
+      setMessage(
+        data.already
+          ? "Monthly Ink Coin stipend already claimed."
+          : `+${data.coins} Ink Coins (monthly Plus stipend).`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-5">
@@ -126,6 +150,14 @@ export function AccountPanels({ premium: initialPremium, notifications: initialP
               {premium.streakFreezeAvailable
                 ? "Claim weekly streak freeze"
                 : "Streak freeze used this week"}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void claimStipend()}
+              className="ml-2 rounded-lg border border-mint/35 bg-mint/10 px-4 py-2 text-sm font-semibold text-mint hover:bg-mint/15 disabled:opacity-50"
+            >
+              Claim monthly Ink Coins
             </button>
           </div>
         ) : (

@@ -2,6 +2,8 @@ import { Figtree, Syne } from "next/font/google";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { themeInitScript } from "@/components/theme-toggle";
+import { DailyLoginPopup } from "@/components/daily-login-popup";
+import { getSession } from "@/lib/session";
 import "./globals.css";
 
 const display = Syne({
@@ -22,11 +24,13 @@ export const metadata: Metadata = {
     "Play today’s Word Daily, Escape Room, Logic Grid, and Path puzzles. Track streaks and challenge friends.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSession();
+
   return (
     <html lang="en" className={`${display.variable} ${body.variable} dark h-full`} suppressHydrationWarning>
       <head>
@@ -40,6 +44,7 @@ export default function RootLayout({
         <footer className="relative z-10 border-t border-[var(--line)] px-4 py-6 text-center text-xs text-fog">
           Inkday · shared puzzle core ready for a future mobile app
         </footer>
+        <DailyLoginPopup signedIn={Boolean(session?.user)} />
       </body>
     </html>
   );

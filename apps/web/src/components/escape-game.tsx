@@ -17,6 +17,8 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
+import { emitCoinBalance } from "@/components/coin-balance-chip";
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
@@ -46,6 +48,8 @@ export function EscapeGame({
 
   const [code, setCode] = useState("");
   const [attempts, setAttempts] = useState(0);
+  const [bonusAttempts, setBonusAttempts] = useState(0);
+  const [coinHint, setCoinHint] = useState<string | null>(null);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -63,11 +67,15 @@ export function EscapeGame({
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
     newUnlocks?: Array<{ title: string; description: string }>;
+    coinsEarned?: number | null;
+    coinBalance?: number | null;
   } | null>(null);
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
     resetKey: `${dateKey}-${difficulty}`,
   });
+
+  const maxAttempts = room.maxAttempts + bonusAttempts;
 
   async function finish(opts: { won: boolean; attemptsUsed: number; code: string }) {
     const elapsedMs = timer.freeze();
@@ -98,7 +106,17 @@ export function EscapeGame({
           return;
         }
         setDone(true);
-        setResults({ won: true, elapsedMs, score: mres.data.score, answer: room.answer });
+        setResults({
+          won: true,
+          elapsedMs,
+          score: mres.data.score,
+          answer: room.answer,
+          coinsEarned: mres.data.coinsEarned,
+          coinBalance: mres.data.coinBalance,
+        });
+        if (typeof mres.data.coinBalance === "number") {
+          emitCoinBalance(mres.data.coinBalance);
+        }
         setStatus(
           mres.data.totalBonus
             ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
@@ -164,7 +182,10 @@ export function EscapeGame({
         answer: data.answer,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
+        coinsEarned: data.coinsEarned,
+        coinBalance: data.coinBalance,
       });
+      if (typeof data.coinBalance === "number") emitCoinBalance(data.coinBalance);
       setStatus(null);
       router.refresh();
     } catch {
@@ -186,15 +207,15 @@ export function EscapeGame({
       return;
     }
 
-    if (nextAttempts >= room.maxAttempts) {
+    if (nextAttempts >= maxAttempts) {
       setDone(true);
       await finish({ won: false, attemptsUsed: nextAttempts, code });
       return;
     }
 
     setStatus(
-      `Not quite. ${room.maxAttempts - nextAttempts} attempt${
-        room.maxAttempts - nextAttempts === 1 ? "" : "s"
+      `Not quite. ${maxAttempts - nextAttempts} attempt${
+        maxAttempts - nextAttempts === 1 ? "" : "s"
       } left.`,
     );
   }
@@ -244,7 +265,7 @@ export function EscapeGame({
       <section className="rounded-2xl border border-[var(--line)] bg-panel/50 p-5">
         <p className="font-semibold">{room.prompt}</p>
         <p className="mt-1 text-xs text-fog">
-          Attempts {attempts}/{room.maxAttempts}
+          Attempts {attempts}/{maxAttempts}
         </p>
         {!done && (
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -268,6 +289,27 @@ export function EscapeGame({
               Try code
             </button>
           </div>
+        )}
+        {!done && !alreadyPlayed && (
+          <CoinConsumableBar
+            signedIn={signedIn}
+            disabled={submitting}
+            onHint={() => {
+              const clue = room.clues[0];
+              setCoinHint(
+                clue
+                  ? `Focus on “${clue.label}”: ${clue.text.slice(0, 80)}${clue.text.length > 80 ? "…" : ""}`
+                  : "Re-read the briefing carefully.",
+              );
+            }}
+            onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
+            onSkip={() => {
+              void finish({ won: false, attemptsUsed: attempts, code: room.answer });
+            }}
+          />
+        )}
+        {coinHint && !done && (
+          <p className="mt-2 text-sm text-mint">{coinHint}</p>
         )}
       </section>
 

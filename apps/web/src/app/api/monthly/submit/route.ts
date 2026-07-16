@@ -213,5 +213,7 @@ export async function POST(req: Request) {
     newMilestones: result.newMilestones,
     newBadges: result.newBadges,
     totalBonus: result.totalBonus,
+    coinsEarned: result.coinsEarned,
+    coinBalance: result.coinBalance,
   });
 }
