@@ -149,7 +149,8 @@ export default async function HomePage() {
         </h2>
         <p className="mt-2 max-w-xl text-fog">{monthly.tagline}</p>
         <p className="mt-3 text-sm text-fog">
-          60 puzzles · any order · not day-locked · milestone detective ranks
+          60 puzzles · exclusive new puzzles · any order · not day-locked ·
+          milestone detective ranks
         </p>
         <div className="mt-4 max-w-md">
           <div className="mb-1 flex justify-between text-xs text-fog">
@@ -270,7 +271,7 @@ export default async function HomePage() {
             <p className="mt-1 text-sm text-fog">
               {profile?.premium?.active
                 ? "You’re on Plus — open member boards and claim a weekly streak freeze from Profile."
-                : "Plus adds vault cases and a weekly streak freeze — no score boosts. Redeem a promo on Profile (Stripe later)."}
+                : "Plus adds vault cases and a weekly streak freeze. Redeem a promo on Profile (Stripe later)."}
             </p>
             <div className="mt-3 flex flex-wrap gap-3">
               <Link
