@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
+import { AvatarMark } from "@/components/avatar-mark";
 import type { ShopItem } from "@daily-puzzle/puzzle-core";
 
 type InvRow = { itemId: string; qty: number };
@@ -17,6 +18,8 @@ export function ShopClient({
   const [catalog, setCatalog] = useState<ShopItem[]>([]);
   const [balance, setBalance] = useState(initialBalance);
   const [inventory, setInventory] = useState<InvRow[]>([]);
+  const [ownedAvatarIds, setOwnedAvatarIds] = useState<string[]>([]);
+  const [equippedAvatarId, setEquippedAvatarId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -27,6 +30,8 @@ export function ShopClient({
     setCatalog(data.catalog ?? []);
     setBalance(data.balance);
     setInventory(data.inventory ?? []);
+    setOwnedAvatarIds(data.ownedAvatarIds ?? []);
+    setEquippedAvatarId(data.equippedAvatarId ?? null);
     if (typeof data.balance === "number") emitCoinBalance(data.balance);
   }
 
@@ -56,15 +61,57 @@ export function ShopClient({
               ? "Streak restore window closed (48h)."
               : data.error === "unavailable"
                 ? "Not available yet."
-                : data.error ?? "Could not buy",
+                : data.error === "plus_required"
+                  ? "Inkday Plus required."
+                  : data.error ?? "Could not buy",
         );
         return;
       }
       setMessage(
         itemId === "streak_restore"
           ? "Streak restored — play today to keep it."
-          : "Added to inventory.",
+          : data.alreadyOwned
+            ? "Already owned."
+            : data.spent === 0
+              ? "Claimed."
+              : "Added to inventory.",
       );
+      if (typeof data.balance === "number") {
+        setBalance(data.balance);
+        emitCoinBalance(data.balance);
+      }
+      await refresh();
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function equipAvatar(avatarId: string) {
+    if (!signedIn) return;
+    setLoading(avatarId);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/shop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "claim_equip_avatar",
+          avatarId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(
+          data.error === "plus_required"
+            ? "Inkday Plus required for this portrait."
+            : data.error === "insufficient"
+              ? "Not enough Ink Coins."
+              : data.error ?? "Could not equip",
+        );
+        return;
+      }
+      setEquippedAvatarId(avatarId);
+      setMessage("Portrait equipped.");
       if (typeof data.balance === "number") {
         setBalance(data.balance);
         emitCoinBalance(data.balance);
@@ -78,6 +125,20 @@ export function ShopClient({
   const qty = (id: string) =>
     inventory.find((i) => i.itemId === id)?.qty ?? 0;
 
+  const avatars = catalog.filter((i) => i.slot === "avatar");
+  const other = catalog.filter((i) => i.slot !== "avatar");
+
+  function avatarOwned(item: ShopItem) {
+    return Boolean(item.free) || ownedAvatarIds.includes(item.id) || qty(item.id) > 0;
+  }
+
+  function avatarButtonLabel(item: ShopItem) {
+    if (equippedAvatarId === item.id) return "Equipped";
+    if (avatarOwned(item)) return "Equip";
+    if (item.plusOnly) return item.price === 0 ? "Claim · Plus" : `Plus · ${item.price}◈`;
+    return `${item.price}◈`;
+  }
+
   return (
     <div className="mx-auto max-w-2xl animate-rise space-y-8">
       <div>
@@ -87,11 +148,15 @@ export function ShopClient({
         </h1>
         <p className="mt-2 text-fog">
           Earn coins from puzzles, streaks, and daily login. Spend on hints,
-          extra attempts, skips, and streak restores.
+          portraits, skips, and streak restores.
           {signedIn && balance != null ? (
             <>
               {" "}
-              Balance: <span className="font-semibold text-mint">{balance}</span>
+              Balance:{" "}
+              <span className="font-semibold text-mint">
+                <span aria-hidden>◈</span>
+                {balance}
+              </span>
             </>
           ) : null}
         </p>
@@ -101,6 +166,9 @@ export function ShopClient({
           </Link>
           <Link href="/inventory" className="text-ember hover:underline">
             Inventory →
+          </Link>
+          <Link href="/profile" className="text-ember hover:underline">
+            Change portrait →
           </Link>
           <Link href="/companion" className="text-fog hover:text-paper">
             Companions (soon)
@@ -123,52 +191,110 @@ export function ShopClient({
         </p>
       )}
 
-      <ul className="space-y-3">
-        {catalog.map((item) => (
-          <li
-            key={item.id}
-            className="flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-panel/60 p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <div className="font-semibold text-paper">
-                {item.title}
-                {item.comingSoon ? (
-                  <span className="ml-2 text-xs font-normal text-fog">
-                    Coming soon
-                  </span>
-                ) : null}
-                {!item.comingSoon && qty(item.id) > 0 ? (
-                  <span className="ml-2 text-xs font-normal text-mint">
-                    Owned ×{qty(item.id)}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1 text-sm text-fog">{item.description}</p>
-            </div>
-            <button
-              type="button"
-              disabled={
-                !signedIn ||
-                item.comingSoon ||
-                item.price <= 0 ||
-                loading === item.id
-              }
-              onClick={() => void buy(item.id)}
-              className="shrink-0 rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
+      <section className="space-y-3">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+          Portraits
+        </h2>
+        <p className="text-sm text-fog">
+          Free starters for everyone. Coin exclusives and Plus seals unlock more
+          looks.
+        </p>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {avatars.map((item) => {
+            return (
+              <li
+                key={item.id}
+                className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-panel/60 p-4"
+              >
+                <AvatarMark avatarId={item.id} size={48} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-paper">
+                    {item.title}
+                    {item.plusOnly ? (
+                      <span className="ml-2 text-[10px] font-semibold uppercase tracking-wider text-ember">
+                        Plus
+                      </span>
+                    ) : null}
+                    {item.free ? (
+                      <span className="ml-2 text-[10px] font-normal uppercase tracking-wider text-fog">
+                        Free
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-0.5 text-xs text-fog">{item.description}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!signedIn || loading === item.id}
+                  onClick={() => void equipAvatar(item.id)}
+                  className="shrink-0 rounded-lg bg-ember px-3 py-2 text-xs font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
+                >
+                  {loading === item.id ? "…" : avatarButtonLabel(item)}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+          Consumables & more
+        </h2>
+        <ul className="space-y-3">
+          {other.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-panel/60 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              {item.comingSoon
-                ? "Soon"
-                : loading === item.id
-                  ? "…"
-                  : `${item.price} ◈`}
-            </button>
-          </li>
-        ))}
-      </ul>
+              <div>
+                <div className="font-semibold text-paper">
+                  {item.title}
+                  {item.comingSoon ? (
+                    <span className="ml-2 text-xs font-normal text-fog">
+                      Coming soon
+                    </span>
+                  ) : null}
+                  {item.plusOnly && !item.comingSoon ? (
+                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-wider text-ember">
+                      Plus
+                    </span>
+                  ) : null}
+                  {!item.comingSoon && qty(item.id) > 0 ? (
+                    <span className="ml-2 text-xs font-normal text-mint">
+                      Owned ×{qty(item.id)}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-sm text-fog">{item.description}</p>
+              </div>
+              <button
+                type="button"
+                disabled={
+                  !signedIn ||
+                  item.comingSoon ||
+                  (item.price <= 0 && !(item.plusOnly && item.price === 0)) ||
+                  loading === item.id
+                }
+                onClick={() => void buy(item.id)}
+                className="shrink-0 rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
+              >
+                {item.comingSoon
+                  ? "Soon"
+                  : loading === item.id
+                    ? "…"
+                    : item.plusOnly && item.price === 0
+                      ? "Claim"
+                      : `${item.price} ◈`}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <p className="text-xs text-fog">
-        Plus members earn +25% coins from gameplay and can claim a monthly
-        stipend on Profile. Score stays fair — no pay-to-win points.
+        Plus members earn +25% coins from gameplay, claim a monthly stipend, and
+        unlock Plus portraits. Score stays fair — no pay-to-win points.
       </p>
     </div>
   );

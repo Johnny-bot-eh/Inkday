@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ProfileView } from "@/components/profile-view";
 import { AccountPanels } from "@/components/account-panels";
 import { getProfile } from "@/lib/game-service";
+import { getCoinBalance } from "@/lib/coin-service";
 import { getSession } from "@/lib/session";
 import {
   DEFAULT_NOTIFICATION_PREFS,
@@ -29,7 +30,23 @@ export default async function ProfilePage() {
 
   const profile = await getProfile(session.user.id);
   if (!profile.user) return null;
-  const { user, stats, recent, insights, premium, notifications } = profile;
+  const {
+    user,
+    stats,
+    recent,
+    insights,
+    premium,
+    notifications,
+    equippedAvatarId,
+    ownedAvatarIds,
+  } = profile;
+
+  let coinBalance: number | null = null;
+  try {
+    coinBalance = await getCoinBalance(session.user.id);
+  } catch {
+    coinBalance = null;
+  }
 
   const premiumView: PremiumStatusView = premium ?? {
     active: false,
@@ -51,6 +68,9 @@ export default async function ProfilePage() {
         insights={insights}
         recent={recent}
         isPlus={premiumView.active}
+        equippedAvatarId={equippedAvatarId}
+        ownedAvatarIds={ownedAvatarIds}
+        coinBalance={coinBalance}
       />
       <AccountPanels
         premium={premiumView}
