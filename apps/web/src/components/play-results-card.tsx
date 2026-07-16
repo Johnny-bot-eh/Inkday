@@ -31,6 +31,8 @@ type Props = {
   answer?: string | null;
   newAchievements?: ProgressToast[];
   newUnlocks?: ProgressToast[];
+  coinsEarned?: number | null;
+  coinBalance?: number | null;
 };
 
 export function PlayResultsCard({
@@ -43,6 +45,8 @@ export function PlayResultsCard({
   answer,
   newAchievements,
   newUnlocks,
+  coinsEarned,
+  coinBalance,
 }: Props) {
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--line)] bg-panel/70 p-5">
@@ -60,6 +64,12 @@ export function PlayResultsCard({
           <p className="mt-1 text-sm text-fog">
             {score} pts
             {typeof streak === "number" ? ` · streak ${streak}` : ""}
+          </p>
+        )}
+        {typeof coinsEarned === "number" && coinsEarned > 0 && (
+          <p className="mt-1 text-sm text-mint">
+            +{coinsEarned} Ink Coins
+            {typeof coinBalance === "number" ? ` · balance ${coinBalance}` : ""}
           </p>
         )}
       </div>

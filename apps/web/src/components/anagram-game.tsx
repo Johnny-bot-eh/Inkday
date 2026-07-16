@@ -17,6 +17,8 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
+import { emitCoinBalance } from "@/components/coin-balance-chip";
 
 type Props = {
   difficulty: Difficulty;
@@ -41,6 +43,8 @@ export function AnagramGame({
 
   const [guess, setGuess] = useState("");
   const [attempts, setAttempts] = useState(0);
+  const [bonusAttempts, setBonusAttempts] = useState(0);
+  const [coinHint, setCoinHint] = useState<string | null>(null);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -58,7 +62,11 @@ export function AnagramGame({
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
     newUnlocks?: Array<{ title: string; description: string }>;
+    coinsEarned?: number | null;
+    coinBalance?: number | null;
   } | null>(null);
+
+  const maxAttempts = puzzle.maxAttempts + bonusAttempts;
 
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
@@ -98,7 +106,17 @@ export function AnagramGame({
           return;
         }
         setDone(true);
-        setResults({ won: true, elapsedMs, score: mres.data.score, answer: puzzle.answer });
+        setResults({
+          won: true,
+          elapsedMs,
+          score: mres.data.score,
+          answer: puzzle.answer,
+          coinsEarned: mres.data.coinsEarned,
+          coinBalance: mres.data.coinBalance,
+        });
+        if (typeof mres.data.coinBalance === "number") {
+          emitCoinBalance(mres.data.coinBalance);
+        }
         setStatus(
           mres.data.totalBonus
             ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
@@ -154,7 +172,10 @@ export function AnagramGame({
         answer: data.answer,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
+        coinsEarned: data.coinsEarned,
+        coinBalance: data.coinBalance,
       });
+      if (typeof data.coinBalance === "number") emitCoinBalance(data.coinBalance);
       setStatus(null);
       router.refresh();
     } catch {
@@ -184,7 +205,7 @@ export function AnagramGame({
       return;
     }
 
-    if (nextAttempts >= puzzle.maxAttempts) {
+    if (nextAttempts >= maxAttempts) {
       void finish({
         won: false,
         attemptsUsed: nextAttempts,
@@ -194,8 +215,8 @@ export function AnagramGame({
     }
 
     setStatus(
-      `Not quite · ${puzzle.maxAttempts - nextAttempts} attempt${
-        puzzle.maxAttempts - nextAttempts === 1 ? "" : "s"
+      `Not quite · ${maxAttempts - nextAttempts} attempt${
+        maxAttempts - nextAttempts === 1 ? "" : "s"
       } left`,
     );
     setGuess("");
@@ -229,7 +250,7 @@ export function AnagramGame({
           {puzzle.scrambled}
         </div>
         <p className="mt-3 text-xs text-fog">
-          {puzzle.answer.length} letters · {puzzle.maxAttempts} attempts
+          {puzzle.answer.length} letters · {maxAttempts} attempts
         </p>
       </div>
 
@@ -261,6 +282,29 @@ export function AnagramGame({
             Submit
           </button>
         </div>
+      )}
+
+      {!done && !alreadyPlayed && (
+        <CoinConsumableBar
+          signedIn={signedIn}
+          disabled={submitting}
+          onHint={() => {
+            const letter = puzzle.answer[0]!;
+            setCoinHint(`Starts with “${letter.toUpperCase()}”.`);
+          }}
+          onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
+          onSkip={() => {
+            void finish({
+              won: false,
+              attemptsUsed: attempts,
+              answer: puzzle.answer,
+            });
+          }}
+        />
+      )}
+
+      {coinHint && !done && (
+        <p className="mt-2 text-sm text-mint">{coinHint}</p>
       )}
 
       {status && (

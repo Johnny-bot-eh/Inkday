@@ -198,6 +198,52 @@ const statements = [
 )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS monthly_badge_unique_idx ON monthly_badge(user_id, collection_id, badge_id)`,
   `CREATE INDEX IF NOT EXISTS monthly_badge_user_idx ON monthly_badge(user_id)`,
+  `CREATE TABLE IF NOT EXISTS coin_wallet (
+  user_id TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  balance INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE TABLE IF NOT EXISTS coin_ledger (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  delta INTEGER NOT NULL,
+  balance_after INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  ref_type TEXT NOT NULL,
+  ref_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS coin_ledger_unique_idx ON coin_ledger(user_id, reason, ref_type, ref_id)`,
+  `CREATE INDEX IF NOT EXISTS coin_ledger_user_idx ON coin_ledger(user_id)`,
+  `CREATE INDEX IF NOT EXISTS coin_ledger_created_idx ON coin_ledger(user_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS coin_inventory (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  item_id TEXT NOT NULL,
+  qty INTEGER NOT NULL DEFAULT 1,
+  acquired_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS coin_inventory_unique_idx ON coin_inventory(user_id, item_id)`,
+  `CREATE INDEX IF NOT EXISTS coin_inventory_user_idx ON coin_inventory(user_id)`,
+  `CREATE TABLE IF NOT EXISTS coin_daily_login (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  date_key TEXT NOT NULL,
+  coins INTEGER NOT NULL,
+  claimed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS coin_daily_login_unique_idx ON coin_daily_login(user_id, date_key)`,
+  `CREATE INDEX IF NOT EXISTS coin_daily_login_user_idx ON coin_daily_login(user_id)`,
+  `CREATE TABLE IF NOT EXISTS coin_streak_claim (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  streak_length INTEGER NOT NULL,
+  anchor_date TEXT NOT NULL,
+  coins INTEGER NOT NULL,
+  claimed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS coin_streak_claim_unique_idx ON coin_streak_claim(user_id, streak_length, anchor_date)`,
+  `CREATE INDEX IF NOT EXISTS coin_streak_claim_user_idx ON coin_streak_claim(user_id)`,
 ];
 
 /** Additive column migrations — safe to re-run (ignore duplicate-column errors). */

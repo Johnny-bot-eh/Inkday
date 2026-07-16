@@ -233,17 +233,31 @@ export async function submitPlay(opts: {
   });
 
   // Re-sync if a challenge win may unlock Challenge Victor
+  let finalAchievements = progress.newAchievements;
+  let finalUnlocks = progress.newUnlocks;
   if (challengeUpdate?.wonChallenge) {
-    await syncProgression(opts.userId, {
+    const again = await syncProgression(opts.userId, {
       dailyStreak: streak,
       bestDailyStreak: bestStreak,
       weeklyStreak: weekly.streak,
       monthlyStreak: monthly.streak,
     });
+    finalAchievements = again.newAchievements;
+    finalUnlocks = again.newUnlocks;
   }
 
   const play = await db.query.playResult.findFirst({
     where: eq(playResult.id, playId),
+  });
+
+  const { grantPlayWinCoins } = await import("@/lib/coin-service");
+  const coins = await grantPlayWinCoins({
+    userId: opts.userId,
+    playId,
+    won: opts.won,
+    streak,
+    dateKey: opts.dateKey,
+    achievementIds: finalAchievements.map((a) => a.id),
   });
 
   return {
@@ -254,9 +268,11 @@ export async function submitPlay(opts: {
     weeklyStreak: weekly.streak,
     monthlyStreak: monthly.streak,
     totalScore,
-    newAchievements: progress.newAchievements,
-    newUnlocks: progress.newUnlocks,
+    newAchievements: finalAchievements,
+    newUnlocks: finalUnlocks,
     challenge: challengeUpdate,
+    coinsEarned: coins.coinsEarned,
+    coinBalance: coins.coinBalance,
   };
 }
 
@@ -1535,6 +1551,8 @@ export async function submitMonthlyClear(opts: {
   newMilestones: MonthlyMilestoneDef[];
   newBadges: Array<{ badgeId: string; title: string }>;
   totalBonus: number;
+  coinsEarned?: number;
+  coinBalance?: number;
 } | { ok: false; reason: string }> {
   const db = getDb();
   const existing = await getMonthlyCompletion(
@@ -1555,6 +1573,7 @@ export async function submitMonthlyClear(opts: {
       newMilestones: [],
       newBadges: [],
       totalBonus: 0,
+      coinsEarned: 0,
     };
   }
 
@@ -1656,6 +1675,16 @@ export async function submitMonthlyClear(opts: {
       .where(eq(userStats.userId, opts.userId));
   }
 
+  const { grantMonthlyClearCoins } = await import("@/lib/coin-service");
+  const coins = await grantMonthlyClearCoins({
+    userId: opts.userId,
+    collectionId: opts.collectionId,
+    slotIndex: opts.slotIndex,
+    alreadyCleared: false,
+    milestoneIds: newlyEarned.map((m) => m.id),
+    cleared,
+  });
+
   return {
     ok: true,
     alreadyCleared: false,
@@ -1664,6 +1693,8 @@ export async function submitMonthlyClear(opts: {
     newMilestones: newlyEarned,
     newBadges,
     totalBonus,
+    coinsEarned: coins.coinsEarned,
+    coinBalance: coins.coinBalance,
   };
 }
 

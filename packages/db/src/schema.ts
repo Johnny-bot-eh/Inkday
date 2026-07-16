@@ -577,6 +577,146 @@ export const monthlyBadgeRelations = relations(monthlyBadge, ({ one }) => ({
   }),
 }));
 
+/** Ink Coins wallet — denormalized balance. */
+export const coinWallet = sqliteTable("coin_wallet", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  balance: integer("balance").notNull().default(0),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+});
+
+/** Append-only ledger; unique reason/ref prevents double grants. */
+export const coinLedger = sqliteTable(
+  "coin_ledger",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    delta: integer("delta").notNull(),
+    balanceAfter: integer("balance_after").notNull(),
+    reason: text("reason").notNull(),
+    refType: text("ref_type").notNull(),
+    refId: text("ref_id").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("coin_ledger_unique_idx").on(
+      t.userId,
+      t.reason,
+      t.refType,
+      t.refId,
+    ),
+    index("coin_ledger_user_idx").on(t.userId),
+    index("coin_ledger_created_idx").on(t.userId, t.createdAt),
+  ],
+);
+
+/** Owned shop / cosmetic / companion items. */
+export const coinInventory = sqliteTable(
+  "coin_inventory",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
+    qty: integer("qty").notNull().default(1),
+    acquiredAt: integer("acquired_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("coin_inventory_unique_idx").on(t.userId, t.itemId),
+    index("coin_inventory_user_idx").on(t.userId),
+  ],
+);
+
+/** UTC daily login claims. */
+export const coinDailyLogin = sqliteTable(
+  "coin_daily_login",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    dateKey: text("date_key").notNull(),
+    coins: integer("coins").notNull(),
+    claimedAt: integer("claimed_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("coin_daily_login_unique_idx").on(t.userId, t.dateKey),
+    index("coin_daily_login_user_idx").on(t.userId),
+  ],
+);
+
+/** Streak milestone coin claims (e.g. 7-day). */
+export const coinStreakClaim = sqliteTable(
+  "coin_streak_claim",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    streakLength: integer("streak_length").notNull(),
+    anchorDate: text("anchor_date").notNull(),
+    coins: integer("coins").notNull(),
+    claimedAt: integer("claimed_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("coin_streak_claim_unique_idx").on(
+      t.userId,
+      t.streakLength,
+      t.anchorDate,
+    ),
+    index("coin_streak_claim_user_idx").on(t.userId),
+  ],
+);
+
+export const coinWalletRelations = relations(coinWallet, ({ one }) => ({
+  user: one(user, {
+    fields: [coinWallet.userId],
+    references: [user.id],
+  }),
+}));
+
+export const coinLedgerRelations = relations(coinLedger, ({ one }) => ({
+  user: one(user, {
+    fields: [coinLedger.userId],
+    references: [user.id],
+  }),
+}));
+
+export const coinInventoryRelations = relations(coinInventory, ({ one }) => ({
+  user: one(user, {
+    fields: [coinInventory.userId],
+    references: [user.id],
+  }),
+}));
+
+export const coinDailyLoginRelations = relations(coinDailyLogin, ({ one }) => ({
+  user: one(user, {
+    fields: [coinDailyLogin.userId],
+    references: [user.id],
+  }),
+}));
+
+export const coinStreakClaimRelations = relations(coinStreakClaim, ({ one }) => ({
+  user: one(user, {
+    fields: [coinStreakClaim.userId],
+    references: [user.id],
+  }),
+}));
+
 export const schema = {
   user,
   session,
@@ -595,6 +735,11 @@ export const schema = {
   monthlyCompletion,
   monthlyMilestone,
   monthlyBadge,
+  coinWallet,
+  coinLedger,
+  coinInventory,
+  coinDailyLogin,
+  coinStreakClaim,
   userRelations,
   userStatsRelations,
   playResultRelations,
@@ -609,4 +754,9 @@ export const schema = {
   monthlyCompletionRelations,
   monthlyMilestoneRelations,
   monthlyBadgeRelations,
+  coinWalletRelations,
+  coinLedgerRelations,
+  coinInventoryRelations,
+  coinDailyLoginRelations,
+  coinStreakClaimRelations,
 };

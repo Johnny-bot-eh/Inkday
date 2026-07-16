@@ -272,7 +272,7 @@ export default async function HomePage() {
             <p className="mt-1 text-sm text-fog">
               {profile?.premium?.active
                 ? "You’re on Plus — open member boards and claim a weekly streak freeze from Profile."
-                : "Plus adds vault cases and a weekly streak freeze. Redeem a promo on Profile (Stripe later)."}
+                : "Plus adds vault cases, a weekly streak freeze, monthly Ink Coins, and +25% coin earnings from puzzles. Redeem a promo on Profile (Stripe later)."}
             </p>
             <div className="mt-3 flex flex-wrap gap-3">
               <Link

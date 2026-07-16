@@ -19,6 +19,8 @@ export async function submitMonthlyFromGame(
     totalBonus?: number;
     newMilestones?: Array<{ title: string }>;
     alreadyCleared?: boolean;
+    coinsEarned?: number;
+    coinBalance?: number;
   };
 }> {
   const res = await fetch("/api/monthly/submit", {

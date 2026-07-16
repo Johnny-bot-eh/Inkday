@@ -19,6 +19,8 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
+import { emitCoinBalance } from "@/components/coin-balance-chip";
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
@@ -53,6 +55,8 @@ export function WordleGame({
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [submitting, setSubmitting] = useState(false);
   const [revealAnswer, setRevealAnswer] = useState<string | null>(null);
+  const [bonusGuesses, setBonusGuesses] = useState(0);
+  const [hintText, setHintText] = useState<string | null>(null);
   const [results, setResults] = useState<{
     won: boolean;
     elapsedMs?: number;
@@ -63,7 +67,11 @@ export function WordleGame({
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
     newUnlocks?: Array<{ title: string; description: string }>;
+    coinsEarned?: number | null;
+    coinBalance?: number | null;
   } | null>(null);
+
+  const maxGuesses = config.maxGuesses + bonusGuesses;
 
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
@@ -84,7 +92,7 @@ export function WordleGame({
     setCurrent("");
 
     const won = valid.guess === config.answer;
-    const exhausted = nextGuesses.length >= config.maxGuesses;
+    const exhausted = nextGuesses.length >= maxGuesses;
     if (won || exhausted) {
       setDone(true);
       void finish(nextGuesses, won);
@@ -127,7 +135,12 @@ export function WordleGame({
           elapsedMs,
           score: mres.data.score,
           answer: config.answer,
+          coinsEarned: mres.data.coinsEarned,
+          coinBalance: mres.data.coinBalance,
         });
+        if (typeof mres.data.coinBalance === "number") {
+          emitCoinBalance(mres.data.coinBalance);
+        }
         setStatus(
           mres.data.totalBonus
             ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
@@ -168,6 +181,7 @@ export function WordleGame({
           dateKey,
           guesses: finalGuesses,
           elapsedMs,
+          forfeit: !won && finalGuesses.length < config.maxGuesses,
         }),
       });
       const data = await res.json();
@@ -187,7 +201,12 @@ export function WordleGame({
         answer: data.answer,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
+        coinsEarned: data.coinsEarned,
+        coinBalance: data.coinBalance,
       });
+      if (typeof data.coinBalance === "number") {
+        emitCoinBalance(data.coinBalance);
+      }
       setStatus(null);
       router.refresh();
     } catch {
@@ -197,7 +216,7 @@ export function WordleGame({
     }
   }
 
-  const rows = Array.from({ length: config.maxGuesses }, (_, i) => {
+  const rows = Array.from({ length: maxGuesses }, (_, i) => {
     if (guesses[i]) {
       return { letters: guesses[i]!.split(""), marks: marks[i]! };
     }
@@ -299,6 +318,28 @@ export function WordleGame({
             Guess
           </button>
         </div>
+      )}
+
+      {!done && !alreadyPlayed && (
+        <CoinConsumableBar
+          signedIn={signedIn}
+          disabled={submitting}
+          onHint={() => {
+            const letter = config.answer[guesses.length % config.wordLength]!;
+            setHintText(
+              `Letter ${((guesses.length % config.wordLength) + 1)} is “${letter.toUpperCase()}”.`,
+            );
+          }}
+          onExtraAttempt={() => setBonusGuesses((n) => n + 1)}
+          onSkip={() => {
+            setDone(true);
+            void finish(guesses, false);
+          }}
+        />
+      )}
+
+      {hintText && !done && (
+        <p className="mt-2 text-sm text-mint">{hintText}</p>
       )}
 
       {status && (
