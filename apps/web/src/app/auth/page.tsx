@@ -1,16 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
-export default function AuthPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+const INVITE_STORAGE_KEY = "inkday-invite";
+
+async function claimPendingInvite(inviterId: string) {
+  try {
+    await fetch("/api/social", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "claim_invite", inviterId }),
+    });
+  } catch {
+    // Redirect still proceeds; invite page can retry.
+  }
+  try {
+    window.localStorage.removeItem(INVITE_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function AuthForm() {
+  const searchParams = useSearchParams();
+  const inviteFromUrl = searchParams.get("invite");
+  const modeParam = searchParams.get("mode");
+
+  const [mode, setMode] = useState<"signin" | "signup">(
+    modeParam === "signup" ? "signup" : "signin",
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [inviteId, setInviteId] = useState<string | null>(inviteFromUrl);
+
+  useEffect(() => {
+    if (inviteFromUrl) {
+      setInviteId(inviteFromUrl);
+      try {
+        window.localStorage.setItem(INVITE_STORAGE_KEY, inviteFromUrl);
+      } catch {
+        // ignore
+      }
+      return;
+    }
+    try {
+      const stored = window.localStorage.getItem(INVITE_STORAGE_KEY);
+      if (stored) setInviteId(stored);
+    } catch {
+      // ignore
+    }
+  }, [inviteFromUrl]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,6 +81,13 @@ export default function AuthPage() {
           throw new Error(res.error.message ?? "Sign in failed");
         }
       }
+
+      if (inviteId) {
+        await claimPendingInvite(inviteId);
+        window.location.assign("/friends?invited=1");
+        return;
+      }
+
       // Full navigation avoids soft-nav swallowing a home RSC error as "Error" on this form.
       window.location.assign("/");
       return;
@@ -58,7 +110,9 @@ export default function AuthPage() {
         {mode === "signin" ? "Welcome back" : "Join Inkday"}
       </h1>
       <p className="mt-2 text-fog">
-        Accounts unlock streaks, friends, and leaderboards.
+        {inviteId
+          ? "Finish signing in to accept your friend invite."
+          : "Accounts unlock streaks, friends, and leaderboards."}
       </p>
 
       <form
@@ -132,5 +186,17 @@ export default function AuthPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-md animate-rise text-fog">Loading…</div>
+      }
+    >
+      <AuthForm />
+    </Suspense>
   );
 }
