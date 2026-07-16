@@ -1,5 +1,13 @@
-/** Shared lightweight dictionaries for word puzzle types. */
+/** Shared dictionaries for word puzzle types. */
 
+import {
+  GUESS_WORDS_4,
+  GUESS_WORDS_5,
+  GUESS_WORDS_6,
+  GUESS_WORDS_7,
+} from "./guess-dictionary";
+
+/** Curated answer pools (daily boards pick from these). */
 export const WORDS_4 = [
   "able", "bake", "card", "door", "echo", "farm", "glow", "hand", "iron",
   "jump", "kite", "lamp", "moon", "nest", "open", "path", "quiz", "rain",
@@ -20,17 +28,16 @@ export const WORDS_6 = [
   "jungle", "kitten", "ladder", "magnet", "nectar", "oracle", "puzzle",
   "quartz", "rocket", "silver", "tunnel", "velvet", "window", "yellow",
   "beacon", "candle", "dragon", "engine", "falcon", "garden", "harbor",
-  "insect", "jacket", "knight", "legend", "marble", "nectar", "oxygen",
+  "insect", "jacket", "knight", "legend", "marble", "oxygen", "voyage",
 ];
 
 export const WORDS_7 = [
-  "alchemy", "beacon", "cipher", "destiny", "eclipse", "freedom", "glacier",
+  "alchemy", "cipher", "destiny", "eclipse", "freedom", "glacier",
   "harmony", "insight", "journey", "kindred", "liberty", "mystery", "network",
-  "ovation", "phoenix", "quantum", "radiant", "silence", "triumph", "voyage",
+  "ovation", "phoenix", "quantum", "radiant", "silence", "triumph",
   "cascade", "diamond", "emerald", "fantasy", "gallery", "horizon", "justice",
 ];
 
-/** Flat set for ladder / anagram validation */
 /** Extra intermediates used by curated word ladders */
 const LADDER_EXTRA = [
   "cord", "card", "ward", "have", "lave", "held", "hold", "vast", "vest",
@@ -42,13 +49,22 @@ const LADDER_EXTRA = [
   "hand", "gold", "safe", "dawn", "rich", "heat", "bread", "white", "light",
   "smile", "green", "cold", "hate", "heat", "live", "moon", "tree", "east",
   "cane", "word", "lead", "cage", "dark", "poor", "fire", "flour", "black",
-  "night", "tears", "grass",
+  "night", "tears", "grass", "bunny", "pants",
 ];
 
+/** Flat set for wordle / ladder / anagram guess validation */
 export const ALL_WORDS = new Set(
-  [...WORDS_4, ...WORDS_5, ...WORDS_6, ...WORDS_7, ...LADDER_EXTRA].map((w) =>
-    w.toLowerCase(),
-  ),
+  [
+    ...WORDS_4,
+    ...WORDS_5,
+    ...WORDS_6,
+    ...WORDS_7,
+    ...LADDER_EXTRA,
+    ...GUESS_WORDS_4,
+    ...GUESS_WORDS_5,
+    ...GUESS_WORDS_6,
+    ...GUESS_WORDS_7,
+  ].map((w) => w.toLowerCase()),
 );
 
 export function normalizeWord(input: string): string {

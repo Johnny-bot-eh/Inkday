@@ -33,7 +33,13 @@ const HARD_WORDS = [
   "radiant",
   "silence",
   "triumph",
-  "voyage",
+  "cascade",
+  "diamond",
+  "emerald",
+  "fantasy",
+  "gallery",
+  "horizon",
+  "justice",
 ];
 
 const BY_DIFFICULTY: Record<Difficulty, string[]> = {

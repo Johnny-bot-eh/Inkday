@@ -62,6 +62,29 @@ function AvatarArt({ id }: { id: string }) {
           <rect x="20" y="46" width="18" height="4" rx="1" fill="#7a889e" />
         </>
       );
+    case "avatar_paper":
+      return (
+        <>
+          <rect width="64" height="64" fill="#1a1e28" />
+          <path d="M18 14 L42 14 L46 18 L46 50 L18 50 Z" fill="#e8e4d9" />
+          <path d="M42 14 L42 18 L46 18 Z" fill="#c9c4b5" />
+          <rect x="22" y="24" width="20" height="2" fill="#94a3b8" opacity="0.5" />
+          <rect x="22" y="30" width="16" height="2" fill="#94a3b8" opacity="0.4" />
+          <rect x="22" y="36" width="18" height="2" fill="#94a3b8" opacity="0.35" />
+        </>
+      );
+    case "avatar_dot":
+      return (
+        <>
+          <rect width="64" height="64" fill="#121820" />
+          <circle cx="32" cy="32" r="20" fill="none" stroke="#7a889e" strokeWidth="2" />
+          <line x1="32" y1="12" x2="32" y2="20" stroke="#c9d4e8" strokeWidth="2" />
+          <line x1="32" y1="44" x2="32" y2="52" stroke="#7a889e" strokeWidth="1.5" />
+          <line x1="12" y1="32" x2="20" y2="32" stroke="#7a889e" strokeWidth="1.5" />
+          <line x1="44" y1="32" x2="52" y2="32" stroke="#7a889e" strokeWidth="1.5" />
+          <circle cx="32" cy="32" r="5" fill="#e85d04" />
+        </>
+      );
     case "avatar_ember":
       return (
         <>
@@ -71,6 +94,50 @@ function AvatarArt({ id }: { id: string }) {
           <circle cx="32" cy="32" r="6" fill="#ffba08" />
         </>
       );
+    case "avatar_lantern":
+      return (
+        <>
+          <rect width="64" height="64" fill="#14100c" />
+          <rect x="26" y="12" width="12" height="6" rx="1" fill="#c9a227" />
+          <path d="M20 22 L44 22 L42 48 L22 48 Z" fill="#2a2010" stroke="#e8a87c" strokeWidth="2" />
+          <ellipse cx="32" cy="34" rx="8" ry="10" fill="#ffba08" opacity="0.85" />
+          <ellipse cx="32" cy="32" rx="4" ry="6" fill="#fff3bf" opacity="0.7" />
+        </>
+      );
+    case "avatar_lock":
+      return (
+        <>
+          <rect width="64" height="64" fill="#10141c" />
+          <path
+            d="M22 28 V20 A10 10 0 0 1 42 20 V28"
+            fill="none"
+            stroke="#94a3b8"
+            strokeWidth="4"
+          />
+          <rect x="18" y="28" width="28" height="24" rx="3" fill="#2a3142" stroke="#c9d4e8" strokeWidth="2" />
+          <circle cx="32" cy="38" r="4" fill="#0c1018" stroke="#e85d04" strokeWidth="2" />
+          <rect x="30" y="40" width="4" height="8" rx="1" fill="#e85d04" />
+        </>
+      );
+    case "avatar_stamp":
+      return (
+        <>
+          <rect width="64" height="64" fill="#1a1214" />
+          <circle cx="32" cy="32" r="20" fill="none" stroke="#c2410c" strokeWidth="3" />
+          <circle cx="32" cy="32" r="14" fill="none" stroke="#ea580c" strokeWidth="1.5" strokeDasharray="3 2" />
+          <text
+            x="32"
+            y="36"
+            textAnchor="middle"
+            fill="#fb923c"
+            fontSize="11"
+            fontWeight="700"
+            fontFamily="Georgia, serif"
+          >
+            OK
+          </text>
+        </>
+      );
     case "avatar_vault":
       return (
         <>
@@ -78,6 +145,18 @@ function AvatarArt({ id }: { id: string }) {
           <circle cx="32" cy="32" r="18" fill="#2a3142" stroke="#c9a227" strokeWidth="3" />
           <circle cx="32" cy="32" r="6" fill="#0c1018" stroke="#e8d48b" strokeWidth="2" />
           <rect x="30" y="32" width="12" height="3" rx="1" fill="#c9a227" />
+        </>
+      );
+    case "avatar_ladder":
+      return (
+        <>
+          <rect width="64" height="64" fill="#12161c" />
+          <rect x="20" y="10" width="5" height="44" rx="1" fill="#c9a227" />
+          <rect x="39" y="10" width="5" height="44" rx="1" fill="#c9a227" />
+          <rect x="20" y="18" width="24" height="3" fill="#e8d48b" />
+          <rect x="20" y="28" width="24" height="3" fill="#e8d48b" />
+          <rect x="20" y="38" width="24" height="3" fill="#e8d48b" />
+          <rect x="20" y="48" width="24" height="3" fill="#e8d48b" />
         </>
       );
     case "avatar_cipher":
@@ -98,6 +177,27 @@ function AvatarArt({ id }: { id: string }) {
           </text>
         </>
       );
+    case "avatar_map":
+      return (
+        <>
+          <rect width="64" height="64" fill="#141810" />
+          <path d="M12 16 L28 12 L36 18 L52 14 L52 50 L36 46 L28 52 L12 48 Z" fill="#3d4a2e" />
+          <path d="M20 40 L28 28 L36 34 L44 22" fill="none" stroke="#e8d48b" strokeWidth="2" />
+          <circle cx="44" cy="22" r="3" fill="#e85d04" />
+          <circle cx="20" cy="40" r="2.5" fill="#5eead4" />
+        </>
+      );
+    case "avatar_fog":
+      return (
+        <>
+          <rect width="64" height="64" fill="#0e141c" />
+          <ellipse cx="22" cy="36" rx="16" ry="8" fill="#2a3548" opacity="0.7" />
+          <ellipse cx="40" cy="40" rx="18" ry="9" fill="#3a4558" opacity="0.55" />
+          <ellipse cx="32" cy="28" rx="14" ry="6" fill="#4a5568" opacity="0.4" />
+          <rect x="8" y="44" width="48" height="4" rx="1" fill="#1a2433" />
+          <circle cx="48" cy="18" r="1.5" fill="#c9d4e8" opacity="0.6" />
+        </>
+      );
     case "avatar_nocturne":
       return (
         <>
@@ -107,6 +207,16 @@ function AvatarArt({ id }: { id: string }) {
           <circle cx="18" cy="16" r="1.5" fill="#c9d4e8" />
           <circle cx="50" cy="48" r="1" fill="#c9d4e8" />
           <circle cx="24" cy="44" r="1.2" fill="#94a3b8" />
+        </>
+      );
+    case "avatar_crimson":
+      return (
+        <>
+          <rect width="64" height="64" fill="#1a0c10" />
+          <circle cx="30" cy="32" r="16" fill="#7f1d1d" />
+          <circle cx="38" cy="36" r="12" fill="#991b1b" opacity="0.9" />
+          <ellipse cx="26" cy="26" rx="8" ry="5" fill="#b91c1c" opacity="0.7" />
+          <circle cx="42" cy="42" r="5" fill="#450a0a" />
         </>
       );
     case "avatar_mint":
@@ -157,6 +267,30 @@ function AvatarArt({ id }: { id: string }) {
           <rect x="18" y="28" width="20" height="2" fill="#94a3b8" opacity="0.5" />
           <rect x="18" y="34" width="24" height="2" fill="#94a3b8" opacity="0.4" />
           <circle cx="44" cy="38" r="3" fill="#ffba08" />
+        </>
+      );
+    case "avatar_plus_star":
+      return (
+        <>
+          <rect width="64" height="64" fill="#0c1020" />
+          <circle cx="20" cy="18" r="1.5" fill="#e8d48b" />
+          <circle cx="48" cy="22" r="1.2" fill="#c9d4e8" />
+          <circle cx="16" cy="44" r="1" fill="#94a3b8" />
+          <path
+            d="M32 14 L35 26 L48 26 L38 34 L42 46 L32 38 L22 46 L26 34 L16 26 L29 26 Z"
+            fill="#ffba08"
+          />
+          <circle cx="50" cy="46" r="1.3" fill="#e85d04" />
+        </>
+      );
+    case "avatar_plus_ribbon":
+      return (
+        <>
+          <rect width="64" height="64" fill="#1a1014" />
+          <circle cx="32" cy="28" r="14" fill="#991b1b" stroke="#c9a227" strokeWidth="2" />
+          <circle cx="32" cy="28" r="7" fill="#7f1d1d" />
+          <path d="M26 38 L22 54 L32 46 L42 54 L38 38" fill="#e85d04" />
+          <path d="M28 40 L32 48 L36 40" fill="#ffba08" opacity="0.8" />
         </>
       );
     case "avatar_default":
