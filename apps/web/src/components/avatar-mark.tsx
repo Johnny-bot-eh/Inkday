@@ -19,15 +19,15 @@ export function AvatarMark({
   const id = resolveAvatarId(avatarId);
   return (
     <span
-      className={`inline-flex shrink-0 overflow-hidden rounded-full border border-[var(--line)] ${className}`}
+      className={`relative inline-block shrink-0 overflow-hidden rounded-full border border-[var(--line)] leading-none ${className}`}
       style={{ width: size, height: size }}
       title={title}
       aria-hidden={title ? undefined : true}
     >
       <svg
         viewBox="0 0 64 64"
-        width={size}
-        height={size}
+        className="absolute inset-0 block h-full w-full"
+        preserveAspectRatio="xMidYMid slice"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-label={title}
