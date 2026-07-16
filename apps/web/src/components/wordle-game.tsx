@@ -29,6 +29,8 @@ type Props = {
   alreadyPlayed?: { score: number; won: boolean } | null;
   signedIn: boolean;
   monthly?: MonthlyPlayContext | null;
+  category?: string | null;
+  seasonId?: string | null;
 };
 
 export function WordleGame({
@@ -37,12 +39,17 @@ export function WordleGame({
   alreadyPlayed,
   signedIn,
   monthly = null,
+  category = null,
+  seasonId = null,
 }: Props) {
   const router = useRouter();
   const config = useMemo(
-    () => getWordleConfig(dateKey, difficulty),
-    [dateKey, difficulty],
+    () => getWordleConfig(dateKey, difficulty, { category }),
+    [dateKey, difficulty, category],
   );
+
+  const obscureTheme = config.theme === "obscure";
+  const surpriseTheme = config.theme === "surprise";
 
   const [guesses, setGuesses] = useState<string[]>([]);
   const [marks, setMarks] = useState<LetterMark[][]>([]);
@@ -75,7 +82,7 @@ export function WordleGame({
 
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
-    resetKey: `${dateKey}-${difficulty}`,
+    resetKey: `${dateKey}-${difficulty}-${category ?? ""}`,
   });
 
   function submitGuess() {
@@ -103,7 +110,7 @@ export function WordleGame({
 
   async function finish(finalGuesses: string[], won: boolean) {
     const elapsedMs = timer.freeze();
-    if (!monthly) markBoardPlayed(dateKey, "wordle", difficulty);
+    if (!monthly) markBoardPlayed(dateKey, "wordle", difficulty, seasonId);
     const timeLabel = formatDuration(elapsedMs);
 
     if (monthly) {
@@ -182,6 +189,8 @@ export function WordleGame({
           guesses: finalGuesses,
           elapsedMs,
           forfeit: !won && finalGuesses.length < config.maxGuesses,
+          ...(category ? { category } : {}),
+          ...(seasonId && !category ? { seasonId } : {}),
         }),
       });
       const data = await res.json();
@@ -234,16 +243,54 @@ export function WordleGame({
   });
 
   return (
-    <div className="mx-auto max-w-lg animate-rise">
+    <div
+      className={[
+        "mx-auto max-w-lg animate-rise",
+        obscureTheme && "rounded-2xl border border-red-950/80 bg-[#0a0608] p-4 shadow-[0_0_40px_rgba(80,0,20,0.35)] sm:p-6",
+        surpriseTheme && "rounded-2xl border border-ember/40 bg-ember/5 p-4 sm:p-6",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-ember">
-            {wordleTitle(difficulty)} · {DIFFICULTY_LABELS[difficulty]}
+          <p
+            className={[
+              "text-xs uppercase tracking-[0.22em]",
+              obscureTheme ? "text-red-400" : "text-ember",
+            ].join(" ")}
+          >
+            {config.categoryTitle
+              ? `Surprise · ${config.categoryTitle}`
+              : `${wordleTitle(difficulty)} · ${DIFFICULTY_LABELS[difficulty]}`}
           </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
-            {config.wordLength}-letter{" "}
-            {wordleTitle(difficulty) === "Word Daily" ? "day" : "board"}
+          <h1
+            className={[
+              "mt-1 font-[family-name:var(--font-display)] text-3xl font-bold",
+              obscureTheme && "text-red-100",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {config.categoryTitle
+              ? config.categoryTitle
+              : `${config.wordLength}-letter ${
+                  wordleTitle(difficulty) === "Word Daily" ? "day" : "board"
+                }`}
           </h1>
+          {config.warning ? (
+            <p
+              className={[
+                "mt-2 text-sm",
+                obscureTheme ? "text-red-300/90" : "text-fog",
+              ].join(" ")}
+            >
+              {config.warning}
+            </p>
+          ) : null}
+          {config.categoryTagline && !config.warning ? (
+            <p className="mt-2 text-sm text-fog">{config.categoryTagline}</p>
+          ) : null}
         </div>
         <div className="flex flex-col items-end gap-2">
           <Link href="/" className="text-sm text-fog hover:text-paper">

@@ -4,13 +4,18 @@ import { loadPlayPage } from "@/lib/play-page";
 
 export default async function WordlePlayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ difficulty: string }>;
+  searchParams: Promise<{ category?: string; season?: string }>;
 }) {
   const { difficulty: raw } = await params;
+  const sp = await searchParams;
   const page = await loadPlayPage({
     puzzleType: "wordle",
     difficultyRaw: raw,
+    seasonRaw: sp.season,
+    categoryRaw: sp.category,
   });
 
   if (page.locked) {
@@ -25,6 +30,8 @@ export default async function WordlePlayPage({
       dateKey={page.dateKey}
       signedIn={page.signedIn}
       alreadyPlayed={page.alreadyPlayed}
+      category={page.categoryId}
+      seasonId={page.seasonId}
     />
   );
 }

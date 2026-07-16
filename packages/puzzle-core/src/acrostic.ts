@@ -180,6 +180,7 @@ const BY_DIFFICULTY: Record<Difficulty, Pack[]> = {
   easy: EASY,
   medium: MEDIUM,
   hard: HARD,
+  obscure: HARD,
   impossible: HARD,
 };
 
@@ -187,6 +188,7 @@ const ATTEMPTS: Record<Difficulty, number> = {
   easy: 8,
   medium: 6,
   hard: 5,
+  obscure: 5,
   impossible: 4,
 };
 

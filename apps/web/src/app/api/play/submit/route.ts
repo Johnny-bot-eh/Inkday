@@ -28,6 +28,7 @@ import {
   isValidWordleGuess,
   normalizeSeasonId,
   noHintsBonus,
+  parseWordleCategory,
   perfectBonus,
   scoreAcrostic,
   scoreAnagram,
@@ -44,6 +45,7 @@ import {
   todayKey,
   weeklyBonus,
   monthlyBonus,
+  wordleCategorySeasonId,
   type Difficulty,
   type PathCoord,
   type PuzzleType,
@@ -65,6 +67,8 @@ type Body = {
   difficulty: Difficulty;
   dateKey?: string;
   seasonId?: string;
+  /** Wordle surprise theme id */
+  category?: string;
   premium?: boolean;
   guesses?: string[];
   code?: string;
@@ -86,7 +90,7 @@ const TYPES: PuzzleType[] = [
   "acrostic",
   "wordladder",
 ];
-const DIFFS: Difficulty[] = ["easy", "medium", "hard", "impossible"];
+const DIFFS: Difficulty[] = ["easy", "medium", "hard", "obscure", "impossible"];
 
 function clampElapsed(ms: unknown): number | undefined {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) return undefined;
@@ -138,15 +142,26 @@ export async function POST(req: Request) {
   const { puzzleType, difficulty } = body;
   const elapsedMs = clampElapsed(body.elapsedMs);
   const premiumBoard = Boolean(body.premium) || body.seasonId === "plus";
+  const categoryId =
+    puzzleType === "wordle" ? parseWordleCategory(body.category) : null;
+  if (body.category && !categoryId) {
+    return NextResponse.json({ error: "Unknown category" }, { status: 400 });
+  }
   const seasonId = premiumBoard
     ? null
-    : normalizeSeasonId(body.seasonId);
-  const playSeasonId = premiumBoard ? "plus" : (seasonId ?? "");
+    : categoryId
+      ? wordleCategorySeasonId(categoryId)
+      : normalizeSeasonId(body.seasonId);
+  const playSeasonId = premiumBoard
+    ? "plus"
+    : categoryId
+      ? wordleCategorySeasonId(categoryId)
+      : (seasonId ?? "");
 
-  if (!premiumBoard && body.seasonId && !seasonId) {
+  if (!premiumBoard && !categoryId && body.seasonId && !seasonId) {
     return NextResponse.json({ error: "Unknown season" }, { status: 400 });
   }
-  if (seasonId && !isSeasonActiveOn(seasonId, dateKey)) {
+  if (seasonId && !categoryId && !isSeasonActiveOn(seasonId, dateKey)) {
     return NextResponse.json(
       { error: "Season is not active today" },
       { status: 400 },
@@ -239,7 +254,9 @@ export async function POST(req: Request) {
   }
 
   if (puzzleType === "wordle") {
-    const config = getWordleConfig(dateKey, difficulty);
+    const config = getWordleConfig(dateKey, difficulty, {
+      category: categoryId,
+    });
     const guesses = body.guesses ?? [];
     // Extra-attempt consumables may push a few guesses past the base max.
     const maxAllowed = config.maxGuesses + 5;
@@ -285,7 +302,7 @@ export async function POST(req: Request) {
       base,
       elapsedMs,
       isPerfect: won && isPerfectWordle(guesses.length),
-      seasonActive: Boolean(seasonId),
+      seasonActive: Boolean(seasonId) && !categoryId,
       plusActive,
     });
 

@@ -22,6 +22,7 @@ const BY_DIFFICULTY: Record<Difficulty, string[]> = {
   easy: WORDS_5,
   medium: WORDS_6,
   hard: WORDS_7,
+  obscure: WORDS_7,
   impossible: WORDS_7,
 };
 
@@ -29,6 +30,7 @@ const ATTEMPTS: Record<Difficulty, number> = {
   easy: 6,
   medium: 5,
   hard: 4,
+  obscure: 4,
   impossible: 3,
 };
 
@@ -36,6 +38,7 @@ const HINTS: Record<Difficulty, string> = {
   easy: "Unscramble the letters into a common English word.",
   medium: "Same letters, one real word — no repeats of wrong tries.",
   hard: "Longer scramble. Think of categories: nature, abstract nouns.",
+  obscure: "Rare vocabulary scramble. Few attempts.",
   impossible: "Few attempts. Deduce without extra letter cues.",
 };
 

@@ -1,4 +1,9 @@
-export type Difficulty = "easy" | "medium" | "hard" | "impossible";
+export type Difficulty =
+  | "easy"
+  | "medium"
+  | "hard"
+  | "obscure"
+  | "impossible";
 export type PuzzleType =
   | "wordle"
   | "escape"
@@ -14,6 +19,7 @@ export const ALL_DIFFICULTIES: Difficulty[] = [
   "easy",
   "medium",
   "hard",
+  "obscure",
   "impossible",
 ];
 export const PUZZLE_TYPES: PuzzleType[] = [
@@ -31,13 +37,18 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
   medium: "Medium",
   hard: "Hard",
+  obscure: "Obscure",
   impossible: "Impossible",
 };
 
 /** Word Daily is always the medium board for the day. */
 export const WORD_DAILY_DIFFICULTY: Difficulty = "medium";
 
-export const EXTRA_WORDLE_DIFFICULTIES: Difficulty[] = ["easy", "hard"];
+export const EXTRA_WORDLE_DIFFICULTIES: Difficulty[] = [
+  "easy",
+  "hard",
+  "obscure",
+];
 
 export const PUZZLE_LABELS: Record<PuzzleType, string> = {
   wordle: "Word Daily",
@@ -56,7 +67,9 @@ export const WORD_GAME_TYPES: Array<
 > = ["anagram", "cryptogram", "acrostic", "wordladder"];
 
 export function wordleTitle(difficulty: Difficulty): string {
-  return difficulty === WORD_DAILY_DIFFICULTY ? "Word Daily" : "Word Extra";
+  if (difficulty === WORD_DAILY_DIFFICULTY) return "Word Daily";
+  if (difficulty === "obscure") return "Obscure Word";
+  return "Word Extra";
 }
 
 export function todayKey(date = new Date()): string {

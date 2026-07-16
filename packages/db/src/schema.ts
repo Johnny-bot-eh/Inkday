@@ -163,7 +163,7 @@ export const friendChallenge = sqliteTable(
       ],
     }).notNull(),
     difficulty: text("difficulty", {
-      enum: ["easy", "medium", "hard", "impossible"],
+      enum: ["easy", "medium", "hard", "obscure", "impossible"],
     }).notNull(),
     dateKey: text("date_key").notNull(),
     status: text("status", {
@@ -260,7 +260,7 @@ export const playResult = sqliteTable(
       ],
     }).notNull(),
     difficulty: text("difficulty", {
-      enum: ["easy", "medium", "hard", "impossible"],
+      enum: ["easy", "medium", "hard", "obscure", "impossible"],
     }).notNull(),
     dateKey: text("date_key").notNull(),
     /** Empty string for standard dailies; season slug for limited-time boards */
@@ -481,7 +481,7 @@ export const monthlyCompletion = sqliteTable(
     slotIndex: integer("slot_index").notNull(),
     puzzleType: text("puzzle_type").notNull(),
     difficulty: text("difficulty", {
-      enum: ["easy", "medium", "hard", "impossible"],
+      enum: ["easy", "medium", "hard", "obscure", "impossible"],
     }).notNull(),
     score: integer("score").notNull(),
     won: integer("won", { mode: "boolean" }).notNull(),

@@ -1,6 +1,14 @@
 import type { Difficulty } from "./types";
 import { dayIndex, hashSeed, pickIndex } from "./types";
 import { ALL_WORDS, WORDS_5, WORDS_6, WORDS_7 } from "./words";
+import {
+  WORDLE_CATEGORIES,
+  WORDLE_HARD_ANSWERS,
+  WORDLE_OBSCURE_ANSWERS,
+  parseWordleCategory,
+  sanitizeWordPool,
+  type WordleCategoryId,
+} from "./wordle-lexicon";
 
 export type LetterMark = "correct" | "present" | "absent";
 
@@ -9,50 +17,32 @@ export type WordleConfig = {
   maxGuesses: number;
   answer: string;
   allowedGuesses: string[];
+  /** Optional player-facing warning (Obscure / surprise themes). */
+  warning?: string;
+  /** Visual theme key for the client. */
+  theme?: "default" | "obscure" | "surprise";
+  categoryId?: WordleCategoryId;
+  categoryTitle?: string;
+  categoryTagline?: string;
 };
 
 const EASY_WORDS = WORDS_5;
 const MEDIUM_WORDS = WORDS_6;
-const HARD_WORDS = [
-  ...WORDS_7,
-  "alchemy",
-  "destiny",
-  "eclipse",
-  "freedom",
-  "glacier",
-  "harmony",
-  "insight",
-  "journey",
-  "kindred",
-  "liberty",
-  "mystery",
-  "network",
-  "ovation",
-  "phoenix",
-  "quantum",
-  "radiant",
-  "silence",
-  "triumph",
-  "cascade",
-  "diamond",
-  "emerald",
-  "fantasy",
-  "gallery",
-  "horizon",
-  "justice",
-];
 
 const BY_DIFFICULTY: Record<Difficulty, string[]> = {
   easy: EASY_WORDS,
   medium: MEDIUM_WORDS,
-  hard: HARD_WORDS,
-  impossible: HARD_WORDS,
+  hard: WORDLE_HARD_ANSWERS,
+  obscure: WORDLE_OBSCURE_ANSWERS,
+  /** Same rare pool as hard, fewer guesses — unlock gate. */
+  impossible: WORDLE_HARD_ANSWERS,
 };
 
 const GUESS_LIMIT: Record<Difficulty, number> = {
   easy: 6,
   medium: 6,
   hard: 5,
+  obscure: 6,
   impossible: 4,
 };
 
@@ -60,21 +50,73 @@ function dictionaryForLength(length: number): string[] {
   return [...ALL_WORDS].filter((w) => w.length === length);
 }
 
+export type WordleConfigOpts = {
+  category?: string | null;
+};
+
 export function getWordleConfig(
   dateKey: string,
   difficulty: Difficulty,
+  opts: WordleConfigOpts = {},
 ): WordleConfig {
-  const pool = BY_DIFFICULTY[difficulty];
+  const categoryId = parseWordleCategory(opts.category);
+
+  if (categoryId) {
+    const category = WORDLE_CATEGORIES[categoryId];
+    const pool = sanitizeWordPool(category.answers, 5);
+    const seed = hashSeed(
+      "wordle-cat",
+      categoryId,
+      dateKey,
+      dayIndex(dateKey),
+    );
+    const answer = pool[pickIndex(seed, pool.length)]!;
+    const dict = dictionaryForLength(answer.length);
+    return {
+      wordLength: answer.length,
+      maxGuesses: GUESS_LIMIT[category.difficulty],
+      answer,
+      allowedGuesses: Array.from(new Set([answer, ...pool, ...dict])),
+      theme: "surprise",
+      categoryId,
+      categoryTitle: category.title,
+      categoryTagline: category.tagline,
+      warning: `Surprise theme: ${category.title}. ${category.tagline}`,
+    };
+  }
+
+  const expectedLen =
+    difficulty === "easy" || difficulty === "obscure"
+      ? 5
+      : difficulty === "medium"
+        ? 6
+        : 7;
+  const pool = sanitizeWordPool(BY_DIFFICULTY[difficulty], expectedLen);
+  const answerPool =
+    pool.length > 0
+      ? pool
+      : BY_DIFFICULTY[difficulty].map((w) => w.toLowerCase());
+
   const seed = hashSeed("wordle", dateKey, difficulty, dayIndex(dateKey));
-  const answer = pool[pickIndex(seed, pool.length)]!;
+  const answer = answerPool[pickIndex(seed, answerPool.length)]!;
   const dict = dictionaryForLength(answer.length);
-  const allowed = Array.from(new Set([answer, ...pool, ...dict]));
-  return {
+  const allowed = Array.from(
+    new Set([answer, ...answerPool, ...WORDS_5, ...WORDS_6, ...WORDS_7, ...dict]),
+  );
+
+  const config: WordleConfig = {
     wordLength: answer.length,
     maxGuesses: GUESS_LIMIT[difficulty],
     answer,
     allowedGuesses: allowed,
+    theme: difficulty === "obscure" ? "obscure" : "default",
   };
+
+  if (difficulty === "obscure") {
+    config.warning = "Do you even know that word? ;)";
+  }
+
+  return config;
 }
 
 export function normalizeGuess(guess: string): string {

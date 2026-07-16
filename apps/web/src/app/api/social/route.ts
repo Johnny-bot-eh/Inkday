@@ -35,6 +35,7 @@ const DIFFICULTIES = new Set<Difficulty>([
   "easy",
   "medium",
   "hard",
+  "obscure",
   "impossible",
 ]);
 

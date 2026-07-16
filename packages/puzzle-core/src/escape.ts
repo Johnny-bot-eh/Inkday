@@ -460,6 +460,7 @@ const ATTEMPTS: Record<Difficulty, number> = {
   easy: 5,
   medium: 3,
   hard: 2,
+  obscure: 2,
   impossible: 1,
 };
 
@@ -468,6 +469,7 @@ const TIERS_FOR: Record<Difficulty, Tier[]> = {
   easy: ["essential", "helpful", "spoiler"],
   medium: ["essential", "decoy"],
   hard: ["essential", "decoy"],
+  obscure: ["essential", "decoy"],
   impossible: ["essential"],
 };
 
@@ -475,6 +477,7 @@ function clueTextForDifficulty(clue: TieredClue, difficulty: Difficulty): string
   if (
     (difficulty === "medium" ||
       difficulty === "hard" ||
+      difficulty === "obscure" ||
       difficulty === "impossible") &&
     clue.cryptic
   ) {
@@ -520,7 +523,7 @@ function cluesForDifficulty(
     clues = [...rest, ...decoy];
   }
 
-  if (difficulty === "hard") {
+  if (difficulty === "hard" || difficulty === "obscure") {
     // Two red herrings; essentials use cryptic wording
     const decoys = clues.filter((c) => c.tier === "decoy");
     const rest = clues.filter((c) => c.tier !== "decoy");

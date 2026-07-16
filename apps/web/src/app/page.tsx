@@ -13,6 +13,7 @@ import {
   dailyChallengeHeadline,
   findPlayForBoard,
   getMonthlyCollection,
+  getSurpriseWordleChallenge,
   todayKey,
   wordleTitle,
   type Difficulty,
@@ -77,6 +78,7 @@ export default async function HomePage() {
   }
 
   const monthlyPct = Math.round((monthlyCleared / MONTHLY_SLOT_COUNT) * 100);
+  const surpriseWordle = getSurpriseWordleChallenge(dateKey);
 
   return (
     <div className="space-y-10">
@@ -360,16 +362,18 @@ export default async function HomePage() {
               })()}
               {EXTRA_WORDLE_DIFFICULTIES.map((difficulty) => {
                 const play = boardPlay("wordle", difficulty);
+                const subtitle =
+                  difficulty === "easy"
+                    ? "Featured above as Daily Word"
+                    : difficulty === "hard"
+                      ? "Rare words · 7 letters · 5 guesses"
+                      : "Do you even know that word? · 500 pts";
                 return (
                   <ChallengePlayRow
                     key={difficulty}
                     href={`/play/wordle/${difficulty}`}
                     title={`${wordleTitle(difficulty)} · ${DIFFICULTY_LABELS[difficulty]}`}
-                    openSubtitle={
-                      difficulty === "easy"
-                        ? "Featured above as Daily Word"
-                        : "Longer words · 5 guesses"
-                    }
+                    openSubtitle={subtitle}
                     doneSubtitle={doneCopy(play)}
                     puzzleType="wordle"
                     difficulty={difficulty}
@@ -378,6 +382,28 @@ export default async function HomePage() {
                   />
                 );
               })}
+              {surpriseWordle &&
+                (() => {
+                  const play = boardPlay(
+                    "wordle",
+                    surpriseWordle.category.difficulty,
+                    surpriseWordle.seasonId,
+                  );
+                  return (
+                    <ChallengePlayRow
+                      href={surpriseWordle.href}
+                      title={`✦ Surprise · ${surpriseWordle.category.title}`}
+                      openSubtitle={surpriseWordle.category.tagline}
+                      doneSubtitle={doneCopy(play)}
+                      puzzleType="wordle"
+                      difficulty={surpriseWordle.category.difficulty}
+                      dateKey={dateKey}
+                      seasonId={surpriseWordle.seasonId}
+                      serverDone={Boolean(play)}
+                      featured
+                    />
+                  );
+                })()}
             </div>
           </article>
 

@@ -6,6 +6,7 @@ export * from "./premium";
 export * from "./daily";
 export * from "./play-lookup";
 export * from "./wordle";
+export * from "./wordle-lexicon";
 export * from "./escape";
 export * from "./logic";
 export * from "./path";

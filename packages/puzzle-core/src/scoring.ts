@@ -5,6 +5,7 @@ export const BASE_POINTS: Record<Difficulty, number> = {
   easy: 50,
   medium: 100,
   hard: 200,
+  obscure: 500,
   impossible: 400,
 };
 

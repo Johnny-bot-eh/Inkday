@@ -303,6 +303,7 @@ const SIZE_FOR: Record<Difficulty, number[]> = {
   easy: [3],
   medium: [3, 4],
   hard: [4],
+  obscure: [4],
   impossible: [4],
 };
 
@@ -325,7 +326,7 @@ export function getLogicPuzzle(
   const template = pool[pickIndex(seed, pool.length)]!;
 
   let clues = [...template.clues];
-  if ((difficulty === "hard" || difficulty === "impossible") && clues.length > 5) {
+  if ((difficulty === "hard" || difficulty === "obscure" || difficulty === "impossible") && clues.length > 5) {
     // Keep the densest info; drop the last clue as extra challenge when safe
     clues = clues.slice(0, -1);
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Difficulty, PathCoord } from "@daily-puzzle/puzzle-core";
 import {
   DIFFICULTY_LABELS,
@@ -48,11 +48,13 @@ export function PathGame({
   const start = useMemo(() => findStart(puzzle), [puzzle]);
 
   const [path, setPath] = useState<PathCoord[]>([start]);
+  const pathRef = useRef<PathCoord[]>([start]);
+  const [dragging, setDragging] = useState(false);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
       ? `Already logged today · ${alreadyPlayed.score} pts`
-      : "Tap adjacent cells to extend your path. Undo backs up one step.",
+      : "Tap or drag through adjacent cells to extend your path. Undo backs up one step.",
   );
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
@@ -76,16 +78,25 @@ export function PathGame({
     [path],
   );
   const head = path[path.length - 1]!;
+  const hideTargetLabels =
+    difficulty === "hard" ||
+    difficulty === "obscure" ||
+    difficulty === "impossible";
+
+  function commitPath(nextPath: PathCoord[]) {
+    pathRef.current = nextPath;
+    setPath(nextPath);
+  }
 
   function undo() {
     if (done || path.length <= 1) return;
-    setPath((prev) => prev.slice(0, -1));
+    commitPath(pathRef.current.slice(0, -1));
     setStatus(null);
   }
 
   function reset() {
     if (done) return;
-    setPath([start]);
+    commitPath([start]);
     setStatus("Path cleared.");
   }
 
@@ -93,21 +104,34 @@ export function PathGame({
     if (done) return;
     const tile = puzzle.grid[cell.r]?.[cell.c];
     if (!tile || !isWalkable(tile)) return;
-    if (pathSet.has(coordKey(cell))) {
+    const currentPath = pathRef.current;
+    const currentHead = currentPath[currentPath.length - 1]!;
+    if (currentPath.some((p) => p.r === cell.r && p.c === cell.c)) {
       // Click earlier cell to rewind to it
-      const idx = path.findIndex((p) => p.r === cell.r && p.c === cell.c);
+      const idx = currentPath.findIndex((p) => p.r === cell.r && p.c === cell.c);
       if (idx >= 0) {
-        setPath(path.slice(0, idx + 1));
+        commitPath(currentPath.slice(0, idx + 1));
         setStatus(null);
       }
       return;
     }
-    if (!areAdjacent(head, cell)) {
+    if (!areAdjacent(currentHead, cell)) {
       setStatus("Move to an adjacent open cell.");
       return;
     }
-    setPath([...path, cell]);
+    commitPath([...currentPath, cell]);
     setStatus(null);
+  }
+
+  function beginDrag(cell: PathCoord) {
+    if (done) return;
+    setDragging(true);
+    tryStep(cell);
+  }
+
+  function enterWhileDragging(cell: PathCoord) {
+    if (!dragging || done) return;
+    tryStep(cell);
   }
 
   async function submit() {
@@ -225,16 +249,21 @@ export function PathGame({
         {puzzle.briefing}
         {puzzle.waypoints.length > 0 && (
           <span className="mt-2 block text-sm text-fog">
-            Checkpoints in order: {puzzle.waypoints.join(" → ")} → E
+            {hideTargetLabels
+              ? "Hard paths conceal checkpoints and the exit. Build a route, then submit to test it."
+              : `Checkpoints in order: ${puzzle.waypoints.join(" → ")} → E`}
           </span>
         )}
       </p>
 
       <div
         className="mx-auto grid gap-1.5"
+        onPointerLeave={() => setDragging(false)}
+        onPointerUp={() => setDragging(false)}
         style={{
           gridTemplateColumns: `repeat(${puzzle.cols}, minmax(0, 1fr))`,
           maxWidth: puzzle.cols * 52,
+          touchAction: "none",
         }}
       >
         {puzzle.grid.map((row, r) =>
@@ -244,8 +273,11 @@ export function PathGame({
             const onPath = pathSet.has(key);
             const isHead = head.r === r && head.c === c;
             const wall = tile === "#";
+            const target = tile === "E" || puzzle.waypoints.includes(tile);
             const label =
-              tile === "." ? "" : tile === "#" ? "" : tile;
+              tile === "." || tile === "#" || (hideTargetLabels && target)
+                ? ""
+                : tile;
 
             return (
               <button
@@ -253,6 +285,12 @@ export function PathGame({
                 type="button"
                 disabled={done || wall}
                 onClick={() => tryStep(coord)}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  beginDrag(coord);
+                }}
+                onPointerEnter={() => enterWhileDragging(coord)}
+                onPointerUp={() => setDragging(false)}
                 className={[
                   "flex aspect-square items-center justify-center rounded-md border text-sm font-bold transition",
                   wall &&
@@ -260,7 +298,7 @@ export function PathGame({
                   !wall && !onPath && "border-[var(--line)] bg-ink-2/80 hover:border-ember/50",
                   onPath && !isHead && "border-transparent bg-path/35 text-paper",
                   isHead && "border-transparent bg-path-head text-on-ember",
-                  (tile === "S" || tile === "E" || puzzle.waypoints.includes(tile)) &&
+                  (tile === "S" || (!hideTargetLabels && target)) &&
                     !onPath &&
                     "text-ember",
                 ]

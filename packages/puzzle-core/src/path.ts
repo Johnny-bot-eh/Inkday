@@ -167,6 +167,67 @@ const TEMPLATES: PathTemplate[] = [
       "....E.",
     ],
   },
+  {
+    slug: "archive-switchback",
+    title: "Archive Switchback",
+    briefing:
+      "A larger logic path. Visit 1 → 2 → 3 in order, then find the concealed exit.",
+    rows: 9,
+    cols: 9,
+    waypoints: ["1", "2", "3"],
+    map: [
+      "S..#.....",
+      ".#.#.###.",
+      ".#...1#..",
+      ".###.#.#.",
+      "...#.#.#.",
+      "##.#...#.",
+      "...###2#.",
+      ".#.....#3",
+      ".####...E",
+    ],
+  },
+  {
+    slug: "catacomb-loop",
+    title: "Catacomb Loop",
+    briefing:
+      "Long corridors, false branches, no revisits. Visit 1 → 2 → 3 before the exit.",
+    rows: 10,
+    cols: 10,
+    waypoints: ["1", "2", "3"],
+    map: [
+      "S....#....",
+      "####.#.##.",
+      "...#.#..1.",
+      ".#.#.###.#",
+      ".#...#...#",
+      ".###.#.#.#",
+      "...#...#2#",
+      "#.#####..#",
+      "#....3...#",
+      "######...E",
+    ],
+  },
+  {
+    slug: "observatory-night",
+    title: "Observatory Night",
+    briefing:
+      "A large night board with three hidden instruments to pass before the final dome.",
+    rows: 9,
+    cols: 10,
+    waypoints: ["1", "2", "3"],
+    map: [
+      "S..#......",
+      ".#.#.####.",
+      ".#...#..1.",
+      ".###.#.##.",
+      "...#.#....",
+      "##.#.####.",
+      "...#...2#.",
+      ".#####.#3.",
+      ".......#.E",
+    ],
+  },
 ];
 
 function parseMap(map: string[]): PathCell[][] {
@@ -264,8 +325,9 @@ assertTemplatesSolvable();
 const BY_DIFFICULTY: Record<Difficulty, (t: PathTemplate) => boolean> = {
   easy: (t) => t.rows <= 5 && t.waypoints.length <= 1,
   medium: (t) => t.rows >= 5 && t.rows <= 7 && t.waypoints.length <= 2,
-  hard: (t) => t.rows >= 6,
-  impossible: (t) => t.rows >= 7 && t.waypoints.length >= 1,
+  hard: (t) => t.rows >= 8 && t.waypoints.length >= 2,
+  obscure: (t) => t.rows >= 8 && t.waypoints.length >= 2,
+  impossible: (t) => t.rows >= 9 && t.waypoints.length >= 3,
 };
 
 export function getPathPuzzle(

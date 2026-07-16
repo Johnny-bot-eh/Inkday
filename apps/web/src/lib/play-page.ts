@@ -4,9 +4,12 @@ import {
   getSeason,
   isSeasonActiveOn,
   normalizeSeasonId,
+  parseWordleCategory,
   unlockRequiredForDifficulty,
+  wordleCategorySeasonId,
   type Difficulty,
   type PuzzleType,
+  type WordleCategoryId,
   todayKey,
 } from "@daily-puzzle/puzzle-core";
 import {
@@ -19,6 +22,7 @@ export async function loadPlayPage(opts: {
   puzzleType: PuzzleType;
   difficultyRaw: string;
   seasonRaw?: string | null;
+  categoryRaw?: string | null;
 }) {
   if (!ALL_DIFFICULTIES.includes(opts.difficultyRaw as Difficulty)) {
     notFound();
@@ -26,17 +30,30 @@ export async function loadPlayPage(opts: {
   const difficulty = opts.difficultyRaw as Difficulty;
   const session = await getSession();
   const dateKey = todayKey();
-  const seasonId = normalizeSeasonId(opts.seasonRaw);
 
-  if (opts.seasonRaw && !seasonId) {
+  const categoryId: WordleCategoryId | null =
+    opts.puzzleType === "wordle"
+      ? parseWordleCategory(opts.categoryRaw)
+      : null;
+
+  if (opts.categoryRaw && !categoryId) {
     notFound();
   }
-  if (seasonId && !isSeasonActiveOn(seasonId, dateKey)) {
+
+  const seasonId = categoryId
+    ? wordleCategorySeasonId(categoryId)
+    : normalizeSeasonId(opts.seasonRaw);
+
+  if (!categoryId && opts.seasonRaw && !seasonId) {
+    notFound();
+  }
+  if (!categoryId && seasonId && !isSeasonActiveOn(seasonId, dateKey)) {
     const season = getSeason(seasonId);
     return {
       difficulty,
       dateKey,
       seasonId,
+      categoryId: null as WordleCategoryId | null,
       signedIn: Boolean(session?.user),
       locked: true as const,
       lockReason: `${season?.title ?? "This season"} isn’t live right now.`,
@@ -51,6 +68,7 @@ export async function loadPlayPage(opts: {
         difficulty,
         dateKey,
         seasonId,
+        categoryId,
         signedIn: false,
         locked: true as const,
         lockReason:
@@ -64,6 +82,7 @@ export async function loadPlayPage(opts: {
         difficulty,
         dateKey,
         seasonId,
+        categoryId,
         signedIn: true,
         locked: true as const,
         lockReason:
@@ -87,6 +106,7 @@ export async function loadPlayPage(opts: {
     difficulty,
     dateKey,
     seasonId,
+    categoryId,
     signedIn: Boolean(session?.user),
     locked: false as const,
     lockReason: null,

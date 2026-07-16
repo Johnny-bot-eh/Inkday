@@ -53,6 +53,7 @@ const PACKS: Record<Difficulty, PhrasePack[]> = {
   easy: EASY,
   medium: MEDIUM,
   hard: HARD,
+  obscure: HARD,
   impossible: HARD,
 };
 
@@ -60,6 +61,7 @@ const ATTEMPTS: Record<Difficulty, number> = {
   easy: 6,
   medium: 5,
   hard: 4,
+  obscure: 4,
   impossible: 3,
 };
 
@@ -67,6 +69,7 @@ const REVEAL_COUNT: Record<Difficulty, number> = {
   easy: 3,
   medium: 2,
   hard: 1,
+  obscure: 1,
   impossible: 0,
 };
 

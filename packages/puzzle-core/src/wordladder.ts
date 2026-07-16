@@ -117,6 +117,7 @@ const BY_DIFFICULTY: Record<Difficulty, Ladder[]> = {
   easy: EASY,
   medium: MEDIUM,
   hard: HARD,
+  obscure: HARD,
   impossible: HARD,
 };
 
@@ -124,6 +125,7 @@ const STEP_PAD: Record<Difficulty, number> = {
   easy: 3,
   medium: 2,
   hard: 2,
+  obscure: 2,
   impossible: 1,
 };
 
