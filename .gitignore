@@ -13,3 +13,4 @@ dist
 coverage
 apps/web/data
 packages/db/data
+.env*

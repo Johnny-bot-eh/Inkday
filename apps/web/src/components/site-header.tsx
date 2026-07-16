@@ -19,9 +19,14 @@ export async function SiteHeader() {
   const stats = session?.user
     ? await ensureUserStats(session.user.id)
     : null;
-  const coins = session?.user
-    ? await getCoinBalance(session.user.id)
-    : null;
+  let coins: number | null = null;
+  if (session?.user) {
+    try {
+      coins = await getCoinBalance(session.user.id);
+    } catch {
+      coins = null;
+    }
+  }
 
   return (
     <header className="relative z-20 border-b border-[var(--line)] backdrop-blur-md">

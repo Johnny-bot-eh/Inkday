@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "node ../../packages/db/src/migrate.mjs && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "DATABASE_URL=file:./data/inkday.db node ../../packages/db/src/migrate.mjs"
+    "db:migrate": "node ../../packages/db/src/migrate.mjs"
   },
   "dependencies": {
     "@daily-puzzle/db": "workspace:*",
