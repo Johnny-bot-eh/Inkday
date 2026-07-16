@@ -44,7 +44,7 @@ export default function AuthPage() {
         err instanceof Error ? err.message : "Something went wrong";
       setError(
         /failed to fetch/i.test(message)
-          ? "Couldn’t reach the server. Check you’re on the live Inkday URL (not a stale link), then try again."
+          ? "Couldn’t reach the auth server. Open Inkday in Chrome or Safari (not Cursor’s preview), confirm Vercel Deployment Protection is off for Production, then try again."
           : message,
       );
     } finally {
