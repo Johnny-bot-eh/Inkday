@@ -28,12 +28,24 @@ const EASY: Ladder[] = [
 
 const MEDIUM: Ladder[] = [
   { start: "cane", end: "hand", chain: ["cane", "care", "card", "hard", "hand"] },
-  { start: "word", end: "gold", chain: ["word", "ward", "hard", "hold", "cold", "gold"] },
+  {
+    start: "word",
+    end: "gold",
+    chain: ["word", "ward", "hard", "card", "cord", "cold", "gold"],
+  },
   { start: "lead", end: "gold", chain: ["lead", "load", "goad", "gold"] },
   { start: "cage", end: "safe", chain: ["cage", "cave", "save", "safe"] },
-  { start: "dark", end: "dawn", chain: ["dark", "dank", "dawn"] },
-  { start: "poor", end: "rich", chain: ["poor", "boor", "book", "rook", "rock", "rick", "rich"] },
-  { start: "fire", end: "heat", chain: ["fire", "fore", "fort", "foot", "hoot", "heat"] },
+  { start: "dark", end: "dawn", chain: ["dark", "darn", "dawn"] },
+  {
+    start: "poor",
+    end: "rich",
+    chain: ["poor", "boor", "book", "rook", "rock", "rick", "rich"],
+  },
+  {
+    start: "fire",
+    end: "heat",
+    chain: ["fire", "hire", "hare", "hard", "herd", "head", "heat"],
+  },
 ];
 
 const HARD: Ladder[] = [
@@ -64,12 +76,22 @@ const HARD: Ladder[] = [
   {
     start: "tears",
     end: "smile",
-    chain: ["tears", "sears", "stars", "stare", "spare", "spire", "smile"],
+    chain: ["tears", "sears", "stars", "stare", "stale", "stile", "smile"],
   },
   {
-    start: "grass",
-    end: "green",
-    chain: ["grass", "gross", "groan", "grown", "green"],
+    start: "shore",
+    end: "beach",
+    chain: [
+      "shore",
+      "chore",
+      "chose",
+      "chase",
+      "cease",
+      "pease",
+      "peace",
+      "peach",
+      "beach",
+    ],
   },
 ];
 

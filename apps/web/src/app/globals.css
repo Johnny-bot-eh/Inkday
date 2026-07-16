@@ -104,6 +104,15 @@ body {
   transition: background 0.25s ease, color 0.25s ease;
 }
 
+/* Syne (display) has deep descenders — default heading line-heights clip the "g". */
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.2;
+  overflow: visible;
+}
+
 body::before {
   content: "";
   position: fixed;

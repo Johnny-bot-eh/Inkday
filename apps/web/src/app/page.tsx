@@ -85,7 +85,7 @@ export default async function HomePage() {
         <p className="text-xs uppercase tracking-[0.28em] text-ember">
           {dateKey}
         </p>
-        <h1 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-5xl font-extrabold leading-[0.95] tracking-tight sm:text-6xl">
+        <h1 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
           Inkday
         </h1>
         <p className="mt-4 max-w-lg text-lg text-fog">
