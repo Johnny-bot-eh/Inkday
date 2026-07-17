@@ -96,6 +96,54 @@ export const WORDLE_OBSCURE_ANSWERS = [
   "zinke",
 ];
 
+/** Short learner-friendly definitions shown after an Obscure clear. */
+export const WORDLE_OBSCURE_DEFINITIONS: Record<string, string> = {
+  aglet: "The small plastic or metal tip at the end of a shoelace.",
+  anent: "Concerning; about (chiefly archaic or Scottish).",
+  askoi: "Ancient Greek flasks with a spout and handle (plural of askos).",
+  atopy: "A genetic tendency to develop allergic conditions like eczema or asthma.",
+  azoic: "Without living organisms; lifeless.",
+  benty: "Covered with bent grass; grassy and coarse.",
+  borty: "Related to bort — low-grade diamond used industrially.",
+  cwtch: "Welsh for a cuddle, hug, or cozy safe place.",
+  cymae: "Architectural moldings with an S-shaped curve (plural of cyma).",
+  davit: "A small crane on a ship used to raise and lower boats.",
+  dwale: "Deadly nightshade, or an old word for a sleeping draught.",
+  elute: "To wash out or extract one substance from another.",
+  emeer: "A variant spelling of emir — a Muslim ruler or commander.",
+  fichu: "A light triangular scarf worn around the neck or shoulders.",
+  fjeld: "A high, rocky, treeless plateau, especially in Scandinavia.",
+  ghyll: "A deep ravine or narrow wooded valley.",
+  gleby: "Of or relating to soil; earthy (rare).",
+  hadal: "Of the ocean’s deepest trenches, below the abyssal zone.",
+  hokku: "The opening verse of a linked Japanese poem; forerunner of the haiku.",
+  ileac: "Relating to the ileum, the final section of the small intestine.",
+  ixora: "A tropical evergreen shrub with dense clusters of bright flowers.",
+  jebel: "An Arabic word for a mountain, hill, or rocky ridge.",
+  jougs: "An iron collar once used in Scotland for public punishment.",
+  karst: "Limestone country riddled with caves, sinkholes, and underground streams.",
+  kraal: "A traditional enclosure for livestock in southern Africa.",
+  lovat: "A soft green-blue color, especially in tweed or wool.",
+  mythe: "An older spelling of myth — a traditional story.",
+  naevi: "Birthmarks or moles (plural of naevus).",
+  ogham: "An early medieval Irish alphabet cut as notches along a line.",
+  pavis: "A large medieval shield that could cover most of the body.",
+  qophs: "The letter qoph in Hebrew and related alphabets (plural).",
+  ruche: "A gathered or pleated strip of fabric used as trim.",
+  sloyd: "A Scandinavian system of craft education, especially woodworking.",
+  towzy: "Disheveled, shaggy, or unkempt (Scottish).",
+  ulema: "A body of Muslim scholars trained in Islamic law and theology.",
+  vleis: "South African word for meat or flesh.",
+  wamus: "A heavy jacket or cardigan, often of rough cloth.",
+  xeric: "Extremely dry; adapted to very little moisture.",
+  yarco: "Australian slang for a rough, working-class youth.",
+  zinke: "A historical brass woodwind instrument; an early cornett.",
+};
+
+export function getObscureDefinition(word: string): string | undefined {
+  return WORDLE_OBSCURE_DEFINITIONS[word.trim().toLowerCase()];
+}
+
 export type WordleCategoryId =
   | "ancient"
   | "nature"

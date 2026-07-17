@@ -72,6 +72,7 @@ export function WordleGame({
     breakdown?: ScoreBreakdown | null;
     ranks?: PlayRanks | null;
     answer?: string | null;
+    definition?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
@@ -116,13 +117,13 @@ export function WordleGame({
     if (monthly) {
       if (!won) {
         setRevealAnswer(config.answer);
-        setResults({ won: false, elapsedMs, answer: config.answer });
+        setResults({ won: false, elapsedMs, answer: config.answer, definition: config.definition });
         setStatus(`Out of guesses (${timeLabel}).`);
         return;
       }
       if (!signedIn) {
         setRevealAnswer(config.answer);
-        setResults({ won: true, elapsedMs, answer: config.answer });
+        setResults({ won: true, elapsedMs, answer: config.answer, definition: config.definition });
         setStatus(`Solved! Sign in to save Case File progress.`);
         return;
       }
@@ -142,6 +143,7 @@ export function WordleGame({
           elapsedMs,
           score: mres.data.score,
           answer: config.answer,
+          definition: config.definition,
           coinsEarned: mres.data.coinsEarned,
           coinBalance: mres.data.coinBalance,
         });
@@ -168,6 +170,7 @@ export function WordleGame({
         won,
         elapsedMs,
         answer: config.answer,
+        definition: config.definition,
       });
       setStatus(
         won
@@ -208,6 +211,7 @@ export function WordleGame({
         breakdown: data.breakdown,
         ranks: data.ranks,
         answer: data.answer,
+        definition: data.definition ?? config.definition,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,

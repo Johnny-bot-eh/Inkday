@@ -5,6 +5,7 @@ import {
   WORDLE_CATEGORIES,
   WORDLE_HARD_ANSWERS,
   WORDLE_OBSCURE_ANSWERS,
+  getObscureDefinition,
   parseWordleCategory,
   sanitizeWordPool,
   type WordleCategoryId,
@@ -19,6 +20,8 @@ export type WordleConfig = {
   allowedGuesses: string[];
   /** Optional player-facing warning (Obscure / surprise themes). */
   warning?: string;
+  /** Definition shown after clear (Obscure boards). */
+  definition?: string;
   /** Visual theme key for the client. */
   theme?: "default" | "obscure" | "surprise";
   categoryId?: WordleCategoryId;
@@ -114,6 +117,7 @@ export function getWordleConfig(
 
   if (difficulty === "obscure") {
     config.warning = "Do you even know that word? ;)";
+    config.definition = getObscureDefinition(answer);
   }
 
   return config;

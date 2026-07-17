@@ -310,7 +310,7 @@ export async function POST(req: Request) {
       scoreBreakdown,
       won,
       meta: { guessesUsed: guesses.length },
-      extra: { answer: config.answer },
+      extra: { answer: config.answer, definition: config.definition },
     });
   }
 

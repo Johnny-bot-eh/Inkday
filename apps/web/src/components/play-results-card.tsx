@@ -29,6 +29,7 @@ type Props = {
   breakdown?: ScoreBreakdown | null;
   ranks?: PlayRanks | null;
   answer?: string | null;
+  definition?: string | null;
   explanation?: string | null;
   newAchievements?: ProgressToast[];
   newUnlocks?: ProgressToast[];
@@ -44,6 +45,7 @@ export function PlayResultsCard({
   breakdown,
   ranks,
   answer,
+  definition,
   explanation,
   newAchievements,
   newUnlocks,
@@ -84,6 +86,9 @@ export function PlayResultsCard({
           <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-paper sm:text-3xl">
             {answer}
           </p>
+          {definition ? (
+            <p className="mt-3 text-sm leading-relaxed text-fog">{definition}</p>
+          ) : null}
         </div>
       ) : null}
 
