@@ -148,19 +148,14 @@ export function CompanionClient({ signedIn, initial }: Props) {
   }
 
   const pet = snapshot.pet!;
+  const pets = [pet];
 
   return (
     <div className="mx-auto max-w-3xl animate-rise space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">
-            Garden
-          </h1>
-          <p className="mt-1 text-sm text-fog">
-            {pet.name ?? pet.speciesTitle} · lv {pet.level} · {pet.stage} ·{" "}
-            {pet.happinessState}
-          </p>
-        </div>
+        <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">
+          Garden
+        </h1>
         <div className="flex flex-wrap gap-3 text-sm">
           <Link href="/shop" className="text-ember hover:underline">
             Shop →
@@ -256,108 +251,122 @@ export function CompanionClient({ signedIn, initial }: Props) {
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-xl border border-[var(--line)] bg-ink-2/50 px-3 py-2">
-            <div className="text-xs uppercase tracking-wider text-fog">
-              Happiness
-            </div>
-            <div className="font-semibold">{pet.happiness}%</div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink-2">
-              <div
-                className="h-full rounded-full bg-mint"
-                style={{ width: `${pet.happiness}%` }}
-              />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={!pet.canPetToday || busy === "pet"}
-              onClick={() =>
-                void post({ action: "pet" }).then((data) => {
-                  if (data?.ok) {
-                    setMessage(`+${data.happinessGain} happiness`);
-                  }
-                })
-              }
-              className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
-            >
-              {pet.canPetToday ? "Pet (+5)" : "Petted today"}
-            </button>
-            {snapshot.foodInventory.map((food) => (
-              <button
-                key={food.itemId}
-                type="button"
-                disabled={busy === "feed" || food.qty <= 0}
-                onClick={() =>
-                  void post({ action: "feed", itemId: food.itemId }).then(
-                    (data) => {
+      <section className="space-y-3">
+        {pets.map((p) => (
+          <div
+            key={p.id}
+            className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+                  {p.name ?? p.speciesTitle}
+                </h2>
+                <p className="mt-0.5 text-sm text-fog">
+                  Lv {p.level} · {p.stage}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={!p.canPetToday || busy === "pet"}
+                  onClick={() =>
+                    void post({ action: "pet" }).then((data) => {
                       if (data?.ok) {
                         setMessage(`+${data.happinessGain} happiness`);
                       }
-                    },
-                  )
-                }
-                className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm hover:border-ember/40 disabled:opacity-50"
-              >
-                Feed {food.title} ×{food.qty}
-              </button>
-            ))}
-            {snapshot.foodInventory.length === 0 ? (
-              <Link
-                href="/shop"
-                className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-fog hover:text-paper"
-              >
-                Buy food
-              </Link>
-            ) : null}
+                    })
+                  }
+                  className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
+                >
+                  {p.canPetToday ? "Pet (+5)" : "Petted today"}
+                </button>
+                {snapshot.foodInventory.map((food) => (
+                  <button
+                    key={food.itemId}
+                    type="button"
+                    disabled={busy === "feed" || food.qty <= 0}
+                    onClick={() =>
+                      void post({ action: "feed", itemId: food.itemId }).then(
+                        (data) => {
+                          if (data?.ok) {
+                            setMessage(`+${data.happinessGain} happiness`);
+                          }
+                        },
+                      )
+                    }
+                    className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm hover:border-ember/40 disabled:opacity-50"
+                  >
+                    Feed {food.title} ×{food.qty}
+                  </button>
+                ))}
+                {snapshot.foodInventory.length === 0 ? (
+                  <Link
+                    href="/shop"
+                    className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-fog hover:text-paper"
+                  >
+                    Buy food
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <span className="text-fog">XP</span>
+                  <span className="font-medium">
+                    {p.xpIntoLevel}/{p.xpForNext}
+                  </span>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-2">
+                  <div
+                    className="h-full rounded-full bg-ember"
+                    style={{
+                      width: `${Math.min(100, (p.xpIntoLevel / Math.max(1, p.xpForNext)) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <span className="text-fog">Happiness</span>
+                  <span className="font-medium">{p.happiness}%</span>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-2">
+                  <div
+                    className="h-full rounded-full bg-mint"
+                    style={{ width: `${p.happiness}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ))}
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
-          <div className="text-xs uppercase tracking-wider text-fog">Pet XP</div>
-          <div className="mt-1 font-[family-name:var(--font-display)] text-xl font-bold">
-            Level {pet.level}
-          </div>
-          <p className="mt-1 text-sm text-fog">
-            {pet.xpIntoLevel}/{pet.xpForNext}
-          </p>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-2">
-            <div
-              className="h-full rounded-full bg-ember"
-              style={{
-                width: `${Math.min(100, (pet.xpIntoLevel / Math.max(1, pet.xpForNext)) * 100)}%`,
-              }}
-            />
-          </div>
+      <section className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
+        <div className="text-xs uppercase tracking-wider text-fog">
+          Account XP
         </div>
-
-        <div className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
-          <div className="text-xs uppercase tracking-wider text-fog">
-            Account XP
-          </div>
-          <div className="mt-1 font-[family-name:var(--font-display)] text-xl font-bold">
-            Level {snapshot.accountLevel}
-          </div>
-          <p className="mt-1 text-sm text-fog">
-            {snapshot.accountXpIntoLevel}/{snapshot.accountXpForNext}
-          </p>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-2">
-            <div
-              className="h-full rounded-full bg-ember"
-              style={{
-                width: `${Math.min(
+        <div className="mt-1 font-[family-name:var(--font-display)] text-xl font-bold">
+          Level {snapshot.accountLevel}
+        </div>
+        <p className="mt-1 text-sm text-fog">
+          {snapshot.accountXpIntoLevel}/{snapshot.accountXpForNext}
+        </p>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-2">
+          <div
+            className="h-full rounded-full bg-ember"
+            style={{
+              width: `${Math.min(
+                100,
+                (snapshot.accountXpIntoLevel /
+                  Math.max(1, snapshot.accountXpForNext)) *
                   100,
-                  (snapshot.accountXpIntoLevel /
-                    Math.max(1, snapshot.accountXpForNext)) *
-                    100,
-                )}%`,
-              }}
-            />
-          </div>
+              )}%`,
+            }}
+          />
         </div>
       </section>
     </div>

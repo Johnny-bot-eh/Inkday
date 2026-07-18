@@ -29,10 +29,10 @@ type Props = {
 };
 
 const TONE_SKY: Record<CompanionSnapshot["garden"]["tone"], string> = {
-  dawn: "linear-gradient(180deg, #f3d5b5 0%, #cfe3f4 38%, #b7d39a 72%, #8fbc6e 100%)",
-  day: "linear-gradient(180deg, #9ec9ef 0%, #c5e4a8 48%, #8fbc6e 100%)",
-  dusk: "linear-gradient(180deg, #c45c6a 0%, #e0a84a 34%, #6d8f45 78%, #3d5c2e 100%)",
-  night: "linear-gradient(180deg, #1a2238 0%, #2a3a55 40%, #1e3324 78%, #142018 100%)",
+  dawn: "linear-gradient(180deg, #f0c9a0 0%, #d8e6c8 36%, #9cbc78 72%, #6e9a52 100%)",
+  day: "linear-gradient(180deg, #8ec0e8 0%, #c5ddb0 42%, #7eab58 78%, #5e8c42 100%)",
+  dusk: "linear-gradient(180deg, #c45c6a 0%, #d4a060 34%, #6d8f45 78%, #3d5c2e 100%)",
+  night: "linear-gradient(180deg, #141c2e 0%, #243848 38%, #1a2e20 78%, #101810 100%)",
 };
 
 function layerZ(layer: string): number {
@@ -148,25 +148,25 @@ export function GardenDiorama({
         ].join(" ")}
         style={{ background: TONE_SKY[garden.tone] }}
       >
-        {/* Ground plane */}
+        {/* Ground plane — forest clearing floor */}
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[44%]"
           style={{
             background: night
-              ? "linear-gradient(180deg, transparent 0%, #1a2a18 35%, #10180f 100%)"
-              : "linear-gradient(180deg, transparent 0%, #8fbc6e88 18%, #6d9a4e 100%)",
+              ? "linear-gradient(180deg, transparent 0%, #1a2a18 28%, #10180f 100%)"
+              : "linear-gradient(180deg, transparent 0%, #7eaa5e88 16%, #5f8c42 100%)",
           }}
         />
         {/* Soft canopy light */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-50"
+          className="pointer-events-none absolute inset-0 opacity-40"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 18%, #ffffff55 0 18%, transparent 42%)",
+              "radial-gradient(ellipse at 50% 12%, #ffffff66 0 14%, transparent 40%)",
           }}
         />
 
-        {/* Innate habitat wallpaper (trees, vines, moss — not movable) */}
+        {/* Innate forest-clearing wallpaper */}
         <GardenHabitat night={night} />
 
         {/* Ambient life */}
@@ -230,18 +230,19 @@ export function GardenDiorama({
           );
         })}
 
-        {/* Companion + dialogue beside pet */}
+        {/* Companion resting in nest + dialogue beside pet */}
         <div
-          className="garden-pet-idle pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+          className="garden-pet-idle pointer-events-none absolute"
           style={{
             left: `${garden.pet.x}%`,
             top: `${garden.pet.y}%`,
             zIndex: layerZ(garden.pet.layer) + Math.round(garden.pet.y) + 1,
-            width: "min(28%, 160px)",
+            width: "min(24%, 140px)",
+            transform: "translate(-50%, -92%)",
           }}
         >
           <div className="relative mx-auto flex w-full justify-center [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full">
-            <div className="absolute inset-x-[18%] bottom-[6%] h-3 rounded-full bg-[#00000022] blur-[2px]" />
+            <div className="absolute inset-x-[12%] bottom-[2%] h-4 rounded-[100%] bg-[#00000033] blur-[3px]" />
             <PetMark
               speciesId={pet.speciesId as PetSpeciesId}
               stage={pet.stage}
@@ -252,8 +253,8 @@ export function GardenDiorama({
           </div>
           <div
             className={[
-              "absolute top-[8%] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-              bubbleLeft ? "right-[78%]" : "left-[78%]",
+              "absolute top-[12%] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+              bubbleLeft ? "right-[82%]" : "left-[82%]",
             ].join(" ")}
             style={{
               background: "rgba(255,255,255,0.92)",
