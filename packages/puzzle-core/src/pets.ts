@@ -231,14 +231,52 @@ export const XP_AWARD = {
   } as Record<Difficulty, number>,
   monthlySlot: 40,
   streak7: 75,
-  /** Base XP for first-time placement of a garden decoration. */
-  gardenPlaceBase: 6,
+  /** Base XP for the first purchase of a garden decoration. */
+  gardenBuyBase: 6,
 } as const;
 
-/** XP for first placing a decoration (scales with unlock level). */
-export function xpForGardenPlace(requiredLevel = 1): number {
+/** Account levels that unlock new decoration tiers. */
+export const DECORATION_UNLOCK_LEVELS = [
+  1, 5, 10, 20, 30, 40, 50, 60, 80, 100,
+] as const;
+
+export function nextDecorationUnlockLevel(
+  accountLevel: number,
+): number | null {
+  const level = Math.max(1, Math.floor(accountLevel));
+  for (const unlock of DECORATION_UNLOCK_LEVELS) {
+    if (unlock > level) return unlock;
+  }
+  return null;
+}
+
+/** Unlocked decorations always show; locked ones only at the next unlock tier. */
+export function isDecorationVisibleInShop(
+  requiredLevel: number,
+  accountLevel: number,
+): boolean {
+  const need = Math.max(1, Math.floor(requiredLevel));
+  const level = Math.max(0, Math.floor(accountLevel));
+  if (need <= level) return true;
+  const next = nextDecorationUnlockLevel(level);
+  return next != null && need === next;
+}
+
+/** XP for buying a decoration; drops sharply on repeat purchases. */
+export function xpForGardenBuy(
+  requiredLevel = 1,
+  ownedBefore = 0,
+): number {
   const level = Math.max(1, Math.floor(requiredLevel));
-  return XP_AWARD.gardenPlaceBase + level;
+  const base = XP_AWARD.gardenBuyBase + level;
+  const copies = Math.max(0, Math.floor(ownedBefore));
+  const factor = Math.pow(0.3, copies);
+  return Math.max(1, Math.round(base * factor));
+}
+
+/** @deprecated Prefer xpForGardenBuy — kept for older callers. */
+export function xpForGardenPlace(requiredLevel = 1): number {
+  return xpForGardenBuy(requiredLevel, 0);
 }
 
 export const HAPPINESS = {
@@ -460,22 +498,40 @@ export const DECORATION_ITEM_IDS = [
   "deco_starter_fern",
   "deco_clover",
   "deco_mushroom",
+  "deco_pebble_stack",
+  "deco_dandelion",
   "deco_berry_bush",
   "deco_toadstool",
+  "deco_wildflower",
+  "deco_acorn_pile",
   "deco_sunflower",
   "deco_birdbath",
-  "deco_log_bench",
-  "deco_crystal",
-  "deco_mini_fountain",
-  "deco_vine_arch",
+  "deco_watering_can",
+  "deco_lily",
   "deco_flower_daisy",
   "deco_flower_tulip",
   "deco_flower_lantern",
+  "deco_rose",
+  "deco_lavender",
+  "deco_log_bench",
+  "deco_crystal",
+  "deco_wind_chime",
+  "deco_stone_lantern",
   "deco_pond",
+  "deco_reeds",
+  "deco_stepping_stones",
+  "deco_mini_fountain",
+  "deco_vine_arch",
+  "deco_garden_statue",
+  "deco_trellis",
   "deco_tree_oak",
   "deco_tree_willow",
+  "deco_pine",
+  "deco_birch",
   "deco_seasonal_lantern",
+  "deco_festival_banner",
   "deco_legendary_obelisk",
+  "deco_mythic_gate",
 ] as const;
 
 export type DecorationItemId = (typeof DECORATION_ITEM_IDS)[number];

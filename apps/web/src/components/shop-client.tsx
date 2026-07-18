@@ -5,7 +5,10 @@ import Link from "next/link";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import { AvatarMark } from "@/components/avatar-mark";
 import { emitEquippedAvatar } from "@/components/header-avatar-chip";
-import type { ShopItem } from "@daily-puzzle/puzzle-core";
+import {
+  isDecorationVisibleInShop,
+  type ShopItem,
+} from "@daily-puzzle/puzzle-core";
 
 type InvRow = { itemId: string; qty: number };
 type CatalogItem = ShopItem & {
@@ -79,14 +82,18 @@ export function ShopClient({
         );
         return;
       }
+      const xpNote =
+        typeof data.xpEarned === "number" && data.xpEarned > 0
+          ? ` · +${data.xpEarned} XP`
+          : "";
       setMessage(
         itemId === "streak_restore"
           ? "Streak restored — play today to keep it."
           : data.alreadyOwned
             ? "Already owned."
             : data.spent === 0
-              ? "Claimed."
-              : "Added to inventory.",
+              ? `Claimed.${xpNote}`
+              : `Added to inventory.${xpNote}`,
       );
       if (typeof data.balance === "number") {
         setBalance(data.balance);
@@ -140,7 +147,18 @@ export function ShopClient({
 
   const avatars = catalog.filter((i) => i.slot === "avatar");
   const food = catalog.filter((i) => i.kind === "food");
-  const decorations = catalog.filter((i) => i.kind === "decoration" && !i.free);
+  const level = accountLevel ?? 1;
+  const decorations = catalog
+    .filter((i) => i.kind === "decoration" && !i.free)
+    .filter((i) =>
+      isDecorationVisibleInShop(i.requiredLevel ?? 1, level),
+    )
+    .sort((a, b) => {
+      const la = a.requiredLevel ?? 1;
+      const lb = b.requiredLevel ?? 1;
+      if (la !== lb) return la - lb;
+      return a.title.localeCompare(b.title);
+    });
   const other = catalog.filter(
     (i) => i.slot !== "avatar" && i.kind !== "food" && i.kind !== "decoration",
   );
@@ -306,6 +324,7 @@ export function ShopClient({
         <ul className="space-y-3">
           {decorations.map((item) => {
             const locked = Boolean(item.levelLocked);
+            const ownedQty = qty(item.id);
             return (
               <li
                 key={item.id}
@@ -314,14 +333,12 @@ export function ShopClient({
                 <div>
                   <div className="font-semibold text-paper">
                     {item.title}
-                    {locked ? (
-                      <span className="ml-2 text-xs font-normal text-fog">
-                        Lv {item.requiredLevel}+
-                      </span>
-                    ) : null}
-                    {!locked && qty(item.id) > 0 ? (
+                    <span className="ml-2 text-xs font-normal text-fog">
+                      Lv {item.requiredLevel ?? 1}+
+                    </span>
+                    {!locked && ownedQty > 0 ? (
                       <span className="ml-2 text-xs font-normal text-mint">
-                        Owned
+                        Owned ×{ownedQty}
                       </span>
                     ) : null}
                   </div>
@@ -329,19 +346,15 @@ export function ShopClient({
                 </div>
                 <button
                   type="button"
-                  disabled={
-                    !signedIn || locked || loading === item.id || qty(item.id) > 0
-                  }
+                  disabled={!signedIn || locked || loading === item.id}
                   onClick={() => void buy(item.id)}
                   className="shrink-0 rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
                 >
                   {locked
                     ? `Locked · lv ${item.requiredLevel}`
-                    : qty(item.id) > 0
-                      ? "Owned"
-                      : loading === item.id
-                        ? "…"
-                        : `${item.price} ◈`}
+                    : loading === item.id
+                      ? "…"
+                      : `${item.price} ◈`}
                 </button>
               </li>
             );

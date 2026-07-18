@@ -306,10 +306,10 @@ export async function buyShopItem(userId: string, itemId: string) {
     return restoreStreakWithCoins(userId);
   }
 
-  // Cosmetics / avatars: idempotent — already owned.
-  if (item.slot === "avatar" || item.kind === "cosmetic" || item.kind === "decoration") {
+  // Avatars / cosmetics: idempotent — already owned. Decorations may stack.
+  if (item.slot === "avatar" || item.kind === "cosmetic") {
     const owned = await getInventoryQty(userId, itemId);
-    if (owned > 0 && item.kind !== "food") {
+    if (owned > 0) {
       return {
         ok: true as const,
         itemId,
@@ -320,6 +320,9 @@ export async function buyShopItem(userId: string, itemId: string) {
       };
     }
   }
+
+  const ownedBefore =
+    item.kind === "decoration" ? await getInventoryQty(userId, itemId) : 0;
 
   let balance = await getCoinBalance(userId);
   let spent = 0;
@@ -344,13 +347,8 @@ export async function buyShopItem(userId: string, itemId: string) {
   }
 
   const qty = await addInventory(userId, itemId, 1);
-  // Cap cosmetics / decorations at 1
-  if (
-    (item.slot === "avatar" ||
-      item.kind === "cosmetic" ||
-      item.kind === "decoration") &&
-    qty > 1
-  ) {
+  // Cap cosmetics / avatars at 1 (decorations stack).
+  if ((item.slot === "avatar" || item.kind === "cosmetic") && qty > 1) {
     const db = getDb();
     const row = await db.query.coinInventory.findFirst({
       where: and(
@@ -366,12 +364,24 @@ export async function buyShopItem(userId: string, itemId: string) {
     }
   }
 
+  let xpEarned = 0;
+  if (item.kind === "decoration") {
+    const { grantGardenBuyXp } = await import("@/lib/pet-service");
+    xpEarned = await grantGardenBuyXp(
+      userId,
+      itemId,
+      item.requiredLevel ?? 1,
+      ownedBefore,
+    );
+  }
+
   return {
     ok: true as const,
     itemId,
-    qty: Math.min(qty, 1),
+    qty: item.kind === "decoration" ? qty : Math.min(qty, 1),
     balance,
     spent,
+    xpEarned,
   };
 }
 

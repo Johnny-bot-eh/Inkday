@@ -11,23 +11,53 @@ export function GardenDecorSprite({ itemId, tone, className }: Props) {
     case "deco_clover":
       return <CloverSprite className={className} />;
     case "deco_mushroom":
-      return <MushroomSprite className={className} />;
+    case "deco_toadstool":
+      return itemId === "deco_toadstool" ? (
+        <ToadstoolSprite className={className} />
+      ) : (
+        <MushroomSprite className={className} />
+      );
+    case "deco_pebble_stack":
+    case "deco_stepping_stones":
+      return <PebbleStackSprite className={className} wide={itemId === "deco_stepping_stones"} />;
+    case "deco_dandelion":
+      return <DandelionSprite className={className} />;
     case "deco_berry_bush":
       return <BerryBushSprite className={className} />;
-    case "deco_toadstool":
-      return <ToadstoolSprite className={className} />;
+    case "deco_wildflower":
+      return <WildflowerSprite className={className} />;
+    case "deco_acorn_pile":
+      return <AcornPileSprite className={className} />;
     case "deco_sunflower":
       return <SunflowerSprite className={className} />;
     case "deco_birdbath":
       return <BirdbathSprite className={className} />;
+    case "deco_watering_can":
+      return <WateringCanSprite className={className} />;
+    case "deco_lily":
+      return <LilySprite className={className} />;
+    case "deco_rose":
+      return <RoseSprite className={className} />;
+    case "deco_lavender":
+      return <LavenderSprite className={className} />;
     case "deco_log_bench":
       return <LogBenchSprite className={className} />;
     case "deco_crystal":
       return <CrystalSprite className={className} />;
+    case "deco_wind_chime":
+      return <WindChimeSprite className={className} />;
+    case "deco_stone_lantern":
+      return <StoneLanternSprite className={className} />;
+    case "deco_reeds":
+      return <ReedsSprite className={className} />;
     case "deco_mini_fountain":
       return <MiniFountainSprite className={className} />;
     case "deco_vine_arch":
       return <VineArchSprite className={className} />;
+    case "deco_garden_statue":
+      return <GardenStatueSprite className={className} />;
+    case "deco_trellis":
+      return <TrellisSprite className={className} />;
     case "deco_flower_daisy":
       return <DaisySprite className={className} />;
     case "deco_flower_tulip":
@@ -40,13 +70,242 @@ export function GardenDecorSprite({ itemId, tone, className }: Props) {
       return <OakSprite className={className} />;
     case "deco_tree_willow":
       return <WillowSprite className={className} />;
+    case "deco_pine":
+      return <PineSprite className={className} />;
+    case "deco_birch":
+      return <BirchSprite className={className} />;
     case "deco_seasonal_lantern":
       return <SeasonalLanternSprite className={className} />;
+    case "deco_festival_banner":
+      return <FestivalBannerSprite className={className} />;
     case "deco_legendary_obelisk":
       return <ObeliskSprite className={className} />;
+    case "deco_mythic_gate":
+      return <MythicGateSprite className={className} />;
     default:
       return <GenericPlantSprite className={className} tone={tone} />;
   }
+}
+
+function PebbleStackSprite({
+  className,
+  wide,
+}: {
+  className?: string;
+  wide?: boolean;
+}) {
+  return (
+    <svg viewBox={wide ? "0 0 96 40" : "0 0 64 48"} className={className} aria-hidden>
+      <ellipse cx={wide ? 48 : 32} cy={wide ? 34 : 42} rx={wide ? 36 : 14} ry="3" fill="#00000022" />
+      {wide ? (
+        <>
+          <ellipse cx="22" cy="28" rx="12" ry="6" fill="#7a7670" />
+          <ellipse cx="48" cy="26" rx="14" ry="7" fill="#8a8680" />
+          <ellipse cx="74" cy="28" rx="11" ry="6" fill="#6a6660" />
+        </>
+      ) : (
+        <>
+          <ellipse cx="32" cy="36" rx="14" ry="7" fill="#7a7670" />
+          <ellipse cx="26" cy="28" rx="9" ry="5" fill="#8a8680" />
+          <ellipse cx="38" cy="30" rx="8" ry="4.5" fill="#6a6660" />
+          <ellipse cx="32" cy="22" rx="7" ry="4" fill="#9a9690" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function DandelionSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 64" className={className} aria-hidden>
+      <ellipse cx="24" cy="58" rx="8" ry="2.5" fill="#00000022" />
+      <path d="M24 58 V28" stroke="#4a7a42" strokeWidth="2" />
+      <circle cx="24" cy="24" r="10" fill="#e8c84a" />
+      <circle cx="24" cy="24" r="5" fill="#c9a227" />
+    </svg>
+  );
+}
+
+function WildflowerSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden>
+      <ellipse cx="32" cy="58" rx="12" ry="3" fill="#00000022" />
+      <path d="M20 58 V36 M32 58 V30 M44 58 V38" stroke="#3d6b38" strokeWidth="2" />
+      <circle cx="20" cy="32" r="5" fill="#c45c8a" />
+      <circle cx="32" cy="26" r="5" fill="#7a8ad0" />
+      <circle cx="44" cy="34" r="5" fill="#e8b84a" />
+    </svg>
+  );
+}
+
+function AcornPileSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 56 48" className={className} aria-hidden>
+      <ellipse cx="28" cy="42" rx="16" ry="3" fill="#00000022" />
+      <ellipse cx="22" cy="32" rx="8" ry="10" fill="#8a5a30" />
+      <ellipse cx="22" cy="26" rx="8" ry="4" fill="#6a4020" />
+      <ellipse cx="34" cy="34" rx="7" ry="9" fill="#9a6a38" />
+      <ellipse cx="34" cy="28" rx="7" ry="3.5" fill="#6a4020" />
+    </svg>
+  );
+}
+
+function WateringCanSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 56" className={className} aria-hidden>
+      <ellipse cx="28" cy="50" rx="14" ry="3" fill="#00000022" />
+      <rect x="14" y="24" width="28" height="20" rx="4" fill="#5a8aaa" />
+      <path d="M42 30 H54 Q58 30 58 36 V40" fill="none" stroke="#5a8aaa" strokeWidth="4" />
+      <path d="M20 24 Q28 14 36 24" fill="none" stroke="#4a7088" strokeWidth="3" />
+      <ellipse cx="28" cy="24" rx="12" ry="4" fill="#6a9aba" />
+    </svg>
+  );
+}
+
+function LilySprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 56 72" className={className} aria-hidden>
+      <ellipse cx="28" cy="66" rx="10" ry="3" fill="#00000022" />
+      <path d="M28 66 V36" stroke="#3d6b38" strokeWidth="2.5" />
+      <path d="M28 48 Q18 44 16 52" fill="#4a8040" />
+      <ellipse cx="28" cy="28" rx="14" ry="10" fill="#f0e8f4" />
+      <ellipse cx="28" cy="28" rx="6" ry="4" fill="#e8c84a" />
+    </svg>
+  );
+}
+
+function RoseSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 72" className={className} aria-hidden>
+      <ellipse cx="24" cy="66" rx="9" ry="2.5" fill="#00000022" />
+      <path d="M24 66 V34" stroke="#3d6b38" strokeWidth="2.5" />
+      <circle cx="24" cy="28" r="12" fill="#b83a4a" />
+      <circle cx="24" cy="28" r="7" fill="#d45a68" />
+      <circle cx="24" cy="28" r="3" fill="#8a2030" />
+    </svg>
+  );
+}
+
+function LavenderSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 56 72" className={className} aria-hidden>
+      <ellipse cx="28" cy="66" rx="12" ry="3" fill="#00000022" />
+      <path d="M18 66 V30 M28 66 V26 M38 66 V32" stroke="#4a6b38" strokeWidth="2" />
+      <ellipse cx="18" cy="24" rx="4" ry="10" fill="#8a6aaa" />
+      <ellipse cx="28" cy="20" rx="4" ry="11" fill="#9a7aba" />
+      <ellipse cx="38" cy="26" rx="4" ry="10" fill="#8a6aaa" />
+    </svg>
+  );
+}
+
+function WindChimeSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 72" className={className} aria-hidden>
+      <path d="M24 8 V18" stroke="#5a4030" strokeWidth="2" />
+      <ellipse cx="24" cy="20" rx="14" ry="4" fill="#8a6a40" />
+      <path d="M14 22 V48 M24 22 V54 M34 22 V46" stroke="#c9a227" strokeWidth="2.5" />
+      <circle cx="14" cy="50" r="2" fill="#e8c84a" />
+      <circle cx="24" cy="56" r="2" fill="#e8c84a" />
+      <circle cx="34" cy="48" r="2" fill="#e8c84a" />
+    </svg>
+  );
+}
+
+function StoneLanternSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 72" className={className} aria-hidden>
+      <ellipse cx="24" cy="66" rx="12" ry="3" fill="#00000022" />
+      <rect x="16" y="48" width="16" height="16" rx="2" fill="#7a7670" />
+      <rect x="12" y="28" width="24" height="22" rx="3" fill="#8a8680" />
+      <rect x="18" y="32" width="12" height="12" rx="1" fill="#f0d878" opacity="0.85" />
+      <path d="M10 28 L24 16 L38 28 Z" fill="#6a6660" />
+    </svg>
+  );
+}
+
+function ReedsSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 72" className={className} aria-hidden>
+      <ellipse cx="32" cy="66" rx="14" ry="3" fill="#00000022" />
+      <path d="M18 66 Q16 30 20 18 M32 66 Q34 28 30 14 M46 66 Q48 32 44 20" fill="none" stroke="#5a7a48" strokeWidth="2.5" />
+      <ellipse cx="20" cy="16" rx="3" ry="6" fill="#6a8a50" />
+      <ellipse cx="30" cy="12" rx="3" ry="6" fill="#5a7a48" />
+      <ellipse cx="44" cy="18" rx="3" ry="6" fill="#6a8a50" />
+    </svg>
+  );
+}
+
+function GardenStatueSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 72" className={className} aria-hidden>
+      <ellipse cx="24" cy="66" rx="12" ry="3" fill="#00000022" />
+      <ellipse cx="24" cy="58" rx="14" ry="5" fill="#8a9098" />
+      <ellipse cx="24" cy="40" rx="10" ry="14" fill="#9aa0a8" />
+      <circle cx="24" cy="22" r="8" fill="#b0b6bc" />
+    </svg>
+  );
+}
+
+function TrellisSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 80" className={className} aria-hidden>
+      <path d="M12 74 V20 M52 74 V20" stroke="#6a4a30" strokeWidth="3" />
+      <path d="M12 28 H52 M12 40 H52 M12 52 H52" stroke="#8a6a48" strokeWidth="2" />
+      <ellipse cx="24" cy="30" rx="6" ry="4" fill="#6a8a50" />
+      <ellipse cx="40" cy="42" rx="6" ry="4" fill="#4a7a42" />
+      <ellipse cx="32" cy="54" rx="5" ry="3" fill="#c45c8a" />
+    </svg>
+  );
+}
+
+function PineSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 90" className={className} aria-hidden>
+      <ellipse cx="32" cy="84" rx="14" ry="3" fill="#00000022" />
+      <rect x="28" y="60" width="8" height="24" fill="#5a4030" />
+      <path d="M32 12 L48 40 H16 Z" fill="#2d4a28" />
+      <path d="M32 24 L52 52 H12 Z" fill="#3d5c2e" />
+      <path d="M32 36 L56 68 H8 Z" fill="#2f5535" />
+    </svg>
+  );
+}
+
+function BirchSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 90" className={className} aria-hidden>
+      <ellipse cx="32" cy="84" rx="12" ry="3" fill="#00000022" />
+      <rect x="28" y="40" width="8" height="44" fill="#e8e0d0" />
+      <rect x="30" y="48" width="2" height="6" fill="#5a4030" opacity="0.5" />
+      <rect x="30" y="62" width="2" height="5" fill="#5a4030" opacity="0.45" />
+      <ellipse cx="32" cy="28" rx="20" ry="16" fill="#8aaa68" />
+      <ellipse cx="22" cy="34" rx="10" ry="8" fill="#6a8a50" />
+    </svg>
+  );
+}
+
+function FestivalBannerSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 80 56" className={className} aria-hidden>
+      <path d="M8 10 H72" stroke="#5a4030" strokeWidth="3" />
+      <path d="M16 10 V40 L24 34 L32 40 V10" fill="#c45c6a" />
+      <path d="M40 10 V38 L48 32 L56 38 V10" fill="#e8b84a" />
+      <path d="M60 10 V36 L68 30 V10" fill="#5a8aaa" />
+    </svg>
+  );
+}
+
+function MythicGateSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 80" className={className} aria-hidden>
+      <ellipse cx="20" cy="74" rx="10" ry="3" fill="#00000022" />
+      <ellipse cx="76" cy="74" rx="10" ry="3" fill="#00000022" />
+      <rect x="12" y="28" width="10" height="46" fill="#6a5a9a" />
+      <rect x="74" y="28" width="10" height="46" fill="#6a5a9a" />
+      <path d="M12 28 Q48 4 84 28" fill="#8a7abc" />
+      <circle cx="48" cy="22" r="4" fill="#e8d8ff" />
+      <path d="M28 40 V68 M40 40 V68 M56 40 V68 M68 40 V68" stroke="#b0a0e0" strokeWidth="2" />
+    </svg>
+  );
 }
 
 function CloverSprite({ className }: { className?: string }) {

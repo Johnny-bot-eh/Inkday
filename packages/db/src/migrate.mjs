@@ -307,7 +307,7 @@ const statements = [
   layer TEXT NOT NULL DEFAULT 'middle',
   placed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
+  `CREATE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
   `CREATE INDEX IF NOT EXISTS garden_placement_user_idx ON garden_placement(user_id)`,
 ];
 
@@ -332,6 +332,9 @@ const indexRebuilds = [
   `DROP INDEX IF EXISTS play_once_per_day_idx`,
   `CREATE UNIQUE INDEX IF NOT EXISTS play_once_per_day_idx ON play_result(user_id, puzzle_type, difficulty, date_key, season_id)`,
   `DROP INDEX IF EXISTS garden_placement_cell_idx`,
+  // Allow multiple placements of the same decoration item.
+  `DROP INDEX IF EXISTS garden_placement_item_idx`,
+  `CREATE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
 ];
 
 function createDbClient() {
@@ -430,7 +433,7 @@ try {
       `ALTER TABLE garden_placement_diorama RENAME TO garden_placement`,
     );
     await client.execute(
-      `CREATE UNIQUE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
+      `CREATE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
     );
     await client.execute(
       `CREATE INDEX IF NOT EXISTS garden_placement_user_idx ON garden_placement(user_id)`,

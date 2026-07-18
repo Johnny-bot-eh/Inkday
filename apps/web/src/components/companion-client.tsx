@@ -54,7 +54,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
               : data.error === "none"
                 ? "No food left — buy some in the Shop."
                 : data.error === "already_placed"
-                  ? "That decoration is already in the scene."
+                  ? "All copies of that decoration are already placed."
                   : (data.error ?? "Something went wrong"),
         );
         return null;
@@ -213,9 +213,6 @@ export function CompanionClient({ signedIn, initial }: Props) {
             void post({ action: "place", itemId, x, y }).then((data) => {
               if (data?.ok) {
                 setSelectedDecor(null);
-                if (typeof data.xpEarned === "number" && data.xpEarned > 0) {
-                  setMessage(`+${data.xpEarned} XP`);
-                }
               }
             });
           }}
@@ -249,6 +246,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
                 ].join(" ")}
               >
                 {item.title}
+                {item.qty > 1 ? ` ×${item.qty}` : ""}
               </button>
             ))}
           </div>
