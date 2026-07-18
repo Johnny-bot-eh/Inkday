@@ -3,7 +3,7 @@ import {
   GARDEN_SCENE,
   HAPPINESS,
   PET_SPECIES,
-  STARTER_GARDEN_POSES,
+  STARTER_DECORATION_IDS,
   STARTER_SPECIES,
   clampGardenCoord,
   clampHappiness,
@@ -17,6 +17,7 @@ import {
   happinessState,
   isDecorationItemId,
   isFoodItemId,
+  isHabitatDecorItemId,
   isValidGardenLayer,
   levelFromXp,
   pickPersonality,
@@ -325,7 +326,7 @@ async function repairMisinitializedStarterPet(
       ),
     );
 
-  await ensureStarterGarden(userId);
+  await clearHabitatInventoryNoise(userId);
 
   return (
     (await db.query.userPet.findFirst({
@@ -334,50 +335,30 @@ async function repairMisinitializedStarterPet(
   );
 }
 
-async function ensureStarterGarden(userId: string) {
+/** Habitat scenery is baked into the wallpaper — strip legacy starter placements. */
+async function clearHabitatInventoryNoise(userId: string) {
   const db = getDb();
-
   try {
-    for (const pose of STARTER_GARDEN_POSES) {
-      const itemId = pose.itemId;
-      const existingInv = await db.query.coinInventory.findFirst({
-        where: and(
-          eq(coinInventory.userId, userId),
-          eq(coinInventory.itemId, itemId),
-        ),
-      });
-      if (!existingInv) {
-        await db.insert(coinInventory).values({
-          id: randomUUID(),
-          userId,
-          itemId,
-          qty: 1,
-        });
-      }
-
-      const existingPlace = await db.query.gardenPlacement.findFirst({
-        where: and(
-          eq(gardenPlacement.userId, userId),
-          eq(gardenPlacement.itemId, itemId),
-        ),
-      });
-      if (existingPlace) continue;
-
-      try {
-        await db.insert(gardenPlacement).values({
-          id: randomUUID(),
-          userId,
-          itemId,
-          x: Math.round(pose.x),
-          y: Math.round(pose.y),
-          layer: pose.layer,
-        });
-      } catch {
-        // Unique conflict or unmigrated schema — skip.
-      }
+    for (const itemId of STARTER_DECORATION_IDS) {
+      await db
+        .delete(gardenPlacement)
+        .where(
+          and(
+            eq(gardenPlacement.userId, userId),
+            eq(gardenPlacement.itemId, itemId),
+          ),
+        );
+      await db
+        .delete(coinInventory)
+        .where(
+          and(
+            eq(coinInventory.userId, userId),
+            eq(coinInventory.itemId, itemId),
+          ),
+        );
     }
   } catch (err) {
-    console.error("ensureStarterGarden failed — run db migrate", err);
+    console.error("clearHabitatInventoryNoise failed", err);
   }
 }
 
@@ -472,6 +453,8 @@ export async function getCompanionSnapshot(
     });
   }
 
+  await clearHabitatInventoryNoise(userId);
+
   const inventory = await listCoinInventory(userId);
   const foodInventory = inventory
     .filter((row) => isFoodItemId(row.itemId))
@@ -482,7 +465,12 @@ export async function getCompanionSnapshot(
     }));
 
   const ownedDecorIds = inventory
-    .filter((row) => isDecorationItemId(row.itemId) && row.qty > 0)
+    .filter(
+      (row) =>
+        isDecorationItemId(row.itemId) &&
+        !isHabitatDecorItemId(row.itemId) &&
+        row.qty > 0,
+    )
     .map((row) => row.itemId);
 
   let placements: Array<{
@@ -500,6 +488,8 @@ export async function getCompanionSnapshot(
     console.error("garden_placement query failed — run db migrate", err);
     placements = [];
   }
+
+  placements = placements.filter((p) => !isHabitatDecorItemId(p.itemId));
 
   const placedIds = new Set(placements.map((p) => p.itemId));
   const petLevel = petView?.level ?? 1;
@@ -620,7 +610,7 @@ export async function claimStarterEgg(
     .where(eq(userProgression.userId, userId));
 
   await backfillProgressionIfNeeded(userId);
-  await ensureStarterGarden(userId);
+  await clearHabitatInventoryNoise(userId);
 
   return { ok: true, snapshot: await getCompanionSnapshot(userId) };
 }
@@ -839,7 +829,7 @@ export async function placeGardenItem(
   | { ok: true; snapshot: CompanionSnapshot }
   | { ok: false; reason: string }
 > {
-  if (!isDecorationItemId(itemId)) {
+  if (!isDecorationItemId(itemId) || isHabitatDecorItemId(itemId)) {
     return { ok: false, reason: "invalid_item" };
   }
   const db = getDb();

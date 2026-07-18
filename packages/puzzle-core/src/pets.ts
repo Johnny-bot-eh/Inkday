@@ -460,12 +460,19 @@ export const DECORATION_ITEM_IDS = [
 
 export type DecorationItemId = (typeof DECORATION_ITEM_IDS)[number];
 
-/** Free starter plot pieces granted with the first egg. */
+/**
+ * Legacy IDs for scenery that now lives in the habitat wallpaper —
+ * not placeable inventory decorations.
+ */
 export const STARTER_DECORATION_IDS = [
   "deco_starter_moss",
   "deco_starter_pebble",
   "deco_starter_fern",
 ] as const;
+
+export function isHabitatDecorItemId(id: string): boolean {
+  return (STARTER_DECORATION_IDS as readonly string[]).includes(id);
+}
 
 export function isDecorationItemId(id: string): id is DecorationItemId {
   return (DECORATION_ITEM_IDS as readonly string[]).includes(id);
