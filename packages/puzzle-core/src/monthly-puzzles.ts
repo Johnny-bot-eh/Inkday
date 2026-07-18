@@ -196,7 +196,7 @@ const TRIVIA: Array<{
   },
 ];
 
-const MATHS: Array<{ prompt: string; answer: string; explanation: string }> = [
+const MATHS_EASY: Array<{ prompt: string; answer: string; explanation: string }> = [
   {
     prompt: "What is 17 + 28?",
     answer: "45",
@@ -208,6 +208,29 @@ const MATHS: Array<{ prompt: string; answer: string; explanation: string }> = [
     explanation: "Nine sevens: 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 = 63 (or 9 × 7 from the times table).",
   },
   {
+    prompt: "What is 100 − 37?",
+    answer: "63",
+    explanation: "100 − 30 = 70, then 70 − 7 = 63.",
+  },
+  {
+    prompt: "Half of 86 is?",
+    answer: "43",
+    explanation: "Half means ÷ 2: 86 ÷ 2 = 43.",
+  },
+  {
+    prompt: "If a train leaves at 3 and arrives 2 hours later, what time is it?",
+    answer: "5",
+    explanation: "Start at 3 o’clock and add 2 hours: 3 + 2 = 5.",
+  },
+  {
+    prompt: "Find the next number: 3, 6, 9, 12, ?",
+    answer: "15",
+    explanation: "Each term increases by 3 (multiples of 3): 3, 6, 9, 12, 15.",
+  },
+];
+
+const MATHS_MEDIUM: Array<{ prompt: string; answer: string; explanation: string }> = [
+  {
     prompt: "What is 144 ÷ 12?",
     answer: "12",
     explanation: "12 × 12 = 144, so 144 ÷ 12 = 12.",
@@ -218,35 +241,81 @@ const MATHS: Array<{ prompt: string; answer: string; explanation: string }> = [
     explanation: "Each term doubles the one before it (×2): 2→4→8→16→32.",
   },
   {
-    prompt: "Find the next number: 3, 6, 9, 12, ?",
-    answer: "15",
-    explanation: "Each term increases by 3 (multiples of 3): 3, 6, 9, 12, 15.",
+    prompt: "What is 15 × 12?",
+    answer: "180",
+    explanation: "15 × 10 = 150 and 15 × 2 = 30; 150 + 30 = 180.",
   },
   {
-    prompt: "What is 100 − 37?",
-    answer: "63",
-    explanation: "100 − 30 = 70, then 70 − 7 = 63.",
+    prompt: "A number times itself is 121. What is the number?",
+    answer: "11",
+    explanation: "11 × 11 = 121, so the square root of 121 is 11.",
   },
   {
-    prompt: "If a train leaves at 3 and arrives 2 hours later, what time is it?",
-    answer: "5",
-    explanation: "Start at 3 o’clock and add 2 hours: 3 + 2 = 5.",
+    prompt: "Find the next number: 5, 10, 20, 40, ?",
+    answer: "80",
+    explanation: "Each term doubles: 5→10→20→40→80.",
   },
   {
-    prompt: "Half of 86 is?",
-    answer: "43",
-    explanation: "Half means ÷ 2: 86 ÷ 2 = 43.",
+    prompt: "What is 7² − 3²?",
+    answer: "40",
+    explanation: "7² = 49 and 3² = 9; 49 − 9 = 40 (or (7−3)(7+3) = 4×10 = 40).",
   },
 ];
 
+const MATHS_HARD: Array<{ prompt: string; answer: string; explanation: string }> = [
+  {
+    prompt: "Find the next number: 2, 3, 5, 8, 12, ?",
+    answer: "17",
+    explanation: "Gaps grow by +1 each time (+1, +2, +3, +4, +5): 12 + 5 = 17.",
+  },
+  {
+    prompt: "What is 13 × 17?",
+    answer: "221",
+    explanation: "13 × 10 = 130, 13 × 7 = 91; 130 + 91 = 221.",
+  },
+  {
+    prompt: "If 2^x = 64, what is x?",
+    answer: "6",
+    explanation: "2⁶ = 64, so x = 6.",
+  },
+  {
+    prompt: "Find the next number: 1, 4, 9, 16, 25, ?",
+    answer: "36",
+    explanation: "Perfect squares: 1², 2², 3², 4², 5², then 6² = 36.",
+  },
+  {
+    prompt: "A bag has 3 red and 5 blue marbles. Odds of red then blue without replacement?",
+    answer: "15/56",
+    explanation: "P(red)=3/8; then P(blue)=5/7. Multiply: (3/8)×(5/7)=15/56.",
+  },
+  {
+    prompt: "Find x: 3x + 7 = 2x + 19",
+    answer: "12",
+    explanation: "Subtract 2x: x + 7 = 19. Subtract 7: x = 12.",
+  },
+];
+
+const MATHS_BY_DIFFICULTY: Record<
+  Difficulty,
+  Array<{ prompt: string; answer: string; explanation: string }>
+> = {
+  easy: MATHS_EASY,
+  medium: MATHS_MEDIUM,
+  hard: MATHS_HARD,
+  obscure: MATHS_HARD,
+  impossible: MATHS_HARD,
+};
+
 const MEMORY_SYMBOLS = ["●", "■", "▲", "◆", "★", "○", "□", "△"];
 
-const PATTERN_SETS: Array<{
+type PatternPack = {
   shown: string[];
   options: string[];
   answerIndex: number;
   explanation: string;
-}> = [
+};
+
+const PATTERNS_EASY: PatternPack[] = [
   {
     shown: ["A", "B", "C"],
     options: ["D", "E", "A", "Z"],
@@ -258,22 +327,7 @@ const PATTERN_SETS: Array<{
     shown: ["2", "4", "6"],
     options: ["7", "8", "9", "10"],
     answerIndex: 1,
-    explanation:
-      "Each number increases by 2 (even numbers: 2, 4, 6, 8).",
-  },
-  {
-    shown: ["■", "■", "○"],
-    options: ["■", "○", "▲", "★"],
-    answerIndex: 1,
-    explanation:
-      "The pattern alternates pairs of filled squares with a circle: ■ ■ ○ ■ ■ ○… so the next symbol is ○.",
-  },
-  {
-    shown: ["1", "1", "2", "3"],
-    options: ["4", "5", "3", "8"],
-    answerIndex: 1,
-    explanation:
-      "This is the Fibonacci sequence: each number is the sum of the two before it (1+1=2, 1+2=3, 2+3=5).",
+    explanation: "Each number increases by 2 (even numbers: 2, 4, 6, 8).",
   },
   {
     shown: ["red", "blue", "red"],
@@ -290,6 +344,92 @@ const PATTERN_SETS: Array<{
       "The arrows turn 90° clockwise each step (up → right → down → left).",
   },
 ];
+
+const PATTERNS_MEDIUM: PatternPack[] = [
+  {
+    shown: ["■", "■", "○"],
+    options: ["■", "○", "▲", "★"],
+    answerIndex: 1,
+    explanation:
+      "The pattern alternates pairs of filled squares with a circle: ■ ■ ○ ■ ■ ○… so the next symbol is ○.",
+  },
+  {
+    shown: ["1", "1", "2", "3"],
+    options: ["4", "5", "3", "8"],
+    answerIndex: 1,
+    explanation:
+      "This is the Fibonacci sequence: each number is the sum of the two before it (1+1=2, 1+2=3, 2+3=5).",
+  },
+  {
+    shown: ["2", "4", "8", "16"],
+    options: ["24", "30", "32", "18"],
+    answerIndex: 2,
+    explanation: "Each term doubles the previous one: 16 × 2 = 32.",
+  },
+  {
+    shown: ["Z", "Y", "X"],
+    options: ["W", "V", "A", "U"],
+    answerIndex: 0,
+    explanation: "Letters count backward through the alphabet: Z → Y → X → W.",
+  },
+  {
+    shown: ["△", "□", "○", "△"],
+    options: ["□", "○", "△", "★"],
+    answerIndex: 0,
+    explanation: "The shapes cycle △ □ ○ △ □… so after △ comes □.",
+  },
+];
+
+const PATTERNS_HARD: PatternPack[] = [
+  {
+    shown: ["2", "3", "5", "8", "12"],
+    options: ["15", "16", "17", "18"],
+    answerIndex: 2,
+    explanation:
+      "The gaps increase by 1 each time (+1, +2, +3, +4, then +5): 12 + 5 = 17.",
+  },
+  {
+    shown: ["A1", "C2", "E3", "G4"],
+    options: ["H5", "I5", "I6", "G5"],
+    answerIndex: 1,
+    explanation:
+      "Letters skip one each time (A,C,E,G → I) while numbers rise by 1 (1→2→3→4→5), so I5.",
+  },
+  {
+    shown: ["3", "9", "27", "81"],
+    options: ["162", "243", "324", "108"],
+    answerIndex: 1,
+    explanation: "Each term is multiplied by 3: 81 × 3 = 243.",
+  },
+  {
+    shown: ["1", "4", "9", "16", "25"],
+    options: ["30", "35", "36", "49"],
+    answerIndex: 2,
+    explanation: "Perfect squares: 1², 2², 3², 4², 5² → next is 6² = 36.",
+  },
+  {
+    shown: ["AZ", "BY", "CX", "DW"],
+    options: ["EV", "EU", "EX", "FV"],
+    answerIndex: 0,
+    explanation:
+      "First letters run A→B→C→D→E while second letters run backward Z→Y→X→W→V, so EV.",
+  },
+  {
+    shown: ["11", "12", "14", "18", "26"],
+    options: ["40", "42", "38", "34"],
+    answerIndex: 1,
+    explanation:
+      "Add powers of 2: +1, +2, +4, +8, then +16 → 26 + 16 = 42.",
+  },
+];
+
+const PATTERNS_BY_DIFFICULTY: Record<Difficulty, PatternPack[]> = {
+  easy: PATTERNS_EASY,
+  medium: PATTERNS_MEDIUM,
+  hard: PATTERNS_HARD,
+  obscure: PATTERNS_HARD,
+  impossible: PATTERNS_HARD,
+};
 
 const DEDUCTIONS: Array<{
   briefing: string;
@@ -412,7 +552,8 @@ export function getMonthlyOnlyPuzzle(
       };
     }
     case "mathlogic": {
-      const pack = MATHS[pickIndex(seed, MATHS.length)]!;
+      const pool = MATHS_BY_DIFFICULTY[difficulty];
+      const pack = pool[pickIndex(seed, pool.length)]!;
       return {
         kind: "mathlogic",
         prompt: pack.prompt,
@@ -435,7 +576,8 @@ export function getMonthlyOnlyPuzzle(
       return { kind: "memory", sequence, flashMs };
     }
     case "pattern": {
-      const pack = PATTERN_SETS[pickIndex(seed, PATTERN_SETS.length)]!;
+      const pool = PATTERNS_BY_DIFFICULTY[difficulty];
+      const pack = pool[pickIndex(seed, pool.length)]!;
       return {
         kind: "pattern",
         shown: [...pack.shown],
