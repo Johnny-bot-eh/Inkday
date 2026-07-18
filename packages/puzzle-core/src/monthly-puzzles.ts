@@ -571,9 +571,6 @@ const MATHS_EASY: Array<{ prompt: string; answer: string; explanation: string }>
     answer: "15",
     explanation: "Each term increases by 3 (multiples of 3): 3, 6, 9, 12, 15.",
   },
-];
-
-const MATHS_MEDIUM: Array<{ prompt: string; answer: string; explanation: string }> = [
   {
     prompt: "What is 144 ÷ 12?",
     answer: "12",
@@ -584,25 +581,58 @@ const MATHS_MEDIUM: Array<{ prompt: string; answer: string; explanation: string 
     answer: "32",
     explanation: "Each term doubles the one before it (×2): 2→4→8→16→32.",
   },
+];
+
+const MATHS_MEDIUM: Array<{ prompt: string; answer: string; explanation: string }> = [
   {
     prompt: "What is 15 × 12?",
     answer: "180",
     explanation: "15 × 10 = 150 and 15 × 2 = 30; 150 + 30 = 180.",
   },
   {
-    prompt: "A number times itself is 121. What is the number?",
-    answer: "11",
-    explanation: "11 × 11 = 121, so the square root of 121 is 11.",
-  },
-  {
-    prompt: "Find the next number: 5, 10, 20, 40, ?",
-    answer: "80",
-    explanation: "Each term doubles: 5→10→20→40→80.",
-  },
-  {
     prompt: "What is 7² − 3²?",
     answer: "40",
     explanation: "7² = 49 and 3² = 9; 49 − 9 = 40 (or (7−3)(7+3) = 4×10 = 40).",
+  },
+  {
+    prompt: "A shirt costs $40. It is 25% off. What is the sale price?",
+    answer: "30",
+    explanation: "25% of 40 is 10; 40 − 10 = 30.",
+  },
+  {
+    prompt: "Find the next number: 1, 2, 4, 7, 11, ?",
+    answer: "16",
+    explanation: "Gaps increase by 1 each time (+1, +2, +3, +4, then +5): 11 + 5 = 16.",
+  },
+  {
+    prompt: "What is the least common multiple of 6 and 8?",
+    answer: "24",
+    explanation: "Multiples of 8: 8, 16, 24… Multiples of 6: 6, 12, 18, 24… First shared value is 24.",
+  },
+  {
+    prompt: "If 3x = 51, what is x?",
+    answer: "17",
+    explanation: "Divide both sides by 3: x = 51 ÷ 3 = 17.",
+  },
+  {
+    prompt: "A recipe for 4 needs 6 cups of flour. How many cups for 10 people?",
+    answer: "15",
+    explanation: "6 cups / 4 people = 1.5 cups each; 1.5 × 10 = 15.",
+  },
+  {
+    prompt: "What is 2³ × 5?",
+    answer: "40",
+    explanation: "2³ = 8; 8 × 5 = 40.",
+  },
+  {
+    prompt: "Find the next number: 81, 27, 9, 3, ?",
+    answer: "1",
+    explanation: "Each term is divided by 3: 81÷3=27, 27÷3=9, 9÷3=3, 3÷3=1.",
+  },
+  {
+    prompt: "The average of 8, 12, and x is 10. What is x?",
+    answer: "10",
+    explanation: "(8 + 12 + x) ÷ 3 = 10 → 20 + x = 30 → x = 10.",
   },
 ];
 
@@ -623,11 +653,6 @@ const MATHS_HARD: Array<{ prompt: string; answer: string; explanation: string }>
     explanation: "2⁶ = 64, so x = 6.",
   },
   {
-    prompt: "Find the next number: 1, 4, 9, 16, 25, ?",
-    answer: "36",
-    explanation: "Perfect squares: 1², 2², 3², 4², 5², then 6² = 36.",
-  },
-  {
     prompt: "A bag has 3 red and 5 blue marbles. Odds of red then blue without replacement?",
     answer: "15/56",
     explanation: "P(red)=3/8; then P(blue)=5/7. Multiply: (3/8)×(5/7)=15/56.",
@@ -636,6 +661,31 @@ const MATHS_HARD: Array<{ prompt: string; answer: string; explanation: string }>
     prompt: "Find x: 3x + 7 = 2x + 19",
     answer: "12",
     explanation: "Subtract 2x: x + 7 = 19. Subtract 7: x = 12.",
+  },
+  {
+    prompt: "What is 20% of 20% of 500?",
+    answer: "20",
+    explanation: "20% of 500 = 100; 20% of 100 = 20.",
+  },
+  {
+    prompt: "Find the next number: 2, 6, 12, 20, 30, ?",
+    answer: "42",
+    explanation: "Add consecutive even numbers (+4, +6, +8, +10, then +12): 30 + 12 = 42. (Or n(n+1): 6×7=42.)",
+  },
+  {
+    prompt: "A number is doubled, then 9 is added, giving 45. What was the number?",
+    answer: "18",
+    explanation: "Undo: 45 − 9 = 36; half of 36 is 18.",
+  },
+  {
+    prompt: "How many trailing zeros does 25! have?",
+    answer: "6",
+    explanation: "Count factors of 5: ⌊25/5⌋ + ⌊25/25⌋ = 5 + 1 = 6.",
+  },
+  {
+    prompt: "Solve for x: x/4 + 5 = 17",
+    answer: "48",
+    explanation: "Subtract 5: x/4 = 12. Multiply by 4: x = 48.",
   },
 ];
 
