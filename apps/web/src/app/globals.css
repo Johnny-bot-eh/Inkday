@@ -234,10 +234,10 @@ select {
 @keyframes garden-pet-idle {
   0%,
   100% {
-    transform: translate(-50%, -92%) translateY(0);
+    transform: translate(-50%, -88%) translateY(0);
   }
   50% {
-    transform: translate(-50%, -92%) translateY(-2%);
+    transform: translate(-50%, -88%) translateY(-1.5%);
   }
 }
 

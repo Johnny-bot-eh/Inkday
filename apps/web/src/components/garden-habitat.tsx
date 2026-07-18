@@ -19,8 +19,6 @@ export function GardenHabitat({ night }: Props) {
   const moss = night ? "#243820" : "#4a7340";
   const grass = night ? "#1e3020" : "#5f8a48";
   const stone = night ? "#3a3a36" : "#7a7670";
-  const nest = night ? "#4a3828" : "#8a6a40";
-  const nestDark = night ? "#2e2418" : "#5c4428";
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -182,27 +180,6 @@ export function GardenHabitat({ night }: Props) {
         <ellipse cx="300" cy="108" rx="14" ry="7" fill={stone} opacity="0.75" />
         <ellipse cx="316" cy="112" rx="9" ry="5" fill={stone} opacity="0.6" />
         <ellipse cx="90" cy="106" rx="10" ry="5" fill={stone} opacity="0.55" />
-
-        {/* Nest / moss bed under companion */}
-        <ellipse cx="208" cy="102" rx="42" ry="14" fill={nestDark} opacity="0.55" />
-        <ellipse cx="208" cy="100" rx="36" ry="11" fill={nest} opacity="0.85" />
-        <ellipse cx="208" cy="98" rx="28" ry="8" fill={moss} opacity="0.75" />
-        <path
-          d="M176 96 Q182 88 190 94 Q198 86 208 92 Q218 86 226 94 Q234 88 240 96"
-          fill="none"
-          stroke={nestDark}
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          opacity="0.7"
-        />
-        <path
-          d="M180 100 Q188 94 196 100 Q208 92 220 100 Q228 94 236 100"
-          fill="none"
-          stroke={nest}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          opacity="0.8"
-        />
       </svg>
 
       {/* Foreground fern fronds */}

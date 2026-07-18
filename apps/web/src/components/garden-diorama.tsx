@@ -9,6 +9,7 @@ import {
 } from "react";
 import { GardenDecorSprite } from "@/components/garden-decor-sprite";
 import { GardenHabitat } from "@/components/garden-habitat";
+import { GardenNest, GardenNestRim } from "@/components/garden-nest";
 import { PetMark } from "@/components/pet-mark";
 import type {
   CompanionGardenPlacement,
@@ -230,35 +231,43 @@ export function GardenDiorama({
           );
         })}
 
-        {/* Companion resting in nest + dialogue beside pet */}
+        {/* One nest · one companion (Plus may unlock extra nests later) */}
         <div
           className="garden-pet-idle pointer-events-none absolute"
           style={{
             left: `${garden.pet.x}%`,
             top: `${garden.pet.y}%`,
             zIndex: layerZ(garden.pet.layer) + Math.round(garden.pet.y) + 1,
-            width: "min(24%, 140px)",
-            transform: "translate(-50%, -92%)",
+            width: "min(30%, 170px)",
+            transform: "translate(-50%, -88%)",
           }}
         >
-          <div className="relative mx-auto flex w-full justify-center [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full">
-            <div className="absolute inset-x-[12%] bottom-[2%] h-4 rounded-[100%] bg-[#00000033] blur-[3px]" />
-            <PetMark
-              speciesId={pet.speciesId as PetSpeciesId}
-              stage={pet.stage}
-              colors={pet.colors}
-              happinessState={pet.happinessState}
-              size={120}
+          <div className="relative mx-auto w-full">
+            <GardenNest
+              night={night}
+              className="absolute inset-x-[-6%] bottom-0 z-[1] w-[112%] drop-shadow-md"
+            />
+            <div className="relative z-[2] mx-auto flex w-[72%] justify-center pb-[18%] [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full">
+              <PetMark
+                speciesId={pet.speciesId as PetSpeciesId}
+                stage={pet.stage}
+                colors={pet.colors}
+                happinessState={pet.happinessState}
+                size={120}
+              />
+            </div>
+            <GardenNestRim
+              night={night}
+              className="absolute inset-x-[-2%] bottom-[2%] z-[3] w-[104%]"
             />
           </div>
           <div
             className={[
-              "absolute top-[12%] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-              bubbleLeft ? "right-[82%]" : "left-[82%]",
+              "absolute top-[8%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+              bubbleLeft ? "right-[88%]" : "left-[88%]",
             ].join(" ")}
             style={{
               background: "rgba(255,255,255,0.92)",
-              zIndex: 5,
             }}
           >
             {pet.dialogue}

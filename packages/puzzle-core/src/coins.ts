@@ -299,7 +299,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: "food_cookie",
     title: "Cookie",
-    description: "A warm treat. +18 happiness.",
+    description: "A warm treat. +24 happiness.",
     kind: "food",
     price: 10,
     shopCategory: "food",
@@ -308,9 +308,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: "food_cake",
     title: "Cake",
-    description: "Celebration slice. +30 happiness.",
+    description: "Celebration slice. +55 happiness.",
     kind: "food",
-    price: 25,
+    price: 20,
     shopCategory: "food",
     requiredLevel: 1,
   },
