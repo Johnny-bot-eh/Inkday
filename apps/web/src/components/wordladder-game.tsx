@@ -375,9 +375,28 @@ export function WordLadderGame({
               setCoinHint("No further steps — you’re at the end.");
               return;
             }
-            setCurrent(nextStep.word);
+            const prev = chain[chain.length - 1]!;
+            const next = nextStep.word;
+            let changeAt = 0;
+            for (let i = 0; i < prev.length; i++) {
+              if (prev[i] !== next[i]) {
+                changeAt = i;
+                break;
+              }
+            }
+            const ordinals = [
+              "first",
+              "second",
+              "third",
+              "fourth",
+              "fifth",
+              "sixth",
+              "seventh",
+            ];
+            const ordinal =
+              ordinals[changeAt] ?? `letter ${changeAt + 1}`;
             setCoinHint(
-              `Filled the next word: ${nextStep.word.toUpperCase()}.`,
+              `Extra hint: change the ${ordinal} letter. The next word starts with “${next[0]!.toUpperCase()}”.`,
             );
           }}
           onExtraAttempt={() => setBonusSteps((n) => n + 1)}
