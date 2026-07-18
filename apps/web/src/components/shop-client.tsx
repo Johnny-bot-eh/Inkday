@@ -8,6 +8,11 @@ import { emitEquippedAvatar } from "@/components/header-avatar-chip";
 import type { ShopItem } from "@daily-puzzle/puzzle-core";
 
 type InvRow = { itemId: string; qty: number };
+type CatalogItem = ShopItem & {
+  available?: boolean;
+  levelLocked?: boolean;
+  requiredLevel?: number;
+};
 
 export function ShopClient({
   signedIn,
@@ -16,11 +21,12 @@ export function ShopClient({
   signedIn: boolean;
   initialBalance: number | null;
 }) {
-  const [catalog, setCatalog] = useState<ShopItem[]>([]);
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [balance, setBalance] = useState(initialBalance);
   const [inventory, setInventory] = useState<InvRow[]>([]);
   const [ownedAvatarIds, setOwnedAvatarIds] = useState<string[]>([]);
   const [equippedAvatarId, setEquippedAvatarId] = useState<string | null>(null);
+  const [accountLevel, setAccountLevel] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -33,6 +39,9 @@ export function ShopClient({
     setInventory(data.inventory ?? []);
     setOwnedAvatarIds(data.ownedAvatarIds ?? []);
     setEquippedAvatarId(data.equippedAvatarId ?? null);
+    setAccountLevel(
+      typeof data.accountLevel === "number" ? data.accountLevel : null,
+    );
     if (typeof data.balance === "number") emitCoinBalance(data.balance);
   }
 
@@ -64,7 +73,9 @@ export function ShopClient({
                 ? "Not available yet."
                 : data.error === "plus_required"
                   ? "Inkday Plus required."
-                  : data.error ?? "Could not buy",
+                  : data.error === "level_locked"
+                    ? "Account level too low for this item."
+                    : data.error ?? "Could not buy",
         );
         return;
       }
@@ -128,7 +139,11 @@ export function ShopClient({
     inventory.find((i) => i.itemId === id)?.qty ?? 0;
 
   const avatars = catalog.filter((i) => i.slot === "avatar");
-  const other = catalog.filter((i) => i.slot !== "avatar");
+  const food = catalog.filter((i) => i.kind === "food");
+  const decorations = catalog.filter((i) => i.kind === "decoration");
+  const other = catalog.filter(
+    (i) => i.slot !== "avatar" && i.kind !== "food" && i.kind !== "decoration",
+  );
 
   function avatarOwned(item: ShopItem) {
     return Boolean(item.free) || ownedAvatarIds.includes(item.id) || qty(item.id) > 0;
@@ -149,8 +164,8 @@ export function ShopClient({
           Ink Coins
         </h1>
         <p className="mt-2 text-fog">
-          Earn coins from puzzles, streaks, and daily login. Spend on hints,
-          portraits, skips, and streak restores.
+          Earn coins from puzzles, streaks, and daily login. Spend on food,
+          decorations, hints, and portraits.
           {signedIn && balance != null ? (
             <>
               {" "}
@@ -161,6 +176,13 @@ export function ShopClient({
               </span>
             </>
           ) : null}
+          {signedIn && accountLevel != null ? (
+            <>
+              {" "}
+              · Account lv{" "}
+              <span className="font-semibold text-ember">{accountLevel}</span>
+            </>
+          ) : null}
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
           <Link href="/coins" className="text-ember hover:underline">
@@ -169,11 +191,11 @@ export function ShopClient({
           <Link href="/inventory" className="text-ember hover:underline">
             Inventory →
           </Link>
+          <Link href="/companion" className="text-ember hover:underline">
+            Garden →
+          </Link>
           <Link href="/profile" className="text-ember hover:underline">
             Change portrait →
-          </Link>
-          <Link href="/companion" className="text-fog hover:text-paper">
-            Companions (soon)
           </Link>
         </div>
       </div>
@@ -232,6 +254,97 @@ export function ShopClient({
                   className="shrink-0 rounded-lg bg-ember px-3 py-2 text-xs font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
                 >
                   {loading === item.id ? "…" : avatarButtonLabel(item)}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+          Pet food
+        </h2>
+        <p className="text-sm text-fog">
+          Inexpensive snacks keep your companion happy without blocking garden
+          progress.
+        </p>
+        <ul className="space-y-3">
+          {food.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-panel/60 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <div className="font-semibold text-paper">
+                  {item.title}
+                  {qty(item.id) > 0 ? (
+                    <span className="ml-2 text-xs font-normal text-mint">
+                      Owned ×{qty(item.id)}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-sm text-fog">{item.description}</p>
+              </div>
+              <button
+                type="button"
+                disabled={!signedIn || loading === item.id}
+                onClick={() => void buy(item.id)}
+                className="shrink-0 rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
+              >
+                {loading === item.id ? "…" : `${item.price} ◈`}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+          Garden decorations
+        </h2>
+        <p className="text-sm text-fog">
+          Account XP unlocks categories. Coins still buy every decoration.
+        </p>
+        <ul className="space-y-3">
+          {decorations.map((item) => {
+            const locked = Boolean(item.levelLocked);
+            return (
+              <li
+                key={item.id}
+                className="flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-panel/60 p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <div className="font-semibold text-paper">
+                    {item.title}
+                    {locked ? (
+                      <span className="ml-2 text-xs font-normal text-fog">
+                        Lv {item.requiredLevel}+
+                      </span>
+                    ) : null}
+                    {!locked && qty(item.id) > 0 ? (
+                      <span className="ml-2 text-xs font-normal text-mint">
+                        Owned
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm text-fog">{item.description}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={
+                    !signedIn || locked || loading === item.id || qty(item.id) > 0
+                  }
+                  onClick={() => void buy(item.id)}
+                  className="shrink-0 rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
+                >
+                  {locked
+                    ? `Locked · lv ${item.requiredLevel}`
+                    : qty(item.id) > 0
+                      ? "Owned"
+                      : loading === item.id
+                        ? "…"
+                        : `${item.price} ◈`}
                 </button>
               </li>
             );

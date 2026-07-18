@@ -260,6 +260,16 @@ export async function submitPlay(opts: {
     achievementIds: finalAchievements.map((a) => a.id),
   });
 
+  const { grantWinProgressionRewards } = await import("@/lib/pet-service");
+  const progression = await grantWinProgressionRewards({
+    userId: opts.userId,
+    playId,
+    difficulty: opts.difficulty,
+    won: opts.won,
+    streak,
+    dateKey: opts.dateKey,
+  });
+
   return {
     ok: true as const,
     play,
@@ -273,6 +283,13 @@ export async function submitPlay(opts: {
     challenge: challengeUpdate,
     coinsEarned: coins.coinsEarned,
     coinBalance: coins.coinBalance,
+    xpEarned: progression.xpEarned,
+    accountXp: progression.accountXp,
+    accountLevel: progression.accountLevel,
+    petXp: progression.petXp,
+    petLevel: progression.petLevel,
+    petStage: progression.petStage,
+    happinessGain: progression.happinessGain,
   };
 }
 
@@ -1322,10 +1339,8 @@ export async function grantPremium(opts: {
 }
 
 export async function redeemPremiumPromo(userId: string, code: string) {
-  const expected = (process.env.PREMIUM_PROMO_CODE ?? "inkday-plus")
-    .trim()
-    .toLowerCase();
-  if (code.trim().toLowerCase() !== expected) {
+  const expected = process.env.PREMIUM_PROMO_CODE?.trim().toLowerCase();
+  if (!expected || code.trim().toLowerCase() !== expected) {
     return { ok: false as const, reason: "invalid_code" as const };
   }
   const premium = await grantPremium({
@@ -1570,6 +1585,13 @@ export async function submitMonthlyClear(opts: {
   totalBonus: number;
   coinsEarned?: number;
   coinBalance?: number;
+  xpEarned?: number;
+  accountXp?: number;
+  accountLevel?: number;
+  petXp?: number | null;
+  petLevel?: number | null;
+  petStage?: string | null;
+  happinessGain?: number;
 } | { ok: false; reason: string }> {
   const db = getDb();
   const existing = await getMonthlyCompletion(
@@ -1591,6 +1613,8 @@ export async function submitMonthlyClear(opts: {
       newBadges: [],
       totalBonus: 0,
       coinsEarned: 0,
+      xpEarned: 0,
+      happinessGain: 0,
     };
   }
 
@@ -1702,6 +1726,14 @@ export async function submitMonthlyClear(opts: {
     cleared,
   });
 
+  const { grantMonthlyProgressionRewards } = await import("@/lib/pet-service");
+  const progression = await grantMonthlyProgressionRewards({
+    userId: opts.userId,
+    collectionId: opts.collectionId,
+    slotIndex: opts.slotIndex,
+    alreadyCleared: false,
+  });
+
   return {
     ok: true,
     alreadyCleared: false,
@@ -1712,6 +1744,13 @@ export async function submitMonthlyClear(opts: {
     totalBonus,
     coinsEarned: coins.coinsEarned,
     coinBalance: coins.coinBalance,
+    xpEarned: progression.xpEarned,
+    accountXp: progression.accountXp,
+    accountLevel: progression.accountLevel,
+    petXp: progression.petXp,
+    petLevel: progression.petLevel,
+    petStage: progression.petStage,
+    happinessGain: progression.happinessGain,
   };
 }
 

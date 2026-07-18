@@ -1,3 +1,5 @@
+import type { ShopCategoryId } from "./pets";
+
 /** Ink Coins economy — earn rates, spend prices, shop catalog, Plus multipliers. */
 
 export const PLUS_COIN_MULTIPLIER = 1.25;
@@ -31,6 +33,7 @@ export type CoinItemKind =
   | "pet"
   | "plant"
   | "decoration"
+  | "food"
   | "pack";
 
 export type ShopItemSlot = "avatar";
@@ -49,6 +52,10 @@ export type ShopItem = {
   slot?: ShopItemSlot;
   /** Free starter avatars — always owned, never bought */
   free?: boolean;
+  /** Garden / pet shop unlock category */
+  shopCategory?: ShopCategoryId;
+  /** Account level required to purchase (XP unlocks eligibility only) */
+  requiredLevel?: number;
 };
 
 export const DEFAULT_AVATAR_ID = "avatar_default";
@@ -281,28 +288,103 @@ export const SHOP_ITEMS: ShopItem[] = [
     comingSoon: true,
   },
   {
-    id: "pet_owl_starter",
-    title: "Inkday owl",
-    description: "Adopt a detective owl companion.",
-    kind: "pet",
-    price: 800,
-    comingSoon: true,
+    id: "food_apple",
+    title: "Apple",
+    description: "A crisp snack. +10 happiness.",
+    kind: "food",
+    price: 5,
+    shopCategory: "food",
+    requiredLevel: 1,
   },
   {
-    id: "plant_fern",
-    title: "Case-file fern",
-    description: "A desk plant that slows (never dies) when you’re away.",
-    kind: "plant",
-    price: 600,
-    comingSoon: true,
+    id: "food_cookie",
+    title: "Cookie",
+    description: "A warm treat. +18 happiness.",
+    kind: "food",
+    price: 10,
+    shopCategory: "food",
+    requiredLevel: 1,
   },
   {
-    id: "deco_lamp",
-    title: "Desk lamp",
-    description: "Habitat decoration for companions.",
+    id: "food_cake",
+    title: "Cake",
+    description: "Celebration slice. +30 happiness.",
+    kind: "food",
+    price: 25,
+    shopCategory: "food",
+    requiredLevel: 1,
+  },
+  {
+    id: "deco_flower_daisy",
+    title: "Ink daisy",
+    description: "A soft white bloom for your garden path.",
     kind: "decoration",
-    price: 250,
-    comingSoon: true,
+    price: 100,
+    shopCategory: "flowers",
+    requiredLevel: 20,
+  },
+  {
+    id: "deco_flower_tulip",
+    title: "Ember tulip",
+    description: "Warm petals beside the pet nest.",
+    kind: "decoration",
+    price: 100,
+    shopCategory: "flowers",
+    requiredLevel: 20,
+  },
+  {
+    id: "deco_flower_lantern",
+    title: "Lantern blossom",
+    description: "A glowing flower that softens evening light.",
+    kind: "decoration",
+    price: 120,
+    shopCategory: "flowers",
+    requiredLevel: 20,
+  },
+  {
+    id: "deco_pond",
+    title: "Mirror pond",
+    description: "A still pond that reflects starlight.",
+    kind: "decoration",
+    price: 300,
+    shopCategory: "ponds",
+    requiredLevel: 40,
+  },
+  {
+    id: "deco_tree_oak",
+    title: "Case-file oak",
+    description: "A sturdy oak for shade and secrets.",
+    kind: "decoration",
+    price: 500,
+    shopCategory: "trees",
+    requiredLevel: 60,
+  },
+  {
+    id: "deco_tree_willow",
+    title: "Whisper willow",
+    description: "Long branches for lazy companions.",
+    kind: "decoration",
+    price: 520,
+    shopCategory: "trees",
+    requiredLevel: 60,
+  },
+  {
+    id: "deco_seasonal_lantern",
+    title: "Seasonal lantern",
+    description: "Festival light for rare garden nights.",
+    kind: "decoration",
+    price: 900,
+    shopCategory: "seasonal",
+    requiredLevel: 80,
+  },
+  {
+    id: "deco_legendary_obelisk",
+    title: "Legendary obelisk",
+    description: "A towering monument for dedicated companions.",
+    kind: "decoration",
+    price: 2000,
+    shopCategory: "legendary",
+    requiredLevel: 100,
   },
   {
     id: "coin_pack_small",
@@ -314,6 +396,11 @@ export const SHOP_ITEMS: ShopItem[] = [
     plusOnly: true,
   },
 ];
+
+export const FOOD_SHOP_ITEMS = SHOP_ITEMS.filter((i) => i.kind === "food");
+export const DECORATION_SHOP_ITEMS = SHOP_ITEMS.filter(
+  (i) => i.kind === "decoration",
+);
 
 export const AVATAR_ITEMS = SHOP_ITEMS.filter((i) => i.slot === "avatar");
 
@@ -370,4 +457,5 @@ export type CoinReason =
   | "plus_stipend"
   | "shop_buy"
   | "shop_use"
-  | "streak_restore";
+  | "streak_restore"
+  | "pet_gift";

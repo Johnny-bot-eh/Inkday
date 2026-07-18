@@ -75,6 +75,7 @@ function timeFromMeta(metaJson: string | null): string | null {
 
 function categoryLabel(type: string | null): string {
   if (!type) return "—";
+  if (type === "path") return "Path Puzzle";
   return PUZZLE_LABELS[type as PuzzleType] ?? type;
 }
 

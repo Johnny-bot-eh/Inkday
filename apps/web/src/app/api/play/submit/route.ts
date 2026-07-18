@@ -5,7 +5,6 @@ import {
   checkCryptogramAnswer,
   checkEscapeAnswer,
   checkLogicAnswer,
-  checkPath,
   checkWordLadder,
   evaluateGuess,
   getAcrosticPuzzle,
@@ -13,7 +12,6 @@ import {
   getCryptogramPuzzle,
   getEscapeRoom,
   getLogicPuzzle,
-  getPathPuzzle,
   getWordLadderPuzzle,
   getWordleConfig,
   isPerfectAcrostic,
@@ -21,7 +19,6 @@ import {
   isPerfectCryptogram,
   isPerfectEscape,
   isPerfectLogic,
-  isPerfectPath,
   isPerfectWordLadder,
   isPerfectWordle,
   isSeasonActiveOn,
@@ -35,7 +32,6 @@ import {
   scoreCryptogram,
   scoreEscape,
   scoreLogic,
-  scorePath,
   scoreWordLadder,
   scoreWordle,
   seasonBonus,
@@ -47,7 +43,6 @@ import {
   monthlyBonus,
   wordleCategorySeasonId,
   type Difficulty,
-  type PathCoord,
   type PuzzleType,
   type ScoreBreakdown,
   unlockRequiredForDifficulty,
@@ -74,7 +69,6 @@ type Body = {
   code?: string;
   attemptsUsed?: number;
   answer?: string;
-  path?: PathCoord[];
   elapsedMs?: number;
   /** Skip / forfeit — allow loss without exhausting base attempts */
   forfeit?: boolean;
@@ -84,7 +78,6 @@ const TYPES: PuzzleType[] = [
   "wordle",
   "escape",
   "logic",
-  "path",
   "anagram",
   "cryptogram",
   "acrostic",
@@ -157,6 +150,14 @@ export async function POST(req: Request) {
     : categoryId
       ? wordleCategorySeasonId(categoryId)
       : (seasonId ?? "");
+
+  // Standard dailies must use today's UTC key — blocks forged historical farming.
+  if (!premiumBoard && !categoryId && !seasonId && dateKey !== todayKey()) {
+    return NextResponse.json(
+      { error: "Invalid date for today’s board" },
+      { status: 400 },
+    );
+  }
 
   if (!premiumBoard && !categoryId && body.seasonId && !seasonId) {
     return NextResponse.json({ error: "Unknown season" }, { status: 400 });
@@ -359,36 +360,6 @@ export async function POST(req: Request) {
       won: verdict.correct,
       meta: { attemptsUsed },
       extra: { answer: room.answer, explanation: room.explanation },
-    });
-  }
-
-  if (puzzleType === "path") {
-    const puzzle = getPathPuzzle(dateKey, difficulty, seasonId);
-    if (!body.path || !Array.isArray(body.path)) {
-      return NextResponse.json({ error: "Missing path" }, { status: 400 });
-    }
-    const verdict = checkPath(puzzle, body.path);
-    if (!verdict.ok) {
-      return NextResponse.json({ error: verdict.reason }, { status: 400 });
-    }
-    const base = scorePath({
-      difficulty,
-      correct: true,
-      pathLength: body.path.length,
-    });
-    const scoreBreakdown = buildBreakdown({
-      won: true,
-      difficulty,
-      base,
-      elapsedMs,
-      isPerfect: isPerfectPath({ pathLength: body.path.length }),
-      seasonActive: Boolean(seasonId),
-      plusActive,
-    });
-    return finish({
-      scoreBreakdown,
-      won: true,
-      meta: { pathLength: body.path.length },
     });
   }
 

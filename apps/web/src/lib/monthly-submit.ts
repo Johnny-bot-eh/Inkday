@@ -21,6 +21,11 @@ export async function submitMonthlyFromGame(
     alreadyCleared?: boolean;
     coinsEarned?: number;
     coinBalance?: number;
+    xpEarned?: number;
+    accountLevel?: number;
+    petLevel?: number | null;
+    petStage?: string | null;
+    happinessGain?: number;
   };
 }> {
   const res = await fetch("/api/monthly/submit", {

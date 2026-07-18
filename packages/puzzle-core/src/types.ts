@@ -8,7 +8,6 @@ export type PuzzleType =
   | "wordle"
   | "escape"
   | "logic"
-  | "path"
   | "anagram"
   | "cryptogram"
   | "acrostic"
@@ -26,7 +25,6 @@ export const PUZZLE_TYPES: PuzzleType[] = [
   "wordle",
   "escape",
   "logic",
-  "path",
   "anagram",
   "cryptogram",
   "acrostic",
@@ -54,7 +52,6 @@ export const PUZZLE_LABELS: Record<PuzzleType, string> = {
   wordle: "Word Daily",
   escape: "Escape Room",
   logic: "Logic Grid",
-  path: "Path Puzzle",
   anagram: "Anagrams",
   cryptogram: "Cryptograms",
   acrostic: "Acrostics",
@@ -176,9 +173,9 @@ export const TODAYS_CHALLENGES: DailyChallenge[] = [
     id: "daily-mystery",
     title: "Daily Mystery Puzzle",
     difficultyLabel: "Unknown",
-    puzzleType: "path",
+    puzzleType: "wordladder",
     difficulty: "hard",
-    href: "/play/path/hard",
+    href: "/play/wordladder/hard",
   },
 ];
 
@@ -194,11 +191,11 @@ export const HIDDEN_CHALLENGES: DailyChallenge[] = [
   },
   {
     id: "hidden-labyrinth",
-    title: "Midnight Labyrinth",
+    title: "Midnight Ladder",
     difficultyLabel: "Hard",
-    puzzleType: "path",
+    puzzleType: "wordladder",
     difficulty: "hard",
-    href: "/play/path/hard",
+    href: "/play/wordladder/hard",
   },
   {
     id: "hidden-deduction",

@@ -36,6 +36,11 @@ type Props = {
   newUnlocks?: ProgressToast[];
   coinsEarned?: number | null;
   coinBalance?: number | null;
+  xpEarned?: number | null;
+  accountLevel?: number | null;
+  petLevel?: number | null;
+  petStage?: string | null;
+  happinessGain?: number | null;
 };
 
 export function PlayResultsCard({
@@ -53,6 +58,11 @@ export function PlayResultsCard({
   newUnlocks,
   coinsEarned,
   coinBalance,
+  xpEarned,
+  accountLevel,
+  petLevel,
+  petStage,
+  happinessGain,
 }: Props) {
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--line)] bg-panel/70 p-5">
@@ -76,6 +86,25 @@ export function PlayResultsCard({
           <p className="mt-1 text-sm text-mint">
             +{coinsEarned} Ink Coins
             {typeof coinBalance === "number" ? ` · balance ${coinBalance}` : ""}
+          </p>
+        )}
+        {typeof xpEarned === "number" && xpEarned > 0 && (
+          <p className="mt-1 text-sm text-ember">
+            +{xpEarned} XP
+            {typeof accountLevel === "number"
+              ? ` · account lv ${accountLevel}`
+              : ""}
+            {typeof petLevel === "number"
+              ? ` · pet lv ${petLevel}${petStage ? ` (${petStage})` : ""}`
+              : ""}
+          </p>
+        )}
+        {typeof happinessGain === "number" && happinessGain > 0 && (
+          <p className="mt-1 text-sm text-fog">
+            +{happinessGain} pet happiness{" "}
+            <Link href="/companion" className="text-ember hover:underline">
+              Visit garden →
+            </Link>
           </p>
         )}
       </div>

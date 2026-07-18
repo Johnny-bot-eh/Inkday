@@ -47,7 +47,6 @@ Defaults in `apps/web/.env.local` work for local SQLite.
 - **Word Daily** is always today’s medium wordle. **Word Extra** adds easy and hard boards.
 - **Escape Room** puzzles combine scattered clues into a code (safe / keypad style).
 - **Logic Grid** mysteries use clue lists + fillable grids to identify the culprit.
-- **Path Puzzle** mazes: draw a path from S to E (optional numbered checkpoints).
 - Light/dark theme toggle in the header (saved in localStorage).
 - Each puzzle × difficulty can be played once per calendar day (UTC date key).
 - Scores and streaks update on successful authenticated submits.

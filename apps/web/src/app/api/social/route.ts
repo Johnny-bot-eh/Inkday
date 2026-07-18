@@ -25,7 +25,6 @@ const PUZZLE_TYPES = new Set<PuzzleType>([
   "wordle",
   "escape",
   "logic",
-  "path",
   "anagram",
   "cryptogram",
   "acrostic",

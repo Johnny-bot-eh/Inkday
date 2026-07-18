@@ -11,13 +11,18 @@ export type MonthlyExistingType =
   | "wordle"
   | "escape"
   | "logic"
-  | "path"
   | "anagram"
   | "cryptogram"
   | "acrostic"
   | "wordladder";
 
 export type MonthlyPuzzleType = MonthlyExistingType | MonthlyOnlyType;
+
+/**
+ * Legacy pool token kept only so Case File shuffles stay stable.
+ * Remapped to wordladder when slots are built.
+ */
+type MonthlyPoolType = MonthlyPuzzleType | "path";
 
 export const MONTHLY_SLOT_COUNT = 60;
 export const MONTHLY_EASY_COUNT = 20;
@@ -160,7 +165,7 @@ const MONTH_THEMES: Record<number, MonthTheme> = {
   },
 };
 
-const TYPE_POOL: MonthlyPuzzleType[] = [
+const TYPE_POOL: MonthlyPoolType[] = [
   "wordle",
   "escape",
   "logic",
@@ -181,7 +186,6 @@ export const MONTHLY_TYPE_LABELS: Record<MonthlyPuzzleType, string> = {
   wordle: "Word Puzzle",
   escape: "Mini Escape",
   logic: "Logic Grid",
-  path: "Path Puzzle",
   anagram: "Anagram",
   cryptogram: "Cryptogram",
   acrostic: "Acrostic",
@@ -193,6 +197,10 @@ export const MONTHLY_TYPE_LABELS: Record<MonthlyPuzzleType, string> = {
   pattern: "Pattern",
   deduction: "Deduction",
 };
+
+function resolveMonthlyPoolType(type: MonthlyPoolType): MonthlyPuzzleType {
+  return type === "path" ? "wordladder" : type;
+}
 
 function shuffleInPlace<T>(arr: T[], seed: number): T[] {
   let s = seed >>> 0;
@@ -254,7 +262,7 @@ export function buildMonthlySlots(collectionId: string): MonthlySlot[] {
   ];
   shuffleInPlace(difficulties, seed ^ 0x9e3779b9);
 
-  const types: MonthlyPuzzleType[] = [];
+  const types: MonthlyPoolType[] = [];
   for (let i = 0; i < MONTHLY_SLOT_COUNT; i++) {
     types.push(TYPE_POOL[i % TYPE_POOL.length]!);
   }
@@ -262,7 +270,7 @@ export function buildMonthlySlots(collectionId: string): MonthlySlot[] {
 
   return difficulties.map((difficulty, i) => {
     const index = i + 1;
-    const puzzleType = types[i]!;
+    const puzzleType = resolveMonthlyPoolType(types[i]!);
     return {
       index,
       puzzleType,

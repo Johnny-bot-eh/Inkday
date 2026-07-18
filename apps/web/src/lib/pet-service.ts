@@ -1,0 +1,1018 @@
+import {
+  DECORATION_SHOP_ITEMS,
+  HAPPINESS,
+  PET_SPECIES,
+  STARTER_SPECIES,
+  clampHappiness,
+  daysAway,
+  decayedHappiness,
+  dialogueFor,
+  gardenGridSize,
+  getShopItem,
+  happinessState,
+  isDecorationItemId,
+  isFoodItemId,
+  levelFromXp,
+  pickPersonality,
+  rollPetGift,
+  stageFromLevel,
+  todayKey,
+  welcomeBackLine,
+  xpForDailyWin,
+  xpForMonthlySlot,
+  xpForStreak7,
+  type CompanionGiftView,
+  type CompanionPetView,
+  type CompanionSnapshot,
+  type Difficulty,
+  type FoodItemId,
+  type PetSpeciesId,
+  type ShopCategoryId,
+} from "@daily-puzzle/puzzle-core";
+import {
+  gardenPlacement,
+  getDb,
+  petGift,
+  playResult,
+  progressionEvent,
+  userPet,
+  userProgression,
+  coinInventory,
+  monthlyCompletion,
+} from "@daily-puzzle/db";
+import { and, eq, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { grantCoins, getInventoryQty, listCoinInventory } from "@/lib/coin-service";
+
+export type { CompanionSnapshot } from "@daily-puzzle/puzzle-core";
+
+async function ensureProgression(userId: string) {
+  const db = getDb();
+  const existing = await db.query.userProgression.findFirst({
+    where: eq(userProgression.userId, userId),
+  });
+  if (existing) return existing;
+  await db.insert(userProgression).values({
+    userId,
+    accountXp: 0,
+    starterClaimed: false,
+    backfilled: false,
+  });
+  return (
+    (await db.query.userProgression.findFirst({
+      where: eq(userProgression.userId, userId),
+    })) ?? {
+      userId,
+      accountXp: 0,
+      activePetId: null as string | null,
+      starterClaimed: false,
+      backfilled: false,
+      updatedAt: new Date(),
+    }
+  );
+}
+
+async function recordEvent(opts: {
+  userId: string;
+  petId?: string | null;
+  kind: string;
+  amount: number;
+  sourceType: string;
+  sourceId: string;
+  meta?: Record<string, unknown>;
+}): Promise<{ ok: true; duplicate: boolean }> {
+  const db = getDb();
+  const existing = await db.query.progressionEvent.findFirst({
+    where: and(
+      eq(progressionEvent.userId, opts.userId),
+      eq(progressionEvent.kind, opts.kind),
+      eq(progressionEvent.sourceType, opts.sourceType),
+      eq(progressionEvent.sourceId, opts.sourceId),
+    ),
+  });
+  if (existing) return { ok: true, duplicate: true };
+  try {
+    await db.insert(progressionEvent).values({
+      id: randomUUID(),
+      userId: opts.userId,
+      petId: opts.petId ?? null,
+      kind: opts.kind,
+      amount: opts.amount,
+      sourceType: opts.sourceType,
+      sourceId: opts.sourceId,
+      metaJson: opts.meta ? JSON.stringify(opts.meta) : null,
+    });
+    return { ok: true, duplicate: false };
+  } catch {
+    return { ok: true, duplicate: true };
+  }
+}
+
+/**
+ * Backfill account + active pet XP from historical wins once per user.
+ */
+export async function backfillProgressionIfNeeded(userId: string) {
+  const db = getDb();
+  const prog = await ensureProgression(userId);
+  if (prog.backfilled) return prog;
+
+  const wins = await db
+    .select({
+      id: playResult.id,
+      difficulty: playResult.difficulty,
+    })
+    .from(playResult)
+    .where(and(eq(playResult.userId, userId), eq(playResult.won, true)));
+
+  const monthly = await db
+    .select({
+      id: monthlyCompletion.id,
+      collectionId: monthlyCompletion.collectionId,
+      slotIndex: monthlyCompletion.slotIndex,
+    })
+    .from(monthlyCompletion)
+    .where(
+      and(eq(monthlyCompletion.userId, userId), eq(monthlyCompletion.won, true)),
+    );
+
+  let totalXp = 0;
+  for (const w of wins) {
+    totalXp += xpForDailyWin(w.difficulty as Difficulty);
+  }
+  totalXp += monthly.length * xpForMonthlySlot();
+
+  await db
+    .update(userProgression)
+    .set({
+      accountXp: sql`max(${userProgression.accountXp}, ${totalXp})`,
+      backfilled: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(userProgression.userId, userId));
+
+  if (prog.activePetId) {
+    await db
+      .update(userPet)
+      .set({
+        petXp: sql`max(${userPet.petXp}, ${totalXp})`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userPet.id, prog.activePetId));
+  }
+
+  return ensureProgression(userId);
+}
+
+async function getActivePet(userId: string) {
+  const db = getDb();
+  const prog = await ensureProgression(userId);
+  if (!prog.activePetId) return null;
+  return (
+    (await db.query.userPet.findFirst({
+      where: and(eq(userPet.id, prog.activePetId), eq(userPet.userId, userId)),
+    })) ?? null
+  );
+}
+
+function unlockedCategories(accountLevel: number): ShopCategoryId[] {
+  const all: ShopCategoryId[] = [
+    "food",
+    "flowers",
+    "ponds",
+    "trees",
+    "seasonal",
+    "legendary",
+  ];
+  return all.filter((c) => {
+    const need =
+      c === "food"
+        ? 1
+        : c === "flowers"
+          ? 20
+          : c === "ponds"
+            ? 40
+            : c === "trees"
+              ? 60
+              : c === "seasonal"
+                ? 80
+                : 100;
+    return accountLevel >= need;
+  });
+}
+
+async function maybeRollGift(opts: {
+  userId: string;
+  pet: typeof userPet.$inferSelect;
+  happiness: number;
+  dateKey: string;
+}): Promise<CompanionGiftView> {
+  const db = getDb();
+  const existing = await db.query.petGift.findFirst({
+    where: and(
+      eq(petGift.petId, opts.pet.id),
+      eq(petGift.dateKey, opts.dateKey),
+    ),
+  });
+  if (existing) {
+    if (existing.claimed) return null;
+    return {
+      id: existing.id,
+      giftKind: existing.giftKind,
+      coins: existing.coins,
+      itemId: existing.itemId,
+      claimed: false,
+      message: dialogueFor(
+        opts.pet.personalityId as never,
+        "gift",
+        opts.dateKey.length,
+      ),
+    };
+  }
+  if (opts.happiness < HAPPINESS.giftThreshold) return null;
+
+  const rolled = rollPetGift(opts.userId, opts.dateKey, opts.pet.id);
+  const id = randomUUID();
+  try {
+    await db.insert(petGift).values({
+      id,
+      userId: opts.userId,
+      petId: opts.pet.id,
+      dateKey: opts.dateKey,
+      giftKind: rolled.kind,
+      coins: rolled.coins ?? 0,
+      itemId: rolled.itemId ?? null,
+      claimed: false,
+    });
+  } catch {
+    const again = await db.query.petGift.findFirst({
+      where: and(
+        eq(petGift.petId, opts.pet.id),
+        eq(petGift.dateKey, opts.dateKey),
+      ),
+    });
+    if (!again || again.claimed) return null;
+    return {
+      id: again.id,
+      giftKind: again.giftKind,
+      coins: again.coins,
+      itemId: again.itemId,
+      claimed: false,
+      message: dialogueFor(
+        opts.pet.personalityId as never,
+        "gift",
+        opts.dateKey.length,
+      ),
+    };
+  }
+
+  return {
+    id,
+    giftKind: rolled.kind,
+    coins: rolled.coins ?? 0,
+    itemId: rolled.itemId ?? null,
+    claimed: false,
+    message: dialogueFor(
+      opts.pet.personalityId as never,
+      "gift",
+      opts.dateKey.length,
+    ),
+  };
+}
+
+export async function getCompanionSnapshot(
+  userId: string,
+): Promise<CompanionSnapshot> {
+  const db = getDb();
+  await backfillProgressionIfNeeded(userId);
+  const prog = await ensureProgression(userId);
+  const account = levelFromXp(prog.accountXp);
+  const dateKey = todayKey();
+  const petRow = await getActivePet(userId);
+
+  let petView: CompanionPetView | null = null;
+  let gift: CompanionGiftView = null;
+
+  if (petRow) {
+    const happiness = decayedHappiness(
+      petRow.happinessBase,
+      petRow.happinessUpdatedAt,
+    );
+    // Persist decayed baseline so long absences don't recompute forever.
+    if (happiness !== petRow.happinessBase) {
+      await db
+        .update(userPet)
+        .set({
+          happinessBase: happiness,
+          happinessUpdatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(userPet.id, petRow.id));
+      petRow.happinessBase = happiness;
+      petRow.happinessUpdatedAt = new Date();
+    }
+
+    const away = daysAway(petRow.happinessUpdatedAt);
+    const levelInfo = levelFromXp(petRow.petXp);
+    const species = PET_SPECIES[petRow.speciesId as PetSpeciesId];
+    const state = happinessState(happiness);
+    const dialogueMood =
+      away > 0
+        ? "welcomeBack"
+        : state === "sad" || state === "sleepy"
+          ? "sleepy"
+          : state === "ecstatic" || state === "happy"
+            ? "happy"
+            : "idle";
+
+    petView = {
+      id: petRow.id,
+      speciesId: petRow.speciesId as PetSpeciesId,
+      speciesTitle: species?.title ?? petRow.speciesId,
+      eggTitle: species?.eggTitle ?? "Egg",
+      tagline: species?.tagline ?? "",
+      personalityId: petRow.personalityId,
+      personalityTitle: petRow.personalityId,
+      name: petRow.name,
+      petXp: petRow.petXp,
+      level: levelInfo.level,
+      xpIntoLevel: levelInfo.xpIntoLevel,
+      xpForNext: levelInfo.xpForNext,
+      stage: stageFromLevel(levelInfo.level),
+      happiness,
+      happinessState: state,
+      dialogue:
+        away > 0
+          ? welcomeBackLine(petRow.personalityId as never, away, dateKey)
+          : dialogueFor(petRow.personalityId as never, dialogueMood, dateKey.length),
+      awayDays: away,
+      colors: species?.colors ?? {
+        primary: "#333",
+        secondary: "#999",
+        accent: "#e8b86d",
+      },
+      canPetToday: petRow.lastPetDate !== dateKey,
+      lastPetDate: petRow.lastPetDate,
+    };
+
+    gift = await maybeRollGift({
+      userId,
+      pet: petRow,
+      happiness,
+      dateKey,
+    });
+  }
+
+  const inventory = await listCoinInventory(userId);
+  const foodInventory = inventory
+    .filter((row) => isFoodItemId(row.itemId))
+    .map((row) => ({
+      itemId: row.itemId,
+      title: getShopItem(row.itemId)?.title ?? row.itemId,
+      qty: row.qty,
+    }));
+
+  const ownedDecorIds = inventory
+    .filter((row) => isDecorationItemId(row.itemId) && row.qty > 0)
+    .map((row) => row.itemId);
+  const placements = await db.query.gardenPlacement.findMany({
+    where: eq(gardenPlacement.userId, userId),
+  });
+  const placedIds = new Set(placements.map((p) => p.itemId));
+  const grid = gardenGridSize(ownedDecorIds.length);
+
+  return {
+    needsStarter: !prog.starterClaimed || !petView,
+    starters: STARTER_SPECIES.map((id) => {
+      const s = PET_SPECIES[id];
+      return {
+        id,
+        title: s.title,
+        eggTitle: s.eggTitle,
+        tagline: s.tagline,
+        colors: s.colors,
+      };
+    }),
+    accountXp: prog.accountXp,
+    accountLevel: account.level,
+    accountXpIntoLevel: account.xpIntoLevel,
+    accountXpForNext: account.xpForNext,
+    unlockedCategories: unlockedCategories(account.level),
+    pet: petView,
+    gift,
+    garden: {
+      cols: grid.cols,
+      rows: grid.rows,
+      cells: grid.cells,
+      placements: placements.map((p) => ({
+        id: p.id,
+        itemId: p.itemId,
+        title: getShopItem(p.itemId)?.title ?? p.itemId,
+        cellIndex: p.cellIndex,
+      })),
+      inventoryDecor: ownedDecorIds
+        .filter((id) => !placedIds.has(id))
+        .map((id) => ({
+          itemId: id,
+          title: getShopItem(id)?.title ?? id,
+          qty: 1,
+        })),
+    },
+    foodInventory,
+  };
+}
+
+export async function claimStarterEgg(
+  userId: string,
+  speciesId: string,
+): Promise<
+  | { ok: true; snapshot: CompanionSnapshot }
+  | { ok: false; reason: string }
+> {
+  if (!STARTER_SPECIES.includes(speciesId as PetSpeciesId)) {
+    return { ok: false, reason: "invalid_species" };
+  }
+  const db = getDb();
+  const prog = await ensureProgression(userId);
+  if (prog.starterClaimed && prog.activePetId) {
+    return { ok: false, reason: "already_claimed" };
+  }
+
+  const event = await recordEvent({
+    userId,
+    kind: "starter_claim",
+    amount: 0,
+    sourceType: "starter",
+    sourceId: "first",
+    meta: { speciesId },
+  });
+  if (event.duplicate && prog.starterClaimed) {
+    return { ok: false, reason: "already_claimed" };
+  }
+
+  const personality = pickPersonality(userId, speciesId as PetSpeciesId);
+  const petId = randomUUID();
+  const species = PET_SPECIES[speciesId as PetSpeciesId];
+
+  await db.insert(userPet).values({
+    id: petId,
+    userId,
+    speciesId,
+    personalityId: personality,
+    name: species.title,
+    petXp: prog.accountXp,
+    happinessBase: 100,
+    happinessUpdatedAt: new Date(),
+  });
+
+  await db
+    .update(userProgression)
+    .set({
+      starterClaimed: true,
+      activePetId: petId,
+      updatedAt: new Date(),
+    })
+    .where(eq(userProgression.userId, userId));
+
+  await backfillProgressionIfNeeded(userId);
+
+  return { ok: true, snapshot: await getCompanionSnapshot(userId) };
+}
+
+export async function petCompanion(
+  userId: string,
+): Promise<
+  | { ok: true; snapshot: CompanionSnapshot; happinessGain: number }
+  | { ok: false; reason: string }
+> {
+  const db = getDb();
+  const pet = await getActivePet(userId);
+  if (!pet) return { ok: false, reason: "no_pet" };
+  const dateKey = todayKey();
+  if (pet.lastPetDate === dateKey) {
+    return { ok: false, reason: "already_petted" };
+  }
+
+  const event = await recordEvent({
+    userId,
+    petId: pet.id,
+    kind: "pet",
+    amount: HAPPINESS.petBonus,
+    sourceType: "daily_pet",
+    sourceId: dateKey,
+  });
+  if (event.duplicate) return { ok: false, reason: "already_petted" };
+
+  const current = decayedHappiness(pet.happinessBase, pet.happinessUpdatedAt);
+  const next = clampHappiness(current + HAPPINESS.petBonus);
+  await db
+    .update(userPet)
+    .set({
+      happinessBase: next,
+      happinessUpdatedAt: new Date(),
+      lastPetDate: dateKey,
+      updatedAt: new Date(),
+    })
+    .where(eq(userPet.id, pet.id));
+
+  return {
+    ok: true,
+    happinessGain: next - current,
+    snapshot: await getCompanionSnapshot(userId),
+  };
+}
+
+async function consumeInventoryQty(
+  userId: string,
+  itemId: string,
+  qty = 1,
+): Promise<boolean> {
+  const db = getDb();
+  const existing = await db.query.coinInventory.findFirst({
+    where: and(
+      eq(coinInventory.userId, userId),
+      eq(coinInventory.itemId, itemId),
+    ),
+  });
+  if (!existing || existing.qty < qty) return false;
+  const next = existing.qty - qty;
+  if (next <= 0) {
+    await db.delete(coinInventory).where(eq(coinInventory.id, existing.id));
+  } else {
+    await db
+      .update(coinInventory)
+      .set({ qty: next })
+      .where(eq(coinInventory.id, existing.id));
+  }
+  return true;
+}
+
+export async function feedCompanion(
+  userId: string,
+  itemId: string,
+): Promise<
+  | { ok: true; snapshot: CompanionSnapshot; happinessGain: number }
+  | { ok: false; reason: string }
+> {
+  if (!isFoodItemId(itemId)) return { ok: false, reason: "invalid_food" };
+  const db = getDb();
+  const pet = await getActivePet(userId);
+  if (!pet) return { ok: false, reason: "no_pet" };
+
+  const bonus = HAPPINESS.food[itemId as FoodItemId];
+  if (!bonus) return { ok: false, reason: "invalid_food" };
+
+  const feedId = randomUUID();
+  const event = await recordEvent({
+    userId,
+    petId: pet.id,
+    kind: "feed",
+    amount: bonus,
+    sourceType: "food",
+    sourceId: feedId,
+    meta: { itemId },
+  });
+  if (event.duplicate) return { ok: false, reason: "duplicate" };
+
+  const consumed = await consumeInventoryQty(userId, itemId, 1);
+  if (!consumed) return { ok: false, reason: "none" };
+
+  const current = decayedHappiness(pet.happinessBase, pet.happinessUpdatedAt);
+  const next = clampHappiness(current + bonus);
+  const dateKey = todayKey();
+  await db
+    .update(userPet)
+    .set({
+      happinessBase: next,
+      happinessUpdatedAt: new Date(),
+      lastFeedDate: dateKey,
+      updatedAt: new Date(),
+    })
+    .where(eq(userPet.id, pet.id));
+
+  return {
+    ok: true,
+    happinessGain: next - current,
+    snapshot: await getCompanionSnapshot(userId),
+  };
+}
+
+export async function claimPetGift(
+  userId: string,
+  giftId: string,
+): Promise<
+  | {
+      ok: true;
+      snapshot: CompanionSnapshot;
+      coins: number;
+      itemId: string | null;
+    }
+  | { ok: false; reason: string }
+> {
+  const db = getDb();
+  const gift = await db.query.petGift.findFirst({
+    where: and(eq(petGift.id, giftId), eq(petGift.userId, userId)),
+  });
+  if (!gift) return { ok: false, reason: "not_found" };
+  if (gift.claimed) return { ok: false, reason: "already_claimed" };
+
+  const event = await recordEvent({
+    userId,
+    petId: gift.petId,
+    kind: "gift_claim",
+    amount: gift.coins,
+    sourceType: "pet_gift",
+    sourceId: gift.id,
+  });
+  if (event.duplicate) return { ok: false, reason: "already_claimed" };
+
+  let coins = 0;
+  if (gift.coins > 0) {
+    const grant = await grantCoins({
+      userId,
+      delta: gift.coins,
+      reason: "pet_gift",
+      refType: "pet_gift",
+      refId: gift.id,
+      raw: true,
+    });
+    if (grant.ok) coins = grant.granted;
+  }
+
+  if (gift.itemId) {
+    const existing = await db.query.coinInventory.findFirst({
+      where: and(
+        eq(coinInventory.userId, userId),
+        eq(coinInventory.itemId, gift.itemId),
+      ),
+    });
+    if (existing) {
+      const item = getShopItem(gift.itemId);
+      const isStackable =
+        item?.kind === "consumable" || item?.kind === "food";
+      if (isStackable) {
+        await db
+          .update(coinInventory)
+          .set({ qty: existing.qty + 1 })
+          .where(eq(coinInventory.id, existing.id));
+      }
+    } else {
+      await db.insert(coinInventory).values({
+        id: randomUUID(),
+        userId,
+        itemId: gift.itemId,
+        qty: 1,
+      });
+    }
+  }
+
+  await db
+    .update(petGift)
+    .set({ claimed: true, claimedAt: new Date() })
+    .where(eq(petGift.id, gift.id));
+
+  return {
+    ok: true,
+    coins,
+    itemId: gift.itemId,
+    snapshot: await getCompanionSnapshot(userId),
+  };
+}
+
+export async function placeGardenItem(
+  userId: string,
+  itemId: string,
+  cellIndex: number,
+): Promise<
+  | { ok: true; snapshot: CompanionSnapshot }
+  | { ok: false; reason: string }
+> {
+  if (!isDecorationItemId(itemId)) {
+    return { ok: false, reason: "invalid_item" };
+  }
+  const db = getDb();
+  const owned = await getInventoryQty(userId, itemId);
+  if (owned <= 0) return { ok: false, reason: "not_owned" };
+
+  const inventory = await listCoinInventory(userId);
+  const ownedDecorCount = inventory.filter(
+    (r) => isDecorationItemId(r.itemId) && r.qty > 0,
+  ).length;
+  const grid = gardenGridSize(ownedDecorCount);
+  if (cellIndex < 0 || cellIndex >= grid.cells) {
+    return { ok: false, reason: "out_of_bounds" };
+  }
+
+  const alreadyPlaced = await db.query.gardenPlacement.findFirst({
+    where: and(
+      eq(gardenPlacement.userId, userId),
+      eq(gardenPlacement.itemId, itemId),
+    ),
+  });
+  if (alreadyPlaced) return { ok: false, reason: "already_placed" };
+
+  const cellTaken = await db.query.gardenPlacement.findFirst({
+    where: and(
+      eq(gardenPlacement.userId, userId),
+      eq(gardenPlacement.cellIndex, cellIndex),
+    ),
+  });
+  if (cellTaken) return { ok: false, reason: "cell_taken" };
+
+  try {
+    await db.insert(gardenPlacement).values({
+      id: randomUUID(),
+      userId,
+      itemId,
+      cellIndex,
+    });
+  } catch {
+    return { ok: false, reason: "conflict" };
+  }
+
+  return { ok: true, snapshot: await getCompanionSnapshot(userId) };
+}
+
+export async function moveGardenItem(
+  userId: string,
+  placementId: string,
+  cellIndex: number,
+): Promise<
+  | { ok: true; snapshot: CompanionSnapshot }
+  | { ok: false; reason: string }
+> {
+  const db = getDb();
+  const placement = await db.query.gardenPlacement.findFirst({
+    where: and(
+      eq(gardenPlacement.id, placementId),
+      eq(gardenPlacement.userId, userId),
+    ),
+  });
+  if (!placement) return { ok: false, reason: "not_found" };
+
+  const inventory = await listCoinInventory(userId);
+  const ownedDecorCount = inventory.filter(
+    (r) => isDecorationItemId(r.itemId) && r.qty > 0,
+  ).length;
+  const grid = gardenGridSize(ownedDecorCount);
+  if (cellIndex < 0 || cellIndex >= grid.cells) {
+    return { ok: false, reason: "out_of_bounds" };
+  }
+
+  const cellTaken = await db.query.gardenPlacement.findFirst({
+    where: and(
+      eq(gardenPlacement.userId, userId),
+      eq(gardenPlacement.cellIndex, cellIndex),
+    ),
+  });
+  if (cellTaken && cellTaken.id !== placementId) {
+    return { ok: false, reason: "cell_taken" };
+  }
+
+  await db
+    .update(gardenPlacement)
+    .set({ cellIndex })
+    .where(eq(gardenPlacement.id, placementId));
+
+  return { ok: true, snapshot: await getCompanionSnapshot(userId) };
+}
+
+export async function removeGardenItem(
+  userId: string,
+  placementId: string,
+): Promise<
+  | { ok: true; snapshot: CompanionSnapshot }
+  | { ok: false; reason: string }
+> {
+  const db = getDb();
+  const placement = await db.query.gardenPlacement.findFirst({
+    where: and(
+      eq(gardenPlacement.id, placementId),
+      eq(gardenPlacement.userId, userId),
+    ),
+  });
+  if (!placement) return { ok: false, reason: "not_found" };
+  await db.delete(gardenPlacement).where(eq(gardenPlacement.id, placementId));
+  return { ok: true, snapshot: await getCompanionSnapshot(userId) };
+}
+
+/**
+ * Grant account + active-pet XP (and optional happiness) after a puzzle win.
+ * Idempotent via progression_event unique key.
+ */
+export async function grantPuzzleProgression(opts: {
+  userId: string;
+  sourceType: "play_result" | "monthly_completion" | "streak_7";
+  sourceId: string;
+  xp: number;
+  /** First daily puzzle happiness bonus */
+  dailyPuzzleHappy?: boolean;
+  /** Streak happiness bonus */
+  streakHappy?: boolean;
+  dateKey?: string;
+}): Promise<{
+  xpEarned: number;
+  accountXp: number;
+  accountLevel: number;
+  petXp: number | null;
+  petLevel: number | null;
+  petStage: string | null;
+  happinessGain: number;
+  duplicate: boolean;
+}> {
+  const db = getDb();
+  await ensureProgression(opts.userId);
+  const event = await recordEvent({
+    userId: opts.userId,
+    kind: "xp",
+    amount: opts.xp,
+    sourceType: opts.sourceType,
+    sourceId: opts.sourceId,
+  });
+
+  let xpEarned = 0;
+  if (!event.duplicate && opts.xp > 0) {
+    await db
+      .update(userProgression)
+      .set({
+        accountXp: sql`${userProgression.accountXp} + ${opts.xp}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userProgression.userId, opts.userId));
+
+    const pet = await getActivePet(opts.userId);
+    if (pet) {
+      await db
+        .update(userPet)
+        .set({
+          petXp: sql`${userPet.petXp} + ${opts.xp}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(userPet.id, pet.id));
+    }
+    xpEarned = opts.xp;
+  }
+
+  let happinessGain = 0;
+  const dateKey = opts.dateKey ?? todayKey();
+  const pet = await getActivePet(opts.userId);
+
+  if (pet && opts.dailyPuzzleHappy) {
+    const happyEvent = await recordEvent({
+      userId: opts.userId,
+      petId: pet.id,
+      kind: "puzzle_happy",
+      amount: HAPPINESS.dailyPuzzleBonus,
+      sourceType: "daily_puzzle",
+      sourceId: dateKey,
+    });
+    if (!happyEvent.duplicate && pet.lastPuzzleHappyDate !== dateKey) {
+      const current = decayedHappiness(
+        pet.happinessBase,
+        pet.happinessUpdatedAt,
+      );
+      const next = clampHappiness(current + HAPPINESS.dailyPuzzleBonus);
+      happinessGain += next - current;
+      await db
+        .update(userPet)
+        .set({
+          happinessBase: next,
+          happinessUpdatedAt: new Date(),
+          lastPuzzleHappyDate: dateKey,
+          updatedAt: new Date(),
+        })
+        .where(eq(userPet.id, pet.id));
+      pet.happinessBase = next;
+    }
+  }
+
+  if (pet && opts.streakHappy) {
+    const streakEvent = await recordEvent({
+      userId: opts.userId,
+      petId: pet.id,
+      kind: "streak_happy",
+      amount: HAPPINESS.streakBonus,
+      sourceType: "streak",
+      sourceId: dateKey,
+    });
+    if (!streakEvent.duplicate) {
+      const current = decayedHappiness(
+        pet.happinessBase,
+        pet.happinessUpdatedAt,
+      );
+      const next = clampHappiness(current + HAPPINESS.streakBonus);
+      happinessGain += next - current;
+      await db
+        .update(userPet)
+        .set({
+          happinessBase: next,
+          happinessUpdatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(userPet.id, pet.id));
+    }
+  }
+
+  const prog = await ensureProgression(opts.userId);
+  const account = levelFromXp(prog.accountXp);
+  const active = await getActivePet(opts.userId);
+  const petLevel = active ? levelFromXp(active.petXp) : null;
+
+  return {
+    xpEarned,
+    accountXp: prog.accountXp,
+    accountLevel: account.level,
+    petXp: active?.petXp ?? null,
+    petLevel: petLevel?.level ?? null,
+    petStage: petLevel ? stageFromLevel(petLevel.level) : null,
+    happinessGain,
+    duplicate: event.duplicate,
+  };
+}
+
+export async function grantWinProgressionRewards(opts: {
+  userId: string;
+  playId: string;
+  difficulty: Difficulty;
+  won: boolean;
+  streak: number;
+  dateKey: string;
+}) {
+  if (!opts.won) {
+    return {
+      xpEarned: 0,
+      accountXp: 0,
+      accountLevel: 1,
+      petXp: null as number | null,
+      petLevel: null as number | null,
+      petStage: null as string | null,
+      happinessGain: 0,
+    };
+  }
+
+  const base = await grantPuzzleProgression({
+    userId: opts.userId,
+    sourceType: "play_result",
+    sourceId: opts.playId,
+    xp: xpForDailyWin(opts.difficulty),
+    dailyPuzzleHappy: true,
+    streakHappy: opts.streak > 1,
+    dateKey: opts.dateKey,
+  });
+
+  let xpEarned = base.xpEarned;
+  if (opts.streak > 0 && opts.streak % 7 === 0) {
+    const streakXp = await grantPuzzleProgression({
+      userId: opts.userId,
+      sourceType: "streak_7",
+      sourceId: `${opts.streak}:${opts.dateKey}`,
+      xp: xpForStreak7(),
+      dateKey: opts.dateKey,
+    });
+    xpEarned += streakXp.xpEarned;
+  }
+
+  return {
+    xpEarned,
+    accountXp: base.accountXp,
+    accountLevel: base.accountLevel,
+    petXp: base.petXp,
+    petLevel: base.petLevel,
+    petStage: base.petStage,
+    happinessGain: base.happinessGain,
+  };
+}
+
+export async function grantMonthlyProgressionRewards(opts: {
+  userId: string;
+  collectionId: string;
+  slotIndex: number;
+  alreadyCleared: boolean;
+}) {
+  if (opts.alreadyCleared) {
+    return {
+      xpEarned: 0,
+      accountXp: 0,
+      accountLevel: 1,
+      petXp: null as number | null,
+      petLevel: null as number | null,
+      petStage: null as string | null,
+      happinessGain: 0,
+    };
+  }
+  return grantPuzzleProgression({
+    userId: opts.userId,
+    sourceType: "monthly_completion",
+    sourceId: `${opts.collectionId}:${opts.slotIndex}`,
+    xp: xpForMonthlySlot(),
+  });
+}
+
+export async function getAccountLevel(userId: string): Promise<number> {
+  await backfillProgressionIfNeeded(userId);
+  const prog = await ensureProgression(userId);
+  return levelFromXp(prog.accountXp).level;
+}
+
+export function decorationCatalog() {
+  return DECORATION_SHOP_ITEMS;
+}
