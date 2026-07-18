@@ -191,8 +191,8 @@ export function ProfileView({
           Unlocks
         </h2>
         <p className="mt-1 text-sm text-fog">
-          Solve 50 Escape Rooms for Exclusive Cases, hold a 7-day streak for
-          Hidden Challenges, and solve 100 total puzzles for Impossible Mode.
+          Bonus content earned through progress. Some remain hidden until you
+          get close to their requirement.
         </p>
         <div className="mt-3 grid gap-2">
           {insights.unlocks.map((u) => (
