@@ -17,6 +17,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
@@ -343,6 +344,11 @@ export function EscapeGame({
           {status}
         </p>
       )}
+      <ShowAnswerPanel
+        available={Boolean(alreadyPlayed)}
+        answer={room.answer}
+        detail={room.explanation}
+      />
 
       {results && <PlayResultsCard {...results} />}
     </div>

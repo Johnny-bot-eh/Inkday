@@ -17,6 +17,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 
@@ -333,6 +334,10 @@ export function AnagramGame({
           {status}
         </p>
       )}
+      <ShowAnswerPanel
+        available={Boolean(alreadyPlayed)}
+        answer={puzzle.answer.toUpperCase()}
+      />
 
       {results && (
         <div className="mt-4">

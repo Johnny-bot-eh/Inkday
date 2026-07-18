@@ -96,6 +96,32 @@ export function GardenHabitat({ night, season }: Props) {
         />
       </svg>
 
+      {/* Tiny back shrubs tucked into the distant wall — never over trunks */}
+      <svg
+        viewBox="0 0 400 80"
+        preserveAspectRatio="none"
+        className="absolute inset-x-0 top-[48%] h-[14%] w-full"
+      >
+        <path
+          d="M18 80 C22 52 38 48 48 62 C58 48 72 52 76 80 Z"
+          fill={p.leafDark}
+        />
+        <path
+          d="M34 80 C38 58 48 54 56 66 C62 56 70 60 74 80 Z"
+          fill={p.leafMid}
+          opacity="0.9"
+        />
+        <path
+          d="M324 80 C328 54 344 50 354 64 C364 50 378 54 382 80 Z"
+          fill={p.leafDark}
+        />
+        <path
+          d="M340 80 C344 60 354 56 362 68 C368 58 376 62 380 80 Z"
+          fill={p.leafMid}
+          opacity="0.9"
+        />
+      </svg>
+
       {/* Left oak-like tree — clean upright trunk, canopy covers the tip */}
       <svg
         viewBox="0 0 120 160"
@@ -134,19 +160,18 @@ export function GardenHabitat({ night, season }: Props) {
         ) : (
           <>
             {/* Tiered canopy — wider lower shelf, smaller crown */}
-            <ellipse cx="60" cy="78" rx="42" ry="22" fill={p.leafDark} />
-            <ellipse cx="48" cy="70" rx="24" ry="16" fill={p.leafDark} opacity="0.95" />
-            <ellipse cx="74" cy="68" rx="26" ry="17" fill={p.leafDark} opacity="0.95" />
-            <ellipse cx="60" cy="56" rx="30" ry="18" fill={p.leafMid} />
-            <ellipse cx="44" cy="58" rx="16" ry="12" fill={p.leafMid} opacity="0.9" />
-            <ellipse cx="78" cy="54" rx="17" ry="13" fill={p.leafMid} opacity="0.9" />
-            <ellipse cx="60" cy="40" rx="20" ry="14" fill={p.leafLit} opacity="0.95" />
-            <ellipse cx="52" cy="44" rx="10" ry="8" fill={p.leafLit} opacity="0.75" />
+            <ellipse cx="60" cy="72" rx="40" ry="20" fill={p.leafDark} />
+            <ellipse cx="46" cy="64" rx="22" ry="15" fill={p.leafDark} />
+            <ellipse cx="76" cy="62" rx="24" ry="16" fill={p.leafDark} />
+            <ellipse cx="60" cy="52" rx="28" ry="16" fill={p.leafMid} />
+            <ellipse cx="44" cy="54" rx="14" ry="11" fill={p.leafMid} />
+            <ellipse cx="78" cy="50" rx="15" ry="12" fill={p.leafMid} />
+            <ellipse cx="60" cy="38" rx="18" ry="13" fill={p.leafLit} />
             {blossom !== "transparent" ? (
               <>
-                <circle cx="42" cy="66" r="2.6" fill={blossom} />
-                <circle cx="78" cy="50" r="2.4" fill={blossom} />
-                <circle cx="60" cy="34" r="2.1" fill={blossom} opacity="0.85" />
+                <circle cx="42" cy="60" r="2.6" fill={blossom} />
+                <circle cx="78" cy="46" r="2.4" fill={blossom} />
+                <circle cx="60" cy="32" r="2.1" fill={blossom} opacity="0.85" />
               </>
             ) : null}
           </>
@@ -206,28 +231,6 @@ export function GardenHabitat({ night, season }: Props) {
             ) : null}
           </>
         )}
-      </svg>
-
-      {/* Small background bushes near tree bases — clearing stays open */}
-      <svg
-        viewBox="0 0 400 100"
-        preserveAspectRatio="none"
-        className="absolute inset-x-0 bottom-[34%] h-[18%] w-full"
-      >
-        <ellipse cx="54" cy="72" rx="28" ry="16" fill={p.leafDark} opacity="0.9" />
-        <ellipse cx="72" cy="68" rx="18" ry="12" fill={p.leafMid} opacity="0.95" />
-        <ellipse cx="40" cy="70" rx="14" ry="10" fill={p.leafMid} opacity="0.85" />
-        <ellipse cx="330" cy="74" rx="30" ry="15" fill={p.leafDark} opacity="0.9" />
-        <ellipse cx="348" cy="70" rx="16" ry="11" fill={p.leafMid} opacity="0.95" />
-        <ellipse cx="312" cy="72" rx="14" ry="10" fill={p.leafMid} opacity="0.85" />
-        <ellipse cx="200" cy="78" rx="22" ry="10" fill={p.leafDark} opacity="0.55" />
-        <ellipse cx="214" cy="76" rx="12" ry="8" fill={p.leafMid} opacity="0.6" />
-        {blossom !== "transparent" ? (
-          <>
-            <circle cx="48" cy="64" r="1.8" fill={blossom} />
-            <circle cx="338" cy="66" r="1.6" fill={blossom} />
-          </>
-        ) : null}
       </svg>
 
       {/* Long hanging vines from canopy — kept off the tree trunks */}
