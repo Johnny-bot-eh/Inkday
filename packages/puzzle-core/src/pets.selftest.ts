@@ -49,6 +49,7 @@ assert(
 assert(decayedHappiness(10, threeDaysAgo, now) === 0, "decay floors at 0");
 
 assert(shopCategoryUnlocked(1, "food"), "food always open");
+assert(shopCategoryUnlocked(1, "garden"), "garden open at 1");
 assert(!shopCategoryUnlocked(19, "flowers"), "flowers locked before 20");
 assert(shopCategoryUnlocked(20, "flowers"), "flowers at 20");
 assert(shopCategoryUnlocked(100, "legendary"), "legendary at 100");

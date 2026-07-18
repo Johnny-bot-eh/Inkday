@@ -283,7 +283,7 @@ export async function buyShopItem(userId: string, itemId: string) {
     return { ok: false as const, reason: "plus_required" as const };
   }
 
-  if (item.requiredLevel && item.requiredLevel > 1) {
+  if (typeof item.requiredLevel === "number" && item.requiredLevel >= 1) {
     const { getAccountLevel } = await import("@/lib/pet-service");
     const level = await getAccountLevel(userId);
     if (level < item.requiredLevel) {

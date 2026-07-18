@@ -8,6 +8,26 @@ type Props = {
 
 export function GardenDecorSprite({ itemId, tone, className }: Props) {
   switch (itemId) {
+    case "deco_clover":
+      return <CloverSprite className={className} />;
+    case "deco_mushroom":
+      return <MushroomSprite className={className} />;
+    case "deco_berry_bush":
+      return <BerryBushSprite className={className} />;
+    case "deco_toadstool":
+      return <ToadstoolSprite className={className} />;
+    case "deco_sunflower":
+      return <SunflowerSprite className={className} />;
+    case "deco_birdbath":
+      return <BirdbathSprite className={className} />;
+    case "deco_log_bench":
+      return <LogBenchSprite className={className} />;
+    case "deco_crystal":
+      return <CrystalSprite className={className} />;
+    case "deco_mini_fountain":
+      return <MiniFountainSprite className={className} />;
+    case "deco_vine_arch":
+      return <VineArchSprite className={className} />;
     case "deco_flower_daisy":
       return <DaisySprite className={className} />;
     case "deco_flower_tulip":
@@ -27,6 +47,210 @@ export function GardenDecorSprite({ itemId, tone, className }: Props) {
     default:
       return <GenericPlantSprite className={className} tone={tone} />;
   }
+}
+
+function CloverSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden>
+      <ellipse cx="32" cy="58" rx="10" ry="3" fill="#00000022" />
+      <path d="M32 58 V40" stroke="#3d6b38" strokeWidth="2" strokeLinecap="round" />
+      {[0, 90, 180, 270].map((deg) => {
+        const rad = ((deg - 45) * Math.PI) / 180;
+        const cx = 32 + Math.cos(rad) * 8;
+        const cy = 34 + Math.sin(rad) * 8;
+        return (
+          <ellipse
+            key={deg}
+            cx={cx}
+            cy={cy}
+            rx="7"
+            ry="5"
+            fill="#4a8a42"
+            transform={`rotate(${deg} ${cx} ${cy})`}
+          />
+        );
+      })}
+      <circle cx="32" cy="34" r="2.5" fill="#3d6b38" />
+    </svg>
+  );
+}
+
+function MushroomSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden>
+      <ellipse cx="32" cy="58" rx="10" ry="3" fill="#00000022" />
+      <path
+        d="M26 56 V40 Q26 34 32 34 Q38 34 38 40 V56"
+        fill="#e8d8c0"
+      />
+      <path
+        d="M14 38 Q14 22 32 18 Q50 22 50 38 Q42 34 32 34 Q22 34 14 38 Z"
+        fill="#c45c5c"
+      />
+      <circle cx="24" cy="30" r="3" fill="#f5e8e0" opacity="0.9" />
+      <circle cx="36" cy="26" r="2.5" fill="#f5e8e0" opacity="0.85" />
+      <circle cx="42" cy="32" r="2" fill="#f5e8e0" opacity="0.8" />
+    </svg>
+  );
+}
+
+function BerryBushSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 72 64" className={className} aria-hidden>
+      <ellipse cx="36" cy="58" rx="16" ry="3.5" fill="#00000022" />
+      <ellipse cx="36" cy="40" rx="24" ry="16" fill="#3d6b38" />
+      <ellipse cx="24" cy="42" rx="12" ry="10" fill="#4a8040" />
+      <ellipse cx="48" cy="40" rx="12" ry="10" fill="#355528" />
+      <circle cx="28" cy="38" r="2.2" fill="#c45c6a" />
+      <circle cx="40" cy="34" r="2" fill="#c45c6a" />
+      <circle cx="48" cy="42" r="2.2" fill="#a83a4a" />
+      <circle cx="22" cy="44" r="1.8" fill="#a83a4a" />
+      <circle cx="36" cy="44" r="2" fill="#c45c6a" />
+    </svg>
+  );
+}
+
+function ToadstoolSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 72" className={className} aria-hidden>
+      <ellipse cx="32" cy="66" rx="12" ry="3" fill="#00000022" />
+      <path
+        d="M27 64 V40 Q27 34 32 34 Q37 34 37 40 V64"
+        fill="#efe4d0"
+      />
+      <path
+        d="M12 40 Q12 18 32 14 Q52 18 52 40 Q42 34 32 34 Q22 34 12 40 Z"
+        fill="#d46a7a"
+      />
+      <ellipse cx="32" cy="28" rx="14" ry="6" fill="#e88898" opacity="0.55" />
+      <circle cx="22" cy="30" r="2.5" fill="#fff0f2" opacity="0.85" />
+      <circle cx="34" cy="24" r="3" fill="#fff0f2" opacity="0.8" />
+      <circle cx="42" cy="32" r="2" fill="#fff0f2" opacity="0.75" />
+    </svg>
+  );
+}
+
+function SunflowerSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 80" className={className} aria-hidden>
+      <ellipse cx="32" cy="74" rx="10" ry="3" fill="#00000022" />
+      <path d="M32 74 V40" stroke="#3d6b38" strokeWidth="3" strokeLinecap="round" />
+      <path d="M32 56 Q22 50 20 58" fill="#4a8040" />
+      <path d="M32 50 Q42 46 44 54" fill="#4a8040" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
+        const rad = (deg * Math.PI) / 180;
+        const cx = 32 + Math.cos(rad) * 12;
+        const cy = 30 + Math.sin(rad) * 12;
+        return (
+          <ellipse
+            key={deg}
+            cx={cx}
+            cy={cy}
+            rx="7"
+            ry="3.5"
+            fill="#e8b84a"
+            transform={`rotate(${deg} ${cx} ${cy})`}
+          />
+        );
+      })}
+      <circle cx="32" cy="30" r="8" fill="#5a3d20" />
+      <circle cx="32" cy="30" r="5" fill="#3d2a14" />
+    </svg>
+  );
+}
+
+function BirdbathSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 72 64" className={className} aria-hidden>
+      <ellipse cx="36" cy="58" rx="14" ry="3" fill="#00000022" />
+      <rect x="32" y="36" width="8" height="20" rx="2" fill="#8a9098" />
+      <ellipse cx="36" cy="54" rx="12" ry="4" fill="#6a7078" />
+      <ellipse cx="36" cy="34" rx="24" ry="8" fill="#8a9098" />
+      <ellipse cx="36" cy="32" rx="20" ry="6" fill="#6a9ab0" />
+      <ellipse cx="30" cy="30" rx="8" ry="2.5" fill="#ffffff44" />
+    </svg>
+  );
+}
+
+function LogBenchSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 48" className={className} aria-hidden>
+      <ellipse cx="48" cy="42" rx="34" ry="4" fill="#00000022" />
+      <rect x="14" y="22" width="68" height="14" rx="6" fill="#6a4a30" />
+      <rect x="18" y="24" width="60" height="6" rx="3" fill="#8a6a48" opacity="0.7" />
+      <ellipse cx="20" cy="29" rx="5" ry="7" fill="#5a3d24" />
+      <ellipse cx="76" cy="29" rx="5" ry="7" fill="#5a3d24" />
+      <path
+        d="M28 28 Q48 24 68 28"
+        fill="none"
+        stroke="#4a3420"
+        strokeWidth="1.5"
+        opacity="0.5"
+      />
+    </svg>
+  );
+}
+
+function CrystalSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 72" className={className} aria-hidden>
+      <ellipse cx="24" cy="66" rx="12" ry="3" fill="#00000022" />
+      <path d="M24 8 L36 28 L30 64 L18 64 L12 28 Z" fill="#7ec8e8" />
+      <path d="M24 8 L30 28 L26 64 L18 64 L16 30 Z" fill="#b8e8f8" opacity="0.85" />
+      <path d="M24 8 L18 30 L22 64 L30 64 L32 28 Z" fill="#5aa8c8" opacity="0.55" />
+      <path d="M20 20 L24 12 L28 22" fill="#ffffff88" />
+    </svg>
+  );
+}
+
+function MiniFountainSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 80 72" className={className} aria-hidden>
+      <ellipse cx="40" cy="66" rx="28" ry="4" fill="#00000022" />
+      <ellipse cx="40" cy="58" rx="30" ry="10" fill="#8a9098" />
+      <ellipse cx="40" cy="56" rx="24" ry="7" fill="#5a9ab0" />
+      <rect x="36" y="30" width="8" height="26" rx="2" fill="#9aa0a8" />
+      <ellipse cx="40" cy="30" rx="10" ry="4" fill="#8a9098" />
+      <ellipse cx="40" cy="28" rx="7" ry="2.5" fill="#7ec8e8" />
+      <path
+        d="M40 28 Q34 20 40 14 Q46 20 40 28"
+        fill="#a8d8e8"
+        opacity="0.8"
+      />
+      <circle cx="40" cy="12" r="2" fill="#c8e8f4" />
+      <ellipse cx="32" cy="54" rx="4" ry="1.5" fill="#ffffff44" />
+    </svg>
+  );
+}
+
+function VineArchSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 80" className={className} aria-hidden>
+      <ellipse cx="20" cy="74" rx="10" ry="3" fill="#00000022" />
+      <ellipse cx="76" cy="74" rx="10" ry="3" fill="#00000022" />
+      <path d="M18 74 V36" stroke="#5a4030" strokeWidth="4" strokeLinecap="round" />
+      <path d="M78 74 V36" stroke="#5a4030" strokeWidth="4" strokeLinecap="round" />
+      <path
+        d="M18 36 Q48 8 78 36"
+        fill="none"
+        stroke="#3f6b48"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M22 38 Q48 14 74 38"
+        fill="none"
+        stroke="#5a8a4a"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <ellipse cx="30" cy="30" rx="6" ry="4" fill="#4a7a42" />
+      <ellipse cx="48" cy="18" rx="7" ry="4" fill="#3f6b48" />
+      <ellipse cx="66" cy="30" rx="6" ry="4" fill="#4a7a42" />
+      <ellipse cx="40" cy="26" rx="5" ry="3" fill="#5a8a4a" />
+      <ellipse cx="58" cy="24" rx="5" ry="3" fill="#5a8a4a" />
+    </svg>
+  );
 }
 
 function DaisySprite({ className }: { className?: string }) {

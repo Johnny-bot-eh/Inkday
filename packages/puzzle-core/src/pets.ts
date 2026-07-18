@@ -38,6 +38,7 @@ export type HappinessState =
 
 export type ShopCategoryId =
   | "food"
+  | "garden"
   | "flowers"
   | "ponds"
   | "trees"
@@ -212,6 +213,7 @@ export const STAGE_LEVELS: Array<{ stage: PetStage; minLevel: number }> = [
 /** Shop category unlock levels. */
 export const SHOP_UNLOCK_LEVELS: Record<ShopCategoryId, number> = {
   food: 1,
+  garden: 1,
   flowers: 20,
   ponds: 40,
   trees: 60,
@@ -448,6 +450,16 @@ export const DECORATION_ITEM_IDS = [
   "deco_starter_moss",
   "deco_starter_pebble",
   "deco_starter_fern",
+  "deco_clover",
+  "deco_mushroom",
+  "deco_berry_bush",
+  "deco_toadstool",
+  "deco_sunflower",
+  "deco_birdbath",
+  "deco_log_bench",
+  "deco_crystal",
+  "deco_mini_fountain",
+  "deco_vine_arch",
   "deco_flower_daisy",
   "deco_flower_tulip",
   "deco_flower_lantern",
