@@ -139,8 +139,8 @@ export function CompanionClient({ signedIn, initial }: Props) {
             Choose your companion
           </h1>
           <p className="mt-2 text-fog">
-            Pick one free starter egg. Your companion grows from hatch as you
-            solve puzzles — account level unlocks shops.
+            Pick one free starter egg. Pet XP grows this companion from hatch.
+            Account XP is your total progression — it unlocks more for your pets.
           </p>
         </div>
         {message ? (
@@ -500,7 +500,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
 
         <div className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
           <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
-            Account progress
+            Account XP
           </h2>
           <p className="mt-1 text-sm text-fog">
             Level {snapshot.accountLevel} · {snapshot.accountXpIntoLevel}/
@@ -520,8 +520,8 @@ export function CompanionClient({ signedIn, initial }: Props) {
             />
           </div>
           <p className="mt-3 text-xs text-fog">
-            Account XP comes from puzzle wins (including past clears). Pet XP
-            starts at hatch and only grows from new wins.
+            Total from every pet’s XP plus puzzle history, monthly clears, and
+            streak bonuses. Higher account XP unlocks more for your pets.
           </p>
           <p className="mt-4 text-xs uppercase tracking-wider text-fog">
             Unlocked shops

@@ -112,7 +112,8 @@ async function recordEvent(opts: {
 
 /**
  * Backfill account XP from historical wins once per user.
- * Pets grow from hatch — historical wins do not inflate pet XP.
+ * Pets grow from hatch — historical wins count toward account unlocks only
+ * (the “other” part of account XP), never toward pet XP.
  */
 export async function backfillProgressionIfNeeded(userId: string) {
   const db = getDb();
@@ -930,6 +931,9 @@ export async function removeGardenItem(
 /**
  * Grant account + active-pet XP (and optional happiness) after a puzzle win.
  * Idempotent via progression_event unique key.
+ *
+ * Pet XP grows only the active companion. Account XP always rises — it is the
+ * total unlock pool (every pet’s earned XP plus non-pet progression).
  */
 export async function grantPuzzleProgression(opts: {
   userId: string;
