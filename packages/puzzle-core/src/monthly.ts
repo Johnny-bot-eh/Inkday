@@ -233,6 +233,24 @@ export function parseCollectionId(id: string): { year: number; month: number } {
   return { year: y, month: m };
 }
 
+/** Previous calendar months as `YYYY-MM` ids, newest first. */
+export function previousCollectionIds(
+  collectionId: string,
+  count: number,
+): string[] {
+  let { year, month } = parseCollectionId(collectionId);
+  const ids: string[] = [];
+  for (let i = 0; i < count; i++) {
+    month -= 1;
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
+    ids.push(`${year}-${String(month).padStart(2, "0")}`);
+  }
+  return ids;
+}
+
 export function msUntilMonthEnd(collectionId: string, now = new Date()): number {
   const { year, month } = parseCollectionId(collectionId);
   const end = Date.UTC(year, month, 1); // first of next month
@@ -273,7 +291,7 @@ export function monthlyContentFingerprint(
     const puzzle = getMonthlyOnlyPuzzle(puzzleType, seedKey, difficulty);
     switch (puzzle.kind) {
       case "riddle":
-        return `riddle:${puzzle.answer}`;
+        return `riddle:${puzzle.prompt}`;
       case "trivia":
         return `trivia:${puzzle.question}`;
       case "mathlogic":
@@ -333,7 +351,24 @@ function uniqueSeedKey(
   return `${base}:r255`;
 }
 
+/** Types drawn from small shared catalogs that must not repeat month-to-month. */
+const SCARCE_POOL_TYPES: ReadonlySet<MonthlyPuzzleType> = new Set([
+  "riddle",
+  "trivia",
+  "deduction",
+  "pattern",
+  "mathlogic",
+]);
+
+/** Oldest month that applies cross-month scarce-pool avoidance. */
+const SCARCE_AVOIDANCE_EPOCH = "2025-01";
+
+const monthlySlotCache = new Map<string, MonthlySlot[]>();
+
 export function buildMonthlySlots(collectionId: string): MonthlySlot[] {
+  const cached = monthlySlotCache.get(collectionId);
+  if (cached) return cached;
+
   const seed = hashSeed("case-file", collectionId);
   const difficulties: Difficulty[] = [
     ...Array(MONTHLY_EASY_COUNT).fill("easy"),
@@ -349,7 +384,23 @@ export function buildMonthlySlots(collectionId: string): MonthlySlot[] {
   shuffleInPlace(types, seed ^ 0x85ebca6b);
 
   const usedFingerprints = new Set<string>();
-  return difficulties.map((difficulty, i) => {
+  if (collectionId > SCARCE_AVOIDANCE_EPOCH) {
+    for (const prevId of previousCollectionIds(collectionId, 2)) {
+      if (prevId < SCARCE_AVOIDANCE_EPOCH) continue;
+      for (const slot of buildMonthlySlots(prevId)) {
+        if (!SCARCE_POOL_TYPES.has(slot.puzzleType)) continue;
+        usedFingerprints.add(
+          monthlyContentFingerprint(
+            slot.puzzleType,
+            slot.seedKey,
+            slot.difficulty,
+          ),
+        );
+      }
+    }
+  }
+
+  const slots = difficulties.map((difficulty, i) => {
     const index = i + 1;
     const puzzleType = resolveMonthlyPoolType(types[i]!);
     const seedKey = uniqueSeedKey(
@@ -368,6 +419,8 @@ export function buildMonthlySlots(collectionId: string): MonthlySlot[] {
       points: BASE_POINTS[difficulty],
     };
   });
+  monthlySlotCache.set(collectionId, slots);
+  return slots;
 }
 
 export function getMonthlyCollection(

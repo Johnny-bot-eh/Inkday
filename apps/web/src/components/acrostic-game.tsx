@@ -244,13 +244,26 @@ export function AcrosticGame({
       return;
     }
     const target = puzzle.answers[emptyIndex]!;
+    const current = answers[emptyIndex] ?? "";
+    let matched = 0;
+    while (
+      matched < current.length &&
+      matched < target.length &&
+      current[matched]!.toLowerCase() === target[matched]!.toLowerCase()
+    ) {
+      matched += 1;
+    }
+    const nextLen = Math.min(target.length, matched + 1);
+    const nextValue = target.slice(0, nextLen);
     setAnswers((prev) => {
       const next = [...prev];
-      next[emptyIndex] = target[0]!;
+      next[emptyIndex] = nextValue;
       return next;
     });
     setCoinHint(
-      `Clue ${emptyIndex + 1} starts with “${target[0]!.toUpperCase()}”.`,
+      nextLen >= target.length
+        ? `Clue ${emptyIndex + 1} is “${target}”.`
+        : `Clue ${emptyIndex + 1} begins “${nextValue.toUpperCase()}…”.`,
     );
   }
 
@@ -356,6 +369,10 @@ export function AcrosticGame({
         <CoinConsumableBar
           signedIn={signedIn}
           disabled={submitting}
+          canUseHint={answers.some(
+            (a, i) =>
+              a.trim().toLowerCase() !== puzzle.answers[i]!.toLowerCase(),
+          )}
           onHint={revealAcrosticHint}
           onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
           onSkip={() => {
@@ -369,6 +386,9 @@ export function AcrosticGame({
         />
       )}
 
+      <p className="mt-2 text-xs text-fog">
+        Attempts {attempts}/{maxAttempts}
+      </p>
       {coinHint && !done && (
         <p className="mt-2 text-sm text-mint">{coinHint}</p>
       )}

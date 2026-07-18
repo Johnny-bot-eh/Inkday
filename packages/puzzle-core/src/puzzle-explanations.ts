@@ -10,23 +10,23 @@ const ESCAPE_EXPLANATIONS: Record<string, string[]> = {
   ],
   "gallery-alarm": [
     "The facility card gives building number 14.",
-    "The lobby photo lists three founders on the brass rail (Ames · Bell · Crowe).",
+    "The lobby photo lists three founders on the brass rail (Ames · Bell · Crowe) — that count is the founding circle.",
     "The plaque rule is building number × founder count → 14 × 3 = 42.",
   ],
   "train-locker": [
     "The ticket stub lists departure 19:45, seat 3A, and carriage 7 — not yet in dial order.",
-    "Chalk reorders the dial: ride → berth digits → clock hour.",
+    "Chalk reorders: carriage → seat digits only → departure hour only.",
     "Digits only: carriage 7, then 3 from 3A, then hour 19 from 19:45 → 7319.",
   ],
   "lab-centrifuge": [
-    "Notes order elements by role: life (C), breath (O), buzzing gas (Ne).",
+    "Notes order elements by role: life (C), breath (O), buzzing neon gas (Ne).",
     "The chart shows their atomic numbers in a scrambled patch (Ne·10, C·6, O·8).",
     "Reorder by the notes, then concatenate the counts → 6, 8, 10 → 6810.",
   ],
   "library-cipher": [
     "The borrow slip shows call MYST-B-27 and a year ending in 19.",
-    "B is the 2nd letter; book number 27; twin year digits 19.",
-    "Vault recipe: letter place → book number → year twin → 2, 27, 19 → 22719.",
+    "B is the 2nd letter of the alphabet; book number 27; last two year digits 19.",
+    "Vault recipe: alphabet rank of the call-letter → number after that letter → last two year digits → 2, 27, 19 → 22719.",
   ],
   "manor-clock": [
     "“The hour the clock fears” is midnight (00:00), not the frozen noon on the dial.",
@@ -35,13 +35,13 @@ const ESCAPE_EXPLANATIONS: Record<string, string[]> = {
   ],
   "harbor-crate": [
     "The stencil lists LOT 58, BAY 3, and SHIFT 2.",
-    "The ledger cipher order is bay, then lot, then shift.",
-    "Concatenate as written (no zero-padding the bay) → 3, 58, 2 → 3582.",
+    "The ledger cipher writes bay, then lot, then shift as one code — no extra zeros.",
+    "Concatenate as written → 3, 58, 2 → 3582.",
   ],
   "cafe-wi-fi": [
-    "The specials ticket counts two flat whites and one pour-over at table 4.",
-    "The receipt rule sums drinks per table; table 4 has 2 + 1 = 3 drinks.",
-    "The deadbolt wants table number and drink tally → 4 and 3 → 43.",
+    "The specials ticket is table 4 with two flat whites and one pour-over — three cups total.",
+    "The tip-jar note wants the table number, then the cup count, as digits side by side (not added).",
+    "Table 4 then 3 cups → 43.",
   ],
 };
 

@@ -10,6 +10,8 @@ import { emitCoinBalance } from "@/components/coin-balance-chip";
 type Props = {
   signedIn: boolean;
   disabled?: boolean;
+  /** When false, Hint is disabled and does not charge coins. */
+  canUseHint?: boolean;
   onHint?: () => void;
   onExtraAttempt?: () => void;
   onSkip?: () => void;
@@ -33,7 +35,6 @@ async function buyAndUse(itemId: ConsumableItemId, refId: string) {
   if (typeof data.balance === "number") {
     emitCoinBalance(data.balance);
   } else {
-    // Fallback: re-fetch wallet if the action payload omitted balance.
     try {
       const wallet = await fetch("/api/shop");
       const body = await wallet.json();
@@ -51,6 +52,7 @@ async function buyAndUse(itemId: ConsumableItemId, refId: string) {
 export function CoinConsumableBar({
   signedIn,
   disabled,
+  canUseHint = true,
   onHint,
   onExtraAttempt,
   onSkip,
@@ -65,7 +67,11 @@ export function CoinConsumableBar({
     label: string,
     fn?: () => void,
   ) {
-    if (disabled || !fn) return;
+    if (disabled || !fn || busy !== null) return;
+    if (itemId === "hint" && !canUseHint) {
+      setStatus("No further hints on this board.");
+      return;
+    }
     setBusy(itemId);
     setStatus(null);
     try {
@@ -94,7 +100,7 @@ export function CoinConsumableBar({
         {onHint && (
           <button
             type="button"
-            disabled={disabled || busy !== null}
+            disabled={disabled || busy !== null || !canUseHint}
             onClick={() => void run("hint", "hint", onHint)}
             className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-semibold text-fog hover:bg-white/5 disabled:opacity-50"
           >

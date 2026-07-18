@@ -127,7 +127,7 @@ const HARD: Pack[] = [
       { clue: "Metal that attracts iron", answer: "magnet" },
       { clue: "Strong desire; longing", answer: "yearning" },
       { clue: "Total quiet", answer: "silence" },
-      { clue: "Story line that binds scenes", answer: "thread" },
+      { clue: "Connecting strand running through a story’s scenes", answer: "thread" },
       { clue: "Moon covering the sun (or reverse)", answer: "eclipse" },
       { clue: "Glowing brightly", answer: "radiant" },
       { clue: "Twelve months make one", answer: "year" },
@@ -185,11 +185,11 @@ const BY_DIFFICULTY: Record<Difficulty, Pack[]> = {
 };
 
 const ATTEMPTS: Record<Difficulty, number> = {
-  easy: 8,
-  medium: 6,
-  hard: 5,
-  obscure: 5,
-  impossible: 4,
+  easy: 3,
+  medium: 3,
+  hard: 3,
+  obscure: 3,
+  impossible: 3,
 };
 
 export function getAcrosticPuzzle(

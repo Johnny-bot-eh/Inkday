@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Difficulty } from "@daily-puzzle/puzzle-core";
 import {
   checkEscapeAnswer,
@@ -50,7 +50,8 @@ export function EscapeGame({
   const [code, setCode] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [bonusAttempts, setBonusAttempts] = useState(0);
-  const [coinHint, setCoinHint] = useState<string | null>(null);
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const hintStepRef = useRef(0);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -60,6 +61,7 @@ export function EscapeGame({
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
     won: boolean;
+    outcomeLabel?: string | null;
     elapsedMs?: number;
     score?: number;
     streak?: number;
@@ -85,6 +87,24 @@ export function EscapeGame({
 
   const maxAttempts = room.maxAttempts + bonusAttempts;
 
+  const escapeHintLadder = useMemo(() => {
+    const steps = room.clues.map(
+      (clue) =>
+        `Focus on “${clue.label}”: ${clue.text.slice(0, 100)}${clue.text.length > 100 ? "…" : ""}`,
+    );
+    steps.push("Drop letters and punctuation — the lock wants digits only.");
+    steps.push("Follow the recipe order; ignore decoy numbers that don’t fit it.");
+    return steps;
+  }, [room.clues]);
+
+  function applyEscapeHint() {
+    const n = hintStepRef.current;
+    if (n >= escapeHintLadder.length) return;
+    const next = escapeHintLadder[n]!;
+    hintStepRef.current = n + 1;
+    setUnlockedHints((prev) => [...prev, next]);
+  }
+
   async function finish(opts: { won: boolean; attemptsUsed: number; code: string }) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "escape", difficulty, pack === "premium" ? "plus" : seasonId);
@@ -93,7 +113,13 @@ export function EscapeGame({
     if (monthly) {
       if (!opts.won) {
         setDone(true);
-        setResults({ won: false, elapsedMs, answer: room.answer, explanation: room.explanation });
+        setResults({
+          won: false,
+          outcomeLabel: "Out of attempts",
+          elapsedMs,
+          answer: room.answer,
+          explanation: room.explanation,
+        });
         setStatus(`Out of attempts (${timeLabel}).`);
         return;
       }
@@ -150,13 +176,14 @@ export function EscapeGame({
       setDone(true);
       setResults({
         won: opts.won,
+        outcomeLabel: opts.won ? undefined : "Out of attempts",
         elapsedMs,
         answer: room.answer,
         explanation: room.explanation,
       });
       setStatus(
         opts.won
-          ? `Unlocked in ${timeLabel}! Sign in to save.`
+          ? `Cleared in ${timeLabel}! Sign in to save.`
           : `Out of attempts (${timeLabel}).`,
       );
       return;
@@ -190,6 +217,7 @@ export function EscapeGame({
       setDone(true);
       setResults({
         won: Boolean(data.won),
+        outcomeLabel: data.won ? undefined : "Out of attempts",
         elapsedMs: data.elapsedMs ?? elapsedMs,
         score: data.score,
         streak: data.streak,
@@ -323,22 +351,23 @@ export function EscapeGame({
           <CoinConsumableBar
             signedIn={signedIn}
             disabled={submitting}
-            onHint={() => {
-              const clue = room.clues[0];
-              setCoinHint(
-                clue
-                  ? `Focus on “${clue.label}”: ${clue.text.slice(0, 80)}${clue.text.length > 80 ? "…" : ""}`
-                  : "Re-read the briefing carefully.",
-              );
-            }}
+            canUseHint={unlockedHints.length < escapeHintLadder.length}
+            onHint={applyEscapeHint}
             onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
             onSkip={() => {
               void finish({ won: false, attemptsUsed: attempts, code: room.answer });
             }}
           />
         )}
-        {coinHint && !done && (
-          <p className="mt-2 text-sm text-mint">{coinHint}</p>
+        {unlockedHints.length > 0 && !done && (
+          <ul className="mt-3 space-y-1.5 text-sm text-mint">
+            {unlockedHints.map((hint, i) => (
+              <li key={`escape-hint-${i}`}>
+                <span className="text-fog">Hint {i + 1}: </span>
+                {hint}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 

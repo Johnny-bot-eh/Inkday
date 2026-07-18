@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Difficulty, GridMark } from "@daily-puzzle/puzzle-core";
 import {
   cellKey,
@@ -56,7 +56,8 @@ export function LogicGame({
   const [answer, setAnswer] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [bonusAttempts, setBonusAttempts] = useState(0);
-  const [coinHint, setCoinHint] = useState<string | null>(null);
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const hintStepRef = useRef(0);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -64,9 +65,10 @@ export function LogicGame({
       : null,
   );
   const [submitting, setSubmitting] = useState(false);
-  const maxAttempts = 1 + bonusAttempts;
+  const maxAttempts = 3 + bonusAttempts;
   const [results, setResults] = useState<{
     won: boolean;
+    outcomeLabel?: string | null;
     elapsedMs?: number;
     score?: number;
     streak?: number;
@@ -90,6 +92,30 @@ export function LogicGame({
     resetKey: `${dateKey}-${difficulty}`,
   });
 
+  const logicHintLadder = useMemo(() => {
+    const steps = puzzle.clues.map((clue, i) => `Clue ${i + 1}: ${clue}`);
+    const subject = puzzle.subjects.values.find(
+      (name) => name.toLowerCase() === puzzle.answer.toLowerCase(),
+    );
+    const trait = puzzle.traits[0];
+    if (subject && trait) {
+      const row = puzzle.solution[subject];
+      if (row) {
+        steps.push(
+          `Focus: ${subject}’s ${trait.label.toLowerCase()} is ${row[trait.id]}.`,
+        );
+      }
+    }
+    return steps;
+  }, [puzzle]);
+
+  function applyLogicHint() {
+    const n = hintStepRef.current;
+    if (n >= logicHintLadder.length) return;
+    const next = logicHintLadder[n]!;
+    hintStepRef.current = n + 1;
+    setUnlockedHints((prev) => [...prev, next]);
+  }
   function cycleCell(subject: string, traitId: string, value: string) {
     if (done) return;
     const key = cellKey(subject, traitId, value);
@@ -144,14 +170,25 @@ export function LogicGame({
     if (monthly) {
       if (!correct) {
         setDone(true);
-        setResults({ won: false, elapsedMs, answer: puzzle.answer, explanation: puzzle.explanation });
-        setStatus(`Not quite (${timeLabel}).`);
+        setResults({
+          won: false,
+          outcomeLabel: "Out of attempts",
+          elapsedMs,
+          answer: puzzle.answer,
+          explanation: puzzle.explanation,
+        });
+        setStatus(`Out of attempts (${timeLabel}).`);
         return;
       }
       if (!signedIn) {
         setDone(true);
-        setResults({ won: true, elapsedMs, answer: puzzle.answer, explanation: puzzle.explanation });
-        setStatus("Correct! Sign in to save Case File progress.");
+        setResults({
+          won: true,
+          elapsedMs,
+          answer: puzzle.answer,
+          explanation: puzzle.explanation,
+        });
+        setStatus("Cleared! Sign in to save Case File progress.");
         return;
       }
       setSubmitting(true);
@@ -190,14 +227,15 @@ export function LogicGame({
       setDone(true);
       setResults({
         won: correct,
+        outcomeLabel: correct ? undefined : "Out of attempts",
         elapsedMs,
         answer: puzzle.answer,
         explanation: puzzle.explanation,
       });
       setStatus(
         correct
-          ? `Correct in ${timeLabel}. Sign in to save points.`
-          : `Not quite (${timeLabel}).`,
+          ? `Cleared in ${timeLabel}. Sign in to save points.`
+          : `Out of attempts (${timeLabel}).`,
       );
       return;
     }
@@ -277,22 +315,7 @@ export function LogicGame({
   }
 
   function revealLogicHint() {
-    const subject = puzzle.subjects.values.find(
-      (name) => name.toLowerCase() === puzzle.answer.toLowerCase(),
-    );
-    if (!subject) {
-      setCoinHint(puzzle.clues[0] ?? "Re-read the clues carefully.");
-      return;
-    }
-    const row = puzzle.solution[subject];
-    const trait = puzzle.traits[0];
-    if (row && trait) {
-      setCoinHint(
-        `Hint: ${subject}’s ${trait.label.toLowerCase()} is ${row[trait.id]}.`,
-      );
-      return;
-    }
-    setCoinHint(puzzle.clues[0] ?? "Re-read the clues carefully.");
+    applyLogicHint();
   }
 
   return (
@@ -426,6 +449,9 @@ export function LogicGame({
 
       <section className="rounded-2xl border border-[var(--line)] bg-panel/50 p-5">
         <p className="font-semibold">{puzzle.question}</p>
+        <p className="mt-1 text-xs text-fog">
+          Attempts {attempts}/{maxAttempts}
+        </p>
         {!done && (
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <select
@@ -455,6 +481,7 @@ export function LogicGame({
           <CoinConsumableBar
             signedIn={signedIn}
             disabled={submitting}
+            canUseHint={unlockedHints.length < logicHintLadder.length}
             onHint={revealLogicHint}
             onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
             onSkip={() => {
@@ -462,8 +489,15 @@ export function LogicGame({
             }}
           />
         )}
-        {coinHint && !done && (
-          <p className="mt-2 text-sm text-mint">{coinHint}</p>
+        {unlockedHints.length > 0 && !done && (
+          <ul className="mt-3 space-y-1.5 text-sm text-mint">
+            {unlockedHints.map((hint, i) => (
+              <li key={`logic-hint-${i}`}>
+                <span className="text-fog">Hint {i + 1}: </span>
+                {hint}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 

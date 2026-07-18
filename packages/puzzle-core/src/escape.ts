@@ -30,12 +30,17 @@ export type EscapeRoom = {
  * - decoy: medium + hard — convincing false trails (never label themselves as junk)
  *
  * Hard rule: no clue text may state, spell, or concatenate this room’s answer.
+ *
+ * Cryptic rule: denser wording is fine, but every term must still name the
+ * concrete thing it refers to (e.g. “ABC-place”, not bare “place”; “cups on
+ * the ticket”, not “+” that could mean add). Fold helpful-tier meaning into
+ * cryptic text when helpful clues are hidden on medium/hard.
  */
 type Tier = "essential" | "helpful" | "spoiler" | "decoy";
 
 type TieredClue = EscapeClue & {
   tier: Tier;
-  /** Shown on medium/hard when set — denser / less hand-holding */
+  /** Shown on medium/hard when set — denser, but not vague about what a term means */
   cryptic?: string;
 };
 
@@ -65,7 +70,7 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Notebook",
         text: '"Safe = the day winter first interrupted the case."',
         cryptic:
-          'Margin only: “Code follows the first interruption of the season.”',
+          'Margin: safe code = the circled “First flakes” calendar date, month then day as four digits.',
       },
       {
         id: "calendar",
@@ -73,7 +78,7 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Calendar",
         text: "A circled date mid-autumn: the 12th of the tenth month. Margin note: First flakes.",
         cryptic:
-          "One day circled in autumn. Tiny ink: First flakes. No month name written — only the grid.",
+          "Circled autumn date: tenth month, day 12. Tiny ink: First flakes.",
       },
       {
         id: "sticky",
@@ -115,7 +120,8 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Plaque",
         text: '"Access = building number times the founding circle."',
-        cryptic: "Etched rule: number × circle.",
+        cryptic:
+          "Etched rule: building number × how many names stand in the founding circle.",
       },
       {
         id: "receipt",
@@ -129,7 +135,7 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Lobby photo",
         text: "Three names on the brass rail: Ames · Bell · Crowe.",
-        cryptic: "Brass rail names: Ames · Bell · Crowe.",
+        cryptic: "Brass rail names (the founding circle): Ames · Bell · Crowe.",
       },
       {
         id: "math",
@@ -171,14 +177,15 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Ticket stub",
         text: "Depart 19:45 · Seat 3A · Carriage 7",
-        cryptic: "Stub fields: 19:45 / 3A / 7",
+        cryptic: "Stub fields: depart 19:45 / seat 3A / carriage 7",
       },
       {
         id: "chalk",
         tier: "essential",
         label: "Chalk on door",
-        text: "Order: ride → berth digits → clock hour.",
-        cryptic: "Chalk arrows: ride → berth → hour.",
+        text: "Order: carriage (ride) → seat digits only (berth) → departure hour (drop minutes).",
+        cryptic:
+          "Chalk order: carriage number → seat digits only (drop the letter) → departure hour only (drop minutes).",
       },
       {
         id: "tag",
@@ -221,7 +228,7 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Lab notes",
         text: "Sequence: the life element, then the breath element, then the buzzing gas — by nuclear count.",
         cryptic:
-          "Order whispered in the notes: life → breath → buzz. Count, don’t name.",
+          "Order: life element → breath element → buzzing neon gas. Use each element’s atomic number from the chart — digits only, no symbols.",
       },
       {
         id: "poster",
@@ -276,8 +283,9 @@ const ESCAPES: EscapeTemplate[] = [
         id: "card",
         tier: "essential",
         label: "Librarian card",
-        text: "Vault recipe: letter's place → book number → year twin digits.",
-        cryptic: "Recipe shorthand: place · book · twin.",
+        text: "Vault recipe: letter's place in the alphabet → book number → year twin digits.",
+        cryptic:
+          "Recipe: alphabet rank of the call-letter → number after that letter → last two year digits.",
       },
       {
         id: "alpha",
@@ -319,7 +327,8 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Telegram",
         text: "MEET AT HALF PAST THE HOUR THE CLOCK FEARS.",
-        cryptic: "MEET · HALF PAST · THE DEAD HOUR — ignore the frozen dial.",
+        cryptic:
+          "MEET · HALF PAST · the dead hour (midnight) — ignore the frozen dial.",
       },
       {
         id: "clock",
@@ -327,14 +336,15 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Clock face",
         text: "Short hand fixed at the crown. Long hand pinned straight down.",
         cryptic:
-          "Hands locked at the top and bottom of the dial — a red herring if you trust the face alone.",
+          "Hands locked at noon on the dial — a red herring if you trust the face alone.",
       },
       {
         id: "watch",
         tier: "essential",
         label: "Pocket watch note",
         text: "Drawer latch speaks only four digits — two for the hour, two for the minutes — from midnight's side of the day.",
-        cryptic: "Latch wants HHMM on a 24-hour clock, not a 1–12 parlor face.",
+        cryptic:
+          "Latch wants HHMM on a 24-hour clock (hour then minutes), not a 1–12 parlor face.",
       },
       {
         id: "spoiler",
@@ -377,7 +387,8 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Dock ledger",
         text: "Bolt cipher: bay, then lot, then shift — as written.",
-        cryptic: "Cipher column header: bay → lot → shift",
+        cryptic:
+          "Cipher: write the bay, lot, then shift numbers in that order as one code — no extra zeros.",
       },
       {
         id: "ink",
@@ -425,8 +436,9 @@ const ESCAPES: EscapeTemplate[] = [
         id: "receipt",
         tier: "essential",
         label: "Tip-jar note",
-        text: "Back latch = table, then how many cups on that ticket.",
-        cryptic: "Latch shorthand: table + cups.",
+        text: "Back latch = table number, then how many cups on that ticket (digits side by side).",
+        cryptic:
+          "Latch: table number, then total cups on that ticket — digits side by side, not added.",
       },
       {
         id: "apron",
@@ -457,11 +469,11 @@ const ESCAPES: EscapeTemplate[] = [
 ];
 
 const ATTEMPTS: Record<Difficulty, number> = {
-  easy: 5,
+  easy: 3,
   medium: 3,
-  hard: 2,
-  obscure: 2,
-  impossible: 1,
+  hard: 3,
+  obscure: 3,
+  impossible: 3,
 };
 
 /** Easy gets hand-holds; medium/hard must deduce format and discard red herrings. */

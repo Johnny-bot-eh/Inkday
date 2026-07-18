@@ -27,19 +27,19 @@ const BY_DIFFICULTY: Record<Difficulty, string[]> = {
 };
 
 const ATTEMPTS: Record<Difficulty, number> = {
-  easy: 6,
-  medium: 5,
-  hard: 4,
-  obscure: 4,
+  easy: 3,
+  medium: 3,
+  hard: 3,
+  obscure: 3,
   impossible: 3,
 };
 
 const HINTS: Record<Difficulty, string> = {
   easy: "Unscramble the letters into a common English word.",
   medium: "Same letters, one real word — no repeats of wrong tries.",
-  hard: "Longer scramble. Think of categories: nature, abstract nouns.",
-  obscure: "Rare vocabulary scramble. Few attempts.",
-  impossible: "Few attempts. Deduce without extra letter cues.",
+  hard: "Seven-letter scramble: one real English word from the letters shown.",
+  obscure: "Seven-letter scramble from a wider word pool. Few attempts.",
+  impossible: "Few attempts. Deduce the word from the letters alone.",
 };
 
 export function getAnagramPuzzle(

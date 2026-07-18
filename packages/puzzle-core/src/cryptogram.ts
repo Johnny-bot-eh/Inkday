@@ -54,12 +54,36 @@ const MEDIUM: PhrasePack[] = [
 ];
 
 const HARD: PhrasePack[] = [
-  { phrase: "curiosity unlocks hidden doors", theme: "Discovery", clue: "Asking questions reveals opportunities others overlook." },
-  { phrase: "wisdom grows from quiet mistakes", theme: "Learning", clue: "Good judgment develops by reflecting on errors." },
-  { phrase: "courage is fear that kept walking", theme: "Bravery", clue: "Being brave means continuing despite being afraid." },
-  { phrase: "shadows lengthen when the sun sets", theme: "Evening", clue: "Low evening light stretches dark shapes across the ground." },
-  { phrase: "every puzzle leaves a small map", theme: "Meta", clue: "Each solved challenge provides directions toward something larger." },
-  { phrase: "truth wears many borrowed masks", theme: "Philosophy", clue: "Reality may appear disguised by different perspectives." },
+  {
+    phrase: "curiosity unlocks hidden doors",
+    theme: "Discovery",
+    clue: "A questioning habit acts like a key to opportunities that stay out of sight.",
+  },
+  {
+    phrase: "wisdom grows from quiet mistakes",
+    theme: "Learning",
+    clue: "Good judgment develops slowly from errors considered in silence.",
+  },
+  {
+    phrase: "courage is fear that kept walking",
+    theme: "Bravery",
+    clue: "Bravery is fear that refused to stop moving forward.",
+  },
+  {
+    phrase: "shadows lengthen when the sun sets",
+    theme: "Evening",
+    clue: "As daylight drops, dark shapes on the ground stretch longer.",
+  },
+  {
+    phrase: "every puzzle leaves a small map",
+    theme: "Meta",
+    clue: "Each solved challenge leaves a tiny guide toward something larger.",
+  },
+  {
+    phrase: "truth wears many borrowed masks",
+    theme: "Philosophy",
+    clue: "What is real can appear in disguises taken from other viewpoints.",
+  },
 ];
 
 const PACKS: Record<Difficulty, PhrasePack[]> = {
@@ -71,10 +95,10 @@ const PACKS: Record<Difficulty, PhrasePack[]> = {
 };
 
 const ATTEMPTS: Record<Difficulty, number> = {
-  easy: 6,
-  medium: 5,
-  hard: 4,
-  obscure: 4,
+  easy: 3,
+  medium: 3,
+  hard: 3,
+  obscure: 3,
   impossible: 3,
 };
 
