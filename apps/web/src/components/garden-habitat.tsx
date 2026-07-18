@@ -96,10 +96,10 @@ export function GardenHabitat({ night, season }: Props) {
         />
       </svg>
 
-      {/* Left oak-like tree */}
+      {/* Left oak-like tree — rooted behind the mid-ground shrub belt */}
       <svg
         viewBox="0 0 120 160"
-        className="absolute bottom-[8%] left-[-2%] h-[78%] w-[34%] garden-sway"
+        className="absolute bottom-[22%] left-[-2%] h-[68%] w-[30%] garden-habitat-sway"
         style={{ transformOrigin: "50% 100%" }}
       >
         <ellipse cx="58" cy="152" rx="28" ry="6" fill="#00000028" />
@@ -152,10 +152,10 @@ export function GardenHabitat({ night, season }: Props) {
         )}
       </svg>
 
-      {/* Right denser tree */}
+      {/* Right denser tree — rooted behind the mid-ground shrub belt */}
       <svg
         viewBox="0 0 120 160"
-        className="absolute bottom-[6%] right-[-3%] h-[82%] w-[36%] garden-sway"
+        className="absolute bottom-[20%] right-[-3%] h-[72%] w-[32%] garden-habitat-sway"
         style={{ transformOrigin: "50% 100%", animationDelay: "-1.8s" }}
       >
         <ellipse cx="62" cy="154" rx="30" ry="6" fill="#00000028" />
@@ -200,6 +200,47 @@ export function GardenHabitat({ night, season }: Props) {
             ) : null}
           </>
         )}
+      </svg>
+
+      {/* Mid-ground shrub belt — sits in front of tree trunks */}
+      <svg
+        viewBox="0 0 400 90"
+        preserveAspectRatio="none"
+        className="absolute inset-x-0 bottom-[14%] h-[26%] w-full"
+      >
+        <path
+          d="M0 90 L0 48 Q18 28 40 42 Q58 22 82 40 Q108 18 136 38 Q162 24 188 42 Q214 20 242 40 Q270 22 298 44 Q326 26 352 46 Q378 30 400 48 L400 90 Z"
+          fill={p.leafDark}
+        />
+        <path
+          d="M0 90 L0 58 Q24 40 52 54 Q78 36 108 52 Q140 34 172 54 Q204 38 236 56 Q268 40 300 58 Q332 44 364 58 Q386 48 400 56 L400 90 Z"
+          fill={p.leafMid}
+          opacity="0.92"
+        />
+        <path
+          d="M20 70 Q36 52 52 68 Q70 50 88 70 Q108 54 126 72"
+          fill="none"
+          stroke={p.leafLit}
+          strokeWidth="3"
+          strokeLinecap="round"
+          opacity="0.45"
+        />
+        <path
+          d="M250 72 Q270 54 290 70 Q310 52 330 72 Q350 56 372 74"
+          fill="none"
+          stroke={p.leafLit}
+          strokeWidth="3"
+          strokeLinecap="round"
+          opacity="0.4"
+        />
+        {blossom !== "transparent" ? (
+          <>
+            <circle cx="64" cy="56" r="2.2" fill={blossom} />
+            <circle cx="118" cy="50" r="1.8" fill={blossom} />
+            <circle cx="280" cy="54" r="2" fill={blossom} />
+            <circle cx="340" cy="58" r="1.6" fill={blossom} />
+          </>
+        ) : null}
       </svg>
 
       {/* Long hanging vines from canopy */}

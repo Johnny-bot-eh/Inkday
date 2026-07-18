@@ -223,10 +223,34 @@ export function CompanionClient({ signedIn, initial }: Props) {
           }}
           onMove={(placementId, x, y) => {
             setSelectedPlacement(null);
+            setSnapshot((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                garden: {
+                  ...prev.garden,
+                  placements: prev.garden.placements.map((p) =>
+                    p.id === placementId ? { ...p, x, y } : p,
+                  ),
+                },
+              };
+            });
             void post({ action: "move", placementId, x, y });
           }}
           onRemove={(placementId) => {
             setSelectedPlacement(null);
+            setSnapshot((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                garden: {
+                  ...prev.garden,
+                  placements: prev.garden.placements.filter(
+                    (p) => p.id !== placementId,
+                  ),
+                },
+              };
+            });
             void post({ action: "remove", placementId });
           }}
         />
