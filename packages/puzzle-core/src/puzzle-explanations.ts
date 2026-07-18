@@ -25,8 +25,8 @@ const ESCAPE_EXPLANATIONS: Record<string, string[]> = {
   ],
   "library-cipher": [
     "The borrow slip shows call MYST-B-27 and a year ending in 19.",
-    "B is the 2nd letter; book number 27; twin year digits 19.",
-    "Vault recipe: letter place → book number → year twin → 2, 27, 19 → 22719.",
+    "B is the 2nd letter of the alphabet; book number 27; twin year digits 19.",
+    "Vault recipe: ABC-place → book# → year-twin → 2, 27, 19 → 22719.",
   ],
   "manor-clock": [
     "“The hour the clock fears” is midnight (00:00), not the frozen noon on the dial.",

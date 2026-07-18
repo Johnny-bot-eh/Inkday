@@ -276,8 +276,8 @@ const ESCAPES: EscapeTemplate[] = [
         id: "card",
         tier: "essential",
         label: "Librarian card",
-        text: "Vault recipe: letter's place → book number → year twin digits.",
-        cryptic: "Recipe shorthand: place · book · twin.",
+        text: "Vault recipe: letter's place in the alphabet → book number → year twin digits.",
+        cryptic: "Recipe shorthand: ABC-place · book# · year-twin.",
       },
       {
         id: "alpha",
