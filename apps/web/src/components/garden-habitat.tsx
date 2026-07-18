@@ -96,27 +96,31 @@ export function GardenHabitat({ night, season }: Props) {
         />
       </svg>
 
-      {/* Tiny back shrubs tucked into the distant wall — never over trunks */}
+      {/* Back shrubs — one near each side, one in the open clearing */}
       <svg
         viewBox="0 0 400 80"
         preserveAspectRatio="none"
         className="absolute inset-x-0 top-[48%] h-[14%] w-full"
       >
         <path
-          d="M18 80 C22 52 38 48 48 62 C58 48 72 52 76 80 Z"
+          d="M8 80 C12 56 24 50 34 64 C42 52 52 56 56 80 Z"
           fill={p.leafDark}
         />
         <path
-          d="M34 80 C38 58 48 54 56 66 C62 56 70 60 74 80 Z"
+          d="M168 80 C176 48 198 42 214 60 C230 42 252 50 260 80 Z"
+          fill={p.leafDark}
+        />
+        <path
+          d="M188 80 C196 56 210 50 222 66 C232 54 244 58 250 80 Z"
           fill={p.leafMid}
-          opacity="0.9"
+          opacity="0.92"
         />
         <path
-          d="M324 80 C328 54 344 50 354 64 C364 50 378 54 382 80 Z"
+          d="M344 80 C348 54 364 50 374 64 C384 50 396 54 400 80 Z"
           fill={p.leafDark}
         />
         <path
-          d="M340 80 C344 60 354 56 362 68 C368 58 376 62 380 80 Z"
+          d="M356 80 C360 60 370 56 378 68 C384 58 392 62 396 80 Z"
           fill={p.leafMid}
           opacity="0.9"
         />

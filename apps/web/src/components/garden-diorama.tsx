@@ -138,13 +138,26 @@ export function GardenDiorama({
     const el = stageRef.current;
     if (!el) return { x: 50, y: 50 };
     const rect = el.getBoundingClientRect();
-    const x = ((clientX - rect.left) / Math.max(1, rect.width)) * 100;
-    const y = ((clientY - rect.top) / Math.max(1, rect.height)) * 100;
+    if (rect.width < 1 || rect.height < 1) return { x: 50, y: 50 };
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
     return {
       x: Math.min(92, Math.max(8, x)),
       y: Math.min(92, Math.max(8, y)),
     };
   }, []);
+
+  /** Keep new placements on the clearing / grass, not the sky or distant wall. */
+  const toPlaceNorm = useCallback(
+    (clientX: number, clientY: number) => {
+      const pos = toNorm(clientX, clientY);
+      return {
+        x: pos.x,
+        y: Math.min(90, Math.max(52, pos.y)),
+      };
+    },
+    [toNorm],
+  );
 
   const flushLive = useCallback(() => {
     rafRef.current = null;
@@ -168,20 +181,22 @@ export function GardenDiorama({
   }, []);
 
   function onStagePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    if (e.target !== e.currentTarget && !(e.target as HTMLElement).dataset?.stage)
-      return;
     if (!selectedDecor) {
-      if (selectedPlacement) onSelectPlacement(null);
+      // Only clear selection when tapping empty stage (not a decor/nest).
+      if (e.target === e.currentTarget || (e.target as HTMLElement).dataset?.stage) {
+        if (selectedPlacement) onSelectPlacement(null);
+      }
       return;
     }
     if (busy) return;
-    const { x, y } = toNorm(e.clientX, e.clientY);
+    e.stopPropagation();
+    const { x, y } = toPlaceNorm(e.clientX, e.clientY);
     onPlace(selectedDecor, x, y);
   }
 
   function onStagePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
     if (selectedDecor && !dragRef.current) {
-      setPlaceGhost(toNorm(e.clientX, e.clientY));
+      setPlaceGhost(toPlaceNorm(e.clientX, e.clientY));
     } else if (!dragRef.current) {
       setPlaceGhost(null);
     }
@@ -444,6 +459,23 @@ export function GardenDiorama({
             />
           </div>
         </button>
+
+        {selectedDecor ? (
+          <div
+            data-place-layer="1"
+            aria-hidden
+            className="absolute inset-0 z-[100] cursor-crosshair"
+            onPointerDown={(e) => {
+              if (busy) return;
+              e.stopPropagation();
+              const { x, y } = toPlaceNorm(e.clientX, e.clientY);
+              onPlace(selectedDecor, x, y);
+            }}
+            onPointerMove={(e) => {
+              setPlaceGhost(toPlaceNorm(e.clientX, e.clientY));
+            }}
+          />
+        ) : null}
 
         {selectedDecor && placeGhost ? (
           <div
