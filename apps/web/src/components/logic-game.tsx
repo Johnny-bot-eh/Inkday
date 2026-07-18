@@ -74,6 +74,7 @@ export function LogicGame({
     coinsEarned?: number | null;
     coinBalance?: number | null;
     xpEarned?: number | null;
+    accountXp?: number | null;
     accountLevel?: number | null;
     petLevel?: number | null;
     petStage?: string | null;
@@ -226,6 +227,7 @@ export function LogicGame({
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,
         xpEarned: data.xpEarned,
+        accountXp: data.accountXp,
         accountLevel: data.accountLevel,
         petLevel: data.petLevel,
         petStage: data.petStage,

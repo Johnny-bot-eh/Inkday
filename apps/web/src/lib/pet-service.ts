@@ -1257,6 +1257,24 @@ export async function getAccountLevel(userId: string): Promise<number> {
   return levelFromXp(prog.accountXp).level;
 }
 
+/** Account XP breakdown for header / profile chips. */
+export async function getAccountXpSummary(userId: string): Promise<{
+  accountXp: number;
+  level: number;
+  xpIntoLevel: number;
+  xpForNext: number;
+}> {
+  await backfillProgressionIfNeeded(userId);
+  const prog = await ensureProgression(userId);
+  const info = levelFromXp(prog.accountXp);
+  return {
+    accountXp: info.totalXp,
+    level: info.level,
+    xpIntoLevel: info.xpIntoLevel,
+    xpForNext: info.xpForNext,
+  };
+}
+
 export function decorationCatalog() {
   return DECORATION_SHOP_ITEMS;
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { emitAccountXp } from "@/components/account-xp-chip";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import { GardenDiorama } from "@/components/garden-diorama";
 import { PetMark } from "@/components/pet-mark";
@@ -44,6 +45,21 @@ const MAX_UNDO = 40;
 export function CompanionClient({ signedIn, initial }: Props) {
   const [snapshot, setSnapshot] = useState<CompanionSnapshot | null>(initial);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!snapshot) return;
+    emitAccountXp({
+      accountXp: snapshot.accountXp,
+      level: snapshot.accountLevel,
+      xpIntoLevel: snapshot.accountXpIntoLevel,
+      xpForNext: snapshot.accountXpForNext,
+    });
+  }, [
+    snapshot?.accountXp,
+    snapshot?.accountLevel,
+    snapshot?.accountXpIntoLevel,
+    snapshot?.accountXpForNext,
+  ]);
   const [busy, setBusy] = useState<string | null>(null);
   const [selectedDecor, setSelectedDecor] = useState<string | null>(null);
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(

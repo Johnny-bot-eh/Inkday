@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { formatDuration } from "@/components/play-timer";
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
+import { emitAccountXp } from "@/components/account-xp-chip";
 
 export type PlayRanks = {
   friends: {
@@ -37,6 +39,7 @@ type Props = {
   coinsEarned?: number | null;
   coinBalance?: number | null;
   xpEarned?: number | null;
+  accountXp?: number | null;
   accountLevel?: number | null;
   petLevel?: number | null;
   petStage?: string | null;
@@ -59,11 +62,22 @@ export function PlayResultsCard({
   coinsEarned,
   coinBalance,
   xpEarned,
+  accountXp,
   accountLevel,
   petLevel,
   petStage,
   happinessGain,
 }: Props) {
+  useEffect(() => {
+    if (typeof accountXp === "number") {
+      emitAccountXp({ accountXp });
+      return;
+    }
+    if (typeof accountLevel === "number") {
+      emitAccountXp({ level: accountLevel });
+    }
+  }, [accountXp, accountLevel]);
+
   return (
     <div className="space-y-4 rounded-2xl border border-[var(--line)] bg-panel/70 p-5">
       <div>
