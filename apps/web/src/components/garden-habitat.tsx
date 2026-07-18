@@ -96,31 +96,35 @@ export function GardenHabitat({ night, season }: Props) {
         />
       </svg>
 
-      {/* Left oak-like tree — rooted behind the mid-ground shrub belt */}
+      {/* Left oak-like tree — upright, rooted behind the mid-ground shrub belt */}
       <svg
         viewBox="0 0 120 160"
         className="absolute bottom-[22%] left-[-2%] h-[68%] w-[30%] garden-habitat-sway"
-        style={{ transformOrigin: "50% 100%" }}
+        style={{
+          transformOrigin: "50% 100%",
+          animationDirection: "reverse",
+          animationDuration: "6s",
+        }}
       >
-        <ellipse cx="58" cy="152" rx="28" ry="6" fill="#00000028" />
+        <ellipse cx="56" cy="152" rx="26" ry="6" fill="#00000028" />
         <path
-          d="M52 152 C50 110 48 90 54 72 C46 78 40 88 36 98 C42 86 50 78 58 74 C62 68 66 62 70 58 C68 72 66 100 64 152 Z"
+          d="M50 152 C49 118 48 96 52 74 C46 82 42 92 40 104 C44 92 50 82 56 76 C58 68 60 62 62 58 C60 74 58 110 56 152 Z"
           fill={trunk}
         />
         <path
-          d="M54 100 C62 88 74 82 86 86 C78 92 68 98 60 108 Z"
+          d="M52 108 C58 98 66 94 74 96 C68 102 60 106 54 114 Z"
           fill={trunkLit}
           opacity="0.55"
         />
         {season === "winter" ? (
           <>
             <path
-              d="M40 70 C34 56 42 40 56 36 C52 28 62 20 74 26 C84 18 98 28 94 42 C104 48 100 62 88 64 C80 74 56 72 44 64 Z"
+              d="M38 72 C34 56 42 40 56 38 C52 28 62 22 74 28 C84 20 96 30 92 44 C102 50 98 64 86 66 C78 76 54 74 42 66 Z"
               fill={p.leafMid}
               opacity="0.45"
             />
             <path
-              d="M54 72 L40 48 M54 72 L58 40 M54 72 L72 46 M54 72 L84 52"
+              d="M54 74 L40 50 M54 74 L54 42 M54 74 L68 48 M54 74 L80 56"
               stroke={trunk}
               strokeWidth="2"
               fill="none"
@@ -129,23 +133,23 @@ export function GardenHabitat({ night, season }: Props) {
         ) : (
           <>
             <path
-              d="M28 78 C18 62 22 42 40 36 C34 28 38 16 54 14 C62 6 78 8 86 20 C98 14 112 24 110 40 C122 48 118 68 104 74 C108 88 96 98 80 94 C72 104 54 100 42 92 C32 96 24 88 28 78 Z"
+              d="M30 80 C22 64 28 44 44 38 C38 28 44 16 58 16 C66 8 82 12 88 24 C98 18 110 30 106 44 C116 52 110 70 96 74 C98 88 86 96 72 92 C64 102 48 98 38 90 C30 94 26 88 30 80 Z"
               fill={p.leafDark}
             />
             <path
-              d="M36 70 C28 56 36 40 52 38 C48 28 58 18 72 22 C82 14 98 22 98 36 C108 40 110 56 100 64 C102 76 90 84 76 80 C68 88 50 84 42 76 Z"
+              d="M38 72 C32 58 40 42 54 40 C50 30 60 22 72 26 C82 18 96 28 94 42 C104 46 104 60 94 66 C96 78 84 84 72 80 C64 88 48 84 42 76 Z"
               fill={p.leafMid}
             />
             <path
-              d="M48 58 C44 48 52 38 64 40 C62 32 72 28 82 34 C90 30 98 38 96 48 C102 52 100 62 90 64 C86 72 70 70 60 64 Z"
+              d="M48 58 C46 48 54 40 64 42 C62 34 72 30 80 36 C88 32 94 40 92 50 C98 54 96 62 88 64 C84 72 70 70 60 64 Z"
               fill={p.leafLit}
               opacity="0.9"
             />
             {blossom !== "transparent" ? (
               <>
-                <circle cx="44" cy="42" r="3" fill={blossom} />
-                <circle cx="78" cy="36" r="2.5" fill={blossom} />
-                <circle cx="62" cy="28" r="2.2" fill={blossom} opacity="0.85" />
+                <circle cx="46" cy="44" r="3" fill={blossom} />
+                <circle cx="76" cy="38" r="2.5" fill={blossom} />
+                <circle cx="60" cy="30" r="2.2" fill={blossom} opacity="0.85" />
               </>
             ) : null}
           </>

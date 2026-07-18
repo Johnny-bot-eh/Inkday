@@ -325,6 +325,8 @@ const alters = [
   `ALTER TABLE garden_placement ADD COLUMN x INTEGER NOT NULL DEFAULT 50`,
   `ALTER TABLE garden_placement ADD COLUMN y INTEGER NOT NULL DEFAULT 60`,
   `ALTER TABLE garden_placement ADD COLUMN layer TEXT NOT NULL DEFAULT 'middle'`,
+  `ALTER TABLE user_progression ADD COLUMN nest_x INTEGER`,
+  `ALTER TABLE user_progression ADD COLUMN nest_y INTEGER`,
 ];
 
 /** Index rebuilds that must replace older definitions. */
