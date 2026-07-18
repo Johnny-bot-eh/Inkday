@@ -75,10 +75,8 @@ export function buildMonthlyExplanation(
       return `Work through the prompt step by step to reach ${puzzle.answer}.`;
     case "trivia":
       return `The correct choice is “${puzzle.options[puzzle.answerIndex]}.”`;
-    case "pattern": {
-      const next = puzzle.options[puzzle.answerIndex];
-      return `The shown sequence continues with “${next}.”`;
-    }
+    case "pattern":
+      return puzzle.explanation;
     case "deduction":
       return puzzle.explanation;
     case "memory":

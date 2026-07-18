@@ -45,6 +45,7 @@ export type MonthlyPattern = {
   shown: string[];
   options: string[];
   answerIndex: number;
+  explanation: string;
 };
 
 export type MonthlyDeduction = {
@@ -171,13 +172,50 @@ const PATTERN_SETS: Array<{
   shown: string[];
   options: string[];
   answerIndex: number;
+  explanation: string;
 }> = [
-  { shown: ["A", "B", "C"], options: ["D", "E", "A", "Z"], answerIndex: 0 },
-  { shown: ["2", "4", "6"], options: ["7", "8", "9", "10"], answerIndex: 1 },
-  { shown: ["■", "■", "○"], options: ["■", "○", "▲", "★"], answerIndex: 1 },
-  { shown: ["1", "1", "2", "3"], options: ["4", "5", "3", "8"], answerIndex: 1 },
-  { shown: ["red", "blue", "red"], options: ["blue", "green", "red", "yellow"], answerIndex: 0 },
-  { shown: ["↑", "→", "↓"], options: ["←", "↑", "→", "↓"], answerIndex: 0 },
+  {
+    shown: ["A", "B", "C"],
+    options: ["D", "E", "A", "Z"],
+    answerIndex: 0,
+    explanation:
+      "The letters advance one step through the alphabet each time (A → B → C → D).",
+  },
+  {
+    shown: ["2", "4", "6"],
+    options: ["7", "8", "9", "10"],
+    answerIndex: 1,
+    explanation:
+      "Each number increases by 2 (even numbers: 2, 4, 6, 8).",
+  },
+  {
+    shown: ["■", "■", "○"],
+    options: ["■", "○", "▲", "★"],
+    answerIndex: 1,
+    explanation:
+      "The pattern alternates pairs of filled squares with a circle: ■ ■ ○ ■ ■ ○… so the next symbol is ○.",
+  },
+  {
+    shown: ["1", "1", "2", "3"],
+    options: ["4", "5", "3", "8"],
+    answerIndex: 1,
+    explanation:
+      "This is the Fibonacci sequence: each number is the sum of the two before it (1+1=2, 1+2=3, 2+3=5).",
+  },
+  {
+    shown: ["red", "blue", "red"],
+    options: ["blue", "green", "red", "yellow"],
+    answerIndex: 0,
+    explanation:
+      "The colors alternate red, blue, red, blue… so the next color is blue.",
+  },
+  {
+    shown: ["↑", "→", "↓"],
+    options: ["←", "↑", "→", "↓"],
+    answerIndex: 0,
+    explanation:
+      "The arrows turn 90° clockwise each step (up → right → down → left).",
+  },
 ];
 
 const DEDUCTIONS: Array<{
@@ -297,6 +335,7 @@ export function getMonthlyOnlyPuzzle(
         shown: [...pack.shown],
         options: [...pack.options],
         answerIndex: pack.answerIndex,
+        explanation: pack.explanation,
       };
     }
     case "deduction": {
