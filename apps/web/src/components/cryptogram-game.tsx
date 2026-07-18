@@ -24,6 +24,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
@@ -80,6 +81,9 @@ export function CryptogramGame({
   const [letters, setLetters] = useState<string[]>(() =>
     slots.map((slot) => (slot.revealed ? slot.letter : "")),
   );
+  const [hintedLetters, setHintedLetters] = useState<string[]>([]);
+  const [bonusAttempts, setBonusAttempts] = useState(0);
+  const [coinHint, setCoinHint] = useState<string | null>(null);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const [attempts, setAttempts] = useState(0);
@@ -89,6 +93,16 @@ export function CryptogramGame({
       ? `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
+  const maxAttempts = puzzle.maxAttempts + bonusAttempts;
+  const lockedLetters = useMemo(() => {
+    const set = new Set(puzzle.revealed.map((ch) => ch.toLowerCase()));
+    for (const ch of hintedLetters) set.add(ch.toLowerCase());
+    return set;
+  }, [puzzle.revealed, hintedLetters]);
+  function isLocked(slotIndex: number): boolean {
+    const slot = slots[slotIndex];
+    return Boolean(slot && lockedLetters.has(slot.letter));
+  }
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
     won: boolean;
@@ -136,7 +150,7 @@ export function CryptogramGame({
   function focusEditable(from: number, direction: 1 | -1) {
     let i = from + direction;
     while (i >= 0 && i < slots.length) {
-      if (!slots[i]!.revealed) {
+      if (!isLocked(i)) {
         inputRefs.current[i]?.focus();
         return;
       }
@@ -145,7 +159,7 @@ export function CryptogramGame({
   }
 
   function setLetterAt(index: number, value: string) {
-    if (slots[index]?.revealed) return;
+    if (isLocked(index)) return;
     const ch = value.toLowerCase().replace(/[^a-z]/g, "").slice(-1);
     setLetters((prev) => {
       const next = [...prev];
@@ -153,6 +167,26 @@ export function CryptogramGame({
       return next;
     });
     if (ch) focusEditable(index, 1);
+  }
+
+  function revealHintLetter() {
+    const pool = [
+      ...new Set(
+        slots
+          .map((slot) => slot.letter)
+          .filter((ch) => !lockedLetters.has(ch)),
+      ),
+    ];
+    if (pool.length === 0) {
+      setCoinHint("Every letter is already revealed.");
+      return;
+    }
+    const pick = pool[0]!;
+    setHintedLetters((prev) => [...prev, pick]);
+    setLetters((prev) =>
+      prev.map((ch, i) => (slots[i]!.letter === pick ? pick : ch)),
+    );
+    setCoinHint(`Revealed “${pick.toUpperCase()}” everywhere it appears.`);
   }
 
   function onKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
@@ -281,7 +315,7 @@ export function CryptogramGame({
 
   function submit() {
     if (done || submitting) return;
-    if (letters.some((ch, i) => !slots[i]!.revealed && !ch)) {
+    if (letters.some((ch, i) => !isLocked(i) && !ch)) {
       setStatus("Fill every blank first.");
       return;
     }
@@ -295,14 +329,14 @@ export function CryptogramGame({
       return;
     }
 
-    if (nextAttempts >= puzzle.maxAttempts) {
+    if (nextAttempts >= maxAttempts) {
       void finish({ won: false, attemptsUsed: nextAttempts, answer: guess });
       return;
     }
 
     setStatus(
-      `Not the phrase · ${puzzle.maxAttempts - nextAttempts} attempt${
-        puzzle.maxAttempts - nextAttempts === 1 ? "" : "s"
+      `Not the phrase · ${maxAttempts - nextAttempts} attempt${
+        maxAttempts - nextAttempts === 1 ? "" : "s"
       } left`,
     );
   }
@@ -354,11 +388,17 @@ export function CryptogramGame({
               {word.slotIndexes.map((slotIndex) => {
                 const slot = slots[slotIndex]!;
                 const value = letters[slotIndex] ?? "";
-                if (slot.revealed) {
+                const locked = isLocked(slotIndex);
+                if (locked) {
                   return (
                     <span
                       key={slotIndex}
-                      className="inline-flex h-11 w-8 items-end justify-center border-b border-paper/35 pb-1 font-[family-name:var(--font-display)] text-2xl font-semibold lowercase text-paper"
+                      className={[
+                        "inline-flex h-11 w-8 items-end justify-center border-b pb-1 font-[family-name:var(--font-display)] text-2xl font-semibold lowercase",
+                        hintedLetters.includes(slot.letter)
+                          ? "border-mint/50 text-mint"
+                          : "border-paper/35 text-paper",
+                      ].join(" ")}
                     >
                       {slot.letter}
                     </span>
@@ -405,6 +445,26 @@ export function CryptogramGame({
             Check phrase
           </button>
         </div>
+      )}
+
+      {!done && !alreadyPlayed && (
+        <CoinConsumableBar
+          signedIn={signedIn}
+          disabled={submitting}
+          onHint={revealHintLetter}
+          onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
+          onSkip={() => {
+            void finish({
+              won: false,
+              attemptsUsed: attempts,
+              answer: puzzle.plaintext,
+            });
+          }}
+        />
+      )}
+
+      {coinHint && !done && (
+        <p className="mt-2 text-sm text-mint">{coinHint}</p>
       )}
 
       {status && (
