@@ -1,11 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
   DIFFICULTY_LABELS,
   checkCryptogramAnswer,
   cryptogramHintDisplay,
+  cryptogramSlots,
   getCryptogramPuzzle,
   todayKey,
 } from "@daily-puzzle/puzzle-core";
@@ -28,6 +35,29 @@ type Props = {
   monthly?: MonthlyPlayContext | null;
 };
 
+type WordLayout = {
+  /** Indices into the letter-slot array for this word */
+  slotIndexes: number[];
+};
+
+function buildWordLayout(plaintext: string): WordLayout[] {
+  const words = plaintext.trim().split(/\s+/);
+  const layout: WordLayout[] = [];
+  let cursor = 0;
+  for (const word of words) {
+    const letters = word
+      .split("")
+      .filter((ch) => {
+        const lower = ch.toLowerCase();
+        return lower >= "a" && lower <= "z";
+      });
+    const slotIndexes = letters.map((_, i) => cursor + i);
+    cursor += letters.length;
+    layout.push({ slotIndexes });
+  }
+  return layout;
+}
+
 export function CryptogramGame({
   difficulty,
   dateKey = todayKey(),
@@ -40,17 +70,18 @@ export function CryptogramGame({
     () => getCryptogramPuzzle(dateKey, difficulty),
     [dateKey, difficulty],
   );
-  const hintLine = useMemo(() => cryptogramHintDisplay(puzzle), [puzzle]);
-  const revealedMappings = useMemo(
-    () =>
-      puzzle.revealed.map((plain) => ({
-        plain: plain.toUpperCase(),
-        cipher: puzzle.mapping[plain]!.toUpperCase(),
-      })),
-    [puzzle],
+  const slots = useMemo(() => cryptogramSlots(puzzle), [puzzle]);
+  const wordLayout = useMemo(
+    () => buildWordLayout(puzzle.plaintext),
+    [puzzle.plaintext],
   );
+  const blankPattern = useMemo(() => cryptogramHintDisplay(puzzle), [puzzle]);
 
-  const [guess, setGuess] = useState("");
+  const [letters, setLetters] = useState<string[]>(() =>
+    slots.map((slot) => (slot.revealed ? slot.letter : "")),
+  );
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
   const [attempts, setAttempts] = useState(0);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
@@ -83,6 +114,67 @@ export function CryptogramGame({
     resetKey: `${dateKey}-${difficulty}`,
   });
 
+  useEffect(() => {
+    setLetters(slots.map((slot) => (slot.revealed ? slot.letter : "")));
+  }, [slots]);
+
+  function assembleGuess(nextLetters: string[]): string {
+    let cursor = 0;
+    return puzzle.plaintext
+      .split("")
+      .map((ch) => {
+        const lower = ch.toLowerCase();
+        if (lower < "a" || lower > "z") return ch;
+        const filled = nextLetters[cursor] ?? "";
+        cursor += 1;
+        return filled || "_";
+      })
+      .join("");
+  }
+
+  function focusEditable(from: number, direction: 1 | -1) {
+    let i = from + direction;
+    while (i >= 0 && i < slots.length) {
+      if (!slots[i]!.revealed) {
+        inputRefs.current[i]?.focus();
+        return;
+      }
+      i += direction;
+    }
+  }
+
+  function setLetterAt(index: number, value: string) {
+    if (slots[index]?.revealed) return;
+    const ch = value.toLowerCase().replace(/[^a-z]/g, "").slice(-1);
+    setLetters((prev) => {
+      const next = [...prev];
+      next[index] = ch;
+      return next;
+    });
+    if (ch) focusEditable(index, 1);
+  }
+
+  function onKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Backspace") {
+      if (letters[index]) {
+        setLetterAt(index, "");
+      } else {
+        event.preventDefault();
+        focusEditable(index, -1);
+      }
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      focusEditable(index, -1);
+      return;
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      focusEditable(index, 1);
+    }
+  }
+
   async function finish(opts: { won: boolean; attemptsUsed: number; answer: string }) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "cryptogram", difficulty);
@@ -98,7 +190,7 @@ export function CryptogramGame({
       if (!signedIn) {
         setDone(true);
         setResults({ won: true, elapsedMs, answer: puzzle.plaintext });
-        setStatus("Decoded! Sign in to save Case File progress.");
+        setStatus("Solved! Sign in to save Case File progress.");
         return;
       }
       setSubmitting(true);
@@ -132,7 +224,7 @@ export function CryptogramGame({
       setResults({ won: opts.won, elapsedMs, answer: puzzle.plaintext });
       setStatus(
         opts.won
-          ? `Decoded in ${timeLabel}! Sign in to save.`
+          ? `Solved in ${timeLabel}! Sign in to save.`
           : `Out of attempts (${timeLabel}).`,
       );
       return;
@@ -187,10 +279,11 @@ export function CryptogramGame({
 
   function submit() {
     if (done || submitting) return;
-    if (!guess.trim()) {
-      setStatus("Enter the decoded phrase.");
+    if (letters.some((ch, i) => !slots[i]!.revealed && !ch)) {
+      setStatus("Fill every blank first.");
       return;
     }
+    const guess = assembleGuess(letters);
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
     const verdict = checkCryptogramAnswer(puzzle, guess);
@@ -214,7 +307,7 @@ export function CryptogramGame({
 
   return (
     <div className="mx-auto max-w-lg animate-rise">
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-ember">
             <Link
@@ -225,9 +318,6 @@ export function CryptogramGame({
             </Link>{" "}
             · {DIFFICULTY_LABELS[difficulty]}
           </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
-            {puzzle.title}
-          </h1>
         </div>
         <div className="flex flex-col items-end gap-2">
           <Link href="/" className="text-sm text-fog hover:text-paper">
@@ -239,60 +329,76 @@ export function CryptogramGame({
         </div>
       </div>
 
-      <div className="mb-4 space-y-2 rounded-xl border border-[var(--line)] bg-panel/50 px-4 py-3 text-sm">
-        <p className="font-semibold text-paper">What are you decoding?</p>
-        <p className="text-fog">{puzzle.hint}</p>
-        <p className="text-fog">
-          Spaces stay in place. Type the complete normal English phrase in the
-          box below.
-        </p>
-        <div className="mt-3 rounded-lg border border-ember/30 bg-ember/10 px-3 py-3">
-          <p className="text-xs uppercase tracking-wider text-ember">
-            Theme · {puzzle.theme}
-          </p>
-          <p className="mt-1 text-paper">
-            <span className="font-semibold">Phrase clue:</span> {puzzle.clue}
+      <div className="space-y-8">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-fog">Theme</p>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.15] tracking-tight text-paper">
+            {puzzle.theme}
+          </h1>
+          <p className="mt-4 max-w-md text-lg leading-relaxed text-fog">
+            {puzzle.clue}
           </p>
         </div>
-      </div>
 
-      <div className="rounded-xl border border-[var(--line)] bg-panel/60 px-5 py-6">
-        <p className="text-xs uppercase tracking-wider text-fog">
-          Encrypted phrase — decode this
-        </p>
-        <p className="mt-2 font-mono text-xl tracking-wide">{puzzle.ciphertext}</p>
-        {puzzle.revealed.length > 0 && (
-          <>
-            <p className="mt-5 text-xs uppercase tracking-wider text-fog">
-              Known answer pattern
-            </p>
-            <p className="mt-2 font-mono text-lg tracking-wide text-ember">
-              {hintLine}
-            </p>
-            <p className="mt-2 text-xs text-fog">
-              Given substitutions:{" "}
-              {revealedMappings
-                .map(({ cipher, plain }) => `${cipher} → ${plain}`)
-                .join(" · ")}
-            </p>
-          </>
-        )}
+        <div
+          className="flex flex-wrap items-end gap-x-8 gap-y-5"
+          aria-label={`Phrase blanks: ${blankPattern}`}
+        >
+          {wordLayout.map((word, wordIndex) => (
+            <div
+              key={`word-${wordIndex}`}
+              className="flex flex-wrap items-end gap-x-2.5 gap-y-2"
+            >
+              {word.slotIndexes.map((slotIndex) => {
+                const slot = slots[slotIndex]!;
+                const value = letters[slotIndex] ?? "";
+                if (slot.revealed) {
+                  return (
+                    <span
+                      key={slotIndex}
+                      className="inline-flex h-11 w-8 items-end justify-center border-b border-paper/35 pb-1 font-[family-name:var(--font-display)] text-2xl font-semibold lowercase text-paper"
+                    >
+                      {slot.letter}
+                    </span>
+                  );
+                }
+                return (
+                  <input
+                    key={slotIndex}
+                    ref={(el) => {
+                      inputRefs.current[slotIndex] = el;
+                    }}
+                    type="text"
+                    inputMode="text"
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    maxLength={1}
+                    value={value}
+                    disabled={done || submitting}
+                    onChange={(e) => setLetterAt(slotIndex, e.target.value)}
+                    onKeyDown={(e) => onKeyDown(slotIndex, e)}
+                    onFocus={(e) => e.target.select()}
+                    aria-label={`Letter ${slotIndex + 1}`}
+                    className="h-11 w-8 border-0 border-b border-ember/55 bg-transparent pb-1 text-center font-[family-name:var(--font-display)] text-2xl font-semibold lowercase text-ember outline-none transition-[border-color] placeholder:text-fog/40 focus:border-ember disabled:opacity-60"
+                    placeholder="_"
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        <p className="text-sm text-fog/80">{puzzle.hint}</p>
       </div>
 
       {!done && (
-        <div className="mt-6 space-y-3">
-          <textarea
-            value={guess}
-            onChange={(e) => setGuess(e.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-[var(--line)] bg-ink-2 px-3 py-3 outline-none ring-ember/40 focus:ring-2"
-            placeholder="Type the normal English phrase…"
-            disabled={submitting}
-          />
+        <div className="mt-8">
           <button
             type="button"
             onClick={submit}
-            className="rounded-lg bg-ember px-4 py-2.5 font-semibold text-on-ember hover:bg-ember-deep"
+            disabled={submitting}
+            className="rounded-lg bg-ember px-4 py-2.5 font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-60"
           >
             Check phrase
           </button>
@@ -307,6 +413,7 @@ export function CryptogramGame({
       <ShowAnswerPanel
         available={Boolean(alreadyPlayed)}
         answer={puzzle.plaintext}
+        detail={`Theme: ${puzzle.theme} — ${puzzle.clue}`}
       />
 
       {results && (

@@ -4,11 +4,14 @@ import { normalizeWord } from "./words";
 
 export type CryptogramPuzzle = {
   title: string;
-  /** Ciphertext shown to the player (letters + punctuation/spaces preserved) */
+  /**
+   * Legacy cipher fields retained for stable puzzle identity / seeding.
+   * The play UI no longer shows ciphertext — players fill blanks directly.
+   */
   ciphertext: string;
   /** Plaintext answer (letters only for check, spaces allowed in submit) */
   plaintext: string;
-  /** Letter → substitute mapping used to encode */
+  /** Letter → substitute mapping used to encode (internal) */
   mapping: Record<string, string>;
   /** Plaintext letters already revealed as hints */
   revealed: string[];
@@ -17,6 +20,13 @@ export type CryptogramPuzzle = {
   clue: string;
   maxAttempts: number;
   hint: string;
+};
+
+/** One letter cell in the blank pattern (space separators are not cells). */
+export type CryptogramSlot = {
+  index: number;
+  letter: string;
+  revealed: boolean;
 };
 
 type PhrasePack = { phrase: string; theme: string; clue: string };
@@ -161,10 +171,10 @@ export function getCryptogramPuzzle(
     maxAttempts: ATTEMPTS[difficulty],
     hint:
       difficulty === "easy"
-        ? "Turn the encrypted text into a normal English phrase. The same encrypted letter always decodes to the same real letter."
+        ? "Use the theme and clue. Fill each blank — given letters stay put."
         : difficulty === "medium"
-          ? "Decode the encrypted text into English. Each encrypted letter always represents one real letter."
-          : "Decode the encrypted phrase. Repeated letters, word lengths, and frequency reveal the substitutions.",
+          ? "Read the clue, then complete the phrase in the blanks."
+          : "Sparse letters are given. Word lengths and the clue carry the rest.",
   };
 }
 
@@ -182,23 +192,41 @@ export function checkCryptogramAnswer(
   return { correct: got === target };
 }
 
-/** Show known plaintext letters and blanks in their answer positions. */
-export function cryptogramHintDisplay(puzzle: CryptogramPuzzle): string {
-  const reverse: Record<string, string> = {};
-  for (const [plain, cipher] of Object.entries(puzzle.mapping)) {
-    reverse[cipher] = plain;
+/** Letter slots for interactive blank filling (skips spaces/punctuation). */
+export function cryptogramSlots(puzzle: CryptogramPuzzle): CryptogramSlot[] {
+  const revealedSet = new Set(puzzle.revealed.map((ch) => ch.toLowerCase()));
+  const slots: CryptogramSlot[] = [];
+  let index = 0;
+  for (const ch of puzzle.plaintext) {
+    const lower = ch.toLowerCase();
+    if (lower < "a" || lower > "z") continue;
+    slots.push({
+      index,
+      letter: lower,
+      revealed: revealedSet.has(lower),
+    });
+    index += 1;
   }
-  const revealedSet = new Set(puzzle.revealed);
-  return puzzle.ciphertext
-    .split("")
-    .map((ch) => {
-      const lower = ch.toLowerCase();
-      if (lower < "a" || lower > "z") return ch;
-      const plain = reverse[lower];
-      if (plain && revealedSet.has(plain)) {
-        return ch === lower ? plain : plain.toUpperCase();
-      }
-      return "_";
-    })
-    .join("");
+  return slots;
+}
+
+/**
+ * Aesthetic blank pattern, e.g. `_ l _ _ r     w _ t _ r`
+ * Letters spaced within words; wider gaps between words.
+ */
+export function cryptogramHintDisplay(puzzle: CryptogramPuzzle): string {
+  const revealedSet = new Set(puzzle.revealed.map((ch) => ch.toLowerCase()));
+  const words = puzzle.plaintext.trim().split(/\s+/);
+  return words
+    .map((word) =>
+      word
+        .split("")
+        .map((ch) => {
+          const lower = ch.toLowerCase();
+          if (lower < "a" || lower > "z") return ch;
+          return revealedSet.has(lower) ? lower : "_";
+        })
+        .join(" "),
+    )
+    .join("     ");
 }
