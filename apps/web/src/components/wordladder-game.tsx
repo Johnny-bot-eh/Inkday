@@ -281,8 +281,11 @@ export function WordLadderGame({
             </Link>{" "}
             · <DifficultyLabel difficulty={difficulty} />
           </p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
-            {puzzle.start.toUpperCase()} → {puzzle.end.toUpperCase()}
+          <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold tracking-wide">
+            {puzzle.start.toUpperCase()} →{" "}
+            {done || alreadyPlayed
+              ? puzzle.end.toUpperCase()
+              : "·".repeat(puzzle.end.length)}
           </h1>
         </div>
         <div className="flex flex-col items-end gap-2">

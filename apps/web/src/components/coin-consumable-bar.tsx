@@ -29,7 +29,19 @@ async function buyAndUse(itemId: ConsumableItemId, refId: string) {
         : data.error ?? "Could not use item",
     );
   }
-  if (typeof data.balance === "number") emitCoinBalance(data.balance);
+  // Always refresh header balance as soon as the spend lands.
+  if (typeof data.balance === "number") {
+    emitCoinBalance(data.balance);
+  } else {
+    // Fallback: re-fetch wallet if the action payload omitted balance.
+    try {
+      const wallet = await fetch("/api/shop");
+      const body = await wallet.json();
+      if (typeof body.balance === "number") emitCoinBalance(body.balance);
+    } catch {
+      /* ignore */
+    }
+  }
   return data;
 }
 
@@ -57,9 +69,18 @@ export function CoinConsumableBar({
     setBusy(itemId);
     setStatus(null);
     try {
-      await buyAndUse(itemId, `${itemId}:${Date.now()}`);
+      const data = await buyAndUse(itemId, `${itemId}:${Date.now()}`);
       fn();
-      setStatus(`Used ${label}`);
+      if (typeof data.balance === "number") {
+        const spent = typeof data.spent === "number" ? data.spent : null;
+        setStatus(
+          spent != null && spent > 0
+            ? `Used ${label} (−${spent}◈) · balance ${data.balance}◈`
+            : `Used ${label} · balance ${data.balance}◈`,
+        );
+      } else {
+        setStatus(`Used ${label}`);
+      }
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "Failed");
     } finally {
