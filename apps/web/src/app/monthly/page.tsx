@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  DIFFICULTY_LABELS,
   MONTHLY_MILESTONES,
   MONTHLY_SLOT_COUNT,
   collectionIdForDate,
@@ -8,6 +7,7 @@ import {
 } from "@daily-puzzle/puzzle-core";
 import { getMonthlyProgress } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
+import { DifficultyLabel } from "@/components/difficulty-label";
 
 export const dynamic = "force-dynamic";
 
@@ -138,7 +138,8 @@ export default async function MonthlyHubPage() {
                 <div>
                   <div className={done ? "font-semibold text-fog" : "font-semibold"}>
                     {done ? "✓" : "·"} #{slot.index}{" "}
-                    {DIFFICULTY_LABELS[slot.difficulty]} — {slot.label}
+                    <DifficultyLabel difficulty={slot.difficulty} /> —{" "}
+                    {slot.label}
                   </div>
                   <div className="text-xs text-fog">
                     {done ? "Completed" : `+${slot.points} pts`}

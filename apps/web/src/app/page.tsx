@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   DIFFICULTIES,
-  DIFFICULTY_LABELS,
   EXTRA_WORDLE_DIFFICULTIES,
   HIDDEN_CHALLENGES,
   MONTHLY_SLOT_COUNT,
@@ -26,6 +25,7 @@ import {
 import { getSession } from "@/lib/session";
 import { ChallengeCountdown } from "@/components/challenge-countdown";
 import { ChallengePlayRow } from "@/components/challenge-play-row";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { LocalTodayLabel } from "@/components/local-today-label";
 
 /** Always render with the current UTC day — never serve a stale cached “yesterday”. */
@@ -208,7 +208,12 @@ export default async function HomePage() {
               <ChallengePlayRow
                 key={`${challenge.id}-${dateKey}`}
                 href={challenge.href}
-                title={`${challenge.title} · ${challenge.difficultyLabel}`}
+                title={
+                  <>
+                    {challenge.title} ·{" "}
+                    <DifficultyLabel difficulty={challenge.difficulty} />
+                  </>
+                }
                 openSubtitle={headline}
                 doneSubtitle={doneCopy(play)}
                 puzzleType={challenge.puzzleType}
@@ -241,7 +246,9 @@ export default async function HomePage() {
                       key={challenge.id}
                       href={challenge.href}
                       title={challenge.title}
-                      openSubtitle={challenge.difficultyLabel}
+                      openSubtitle={
+                        <DifficultyLabel difficulty={challenge.difficulty} />
+                      }
                       doneSubtitle={doneCopy(play)}
                       puzzleType={challenge.puzzleType}
                       difficulty={challenge.difficulty}
@@ -354,7 +361,12 @@ export default async function HomePage() {
                   <ChallengePlayRow
                     href={`/play/wordle/${WORD_DAILY_DIFFICULTY}`}
                     title="Word Daily"
-                    openSubtitle="Medium · main daily board"
+                    openSubtitle={
+                      <>
+                        <DifficultyLabel difficulty="medium" />
+                        {" · main daily board"}
+                      </>
+                    }
                     doneSubtitle={doneCopy(play)}
                     puzzleType="wordle"
                     difficulty={WORD_DAILY_DIFFICULTY}
@@ -375,7 +387,12 @@ export default async function HomePage() {
                   <ChallengePlayRow
                     key={difficulty}
                     href={`/play/wordle/${difficulty}`}
-                    title={`${wordleTitle(difficulty)} · ${DIFFICULTY_LABELS[difficulty]}`}
+                    title={
+                      <>
+                        {wordleTitle(difficulty)} ·{" "}
+                        <DifficultyLabel difficulty={difficulty} />
+                      </>
+                    }
                     openSubtitle={subtitle}
                     doneSubtitle={doneCopy(play)}
                     puzzleType="wordle"
@@ -424,11 +441,16 @@ export default async function HomePage() {
                   <ChallengePlayRow
                     key={difficulty}
                     href={`/play/escape/${difficulty}`}
-                    title={DIFFICULTY_LABELS[difficulty]}
+                    title={<DifficultyLabel difficulty={difficulty} />}
                     openSubtitle={
                       difficulty === "hard"
                         ? "Featured above as Daily Detective"
-                        : `${DIFFICULTY_LABELS[difficulty]} escape`
+                        : (
+                          <>
+                            <DifficultyLabel difficulty={difficulty} />
+                            {" escape"}
+                          </>
+                        )
                     }
                     doneSubtitle={doneCopy(play)}
                     puzzleType="escape"
@@ -455,7 +477,7 @@ export default async function HomePage() {
                   <ChallengePlayRow
                     key={difficulty}
                     href={`/play/logic/${difficulty}`}
-                    title={DIFFICULTY_LABELS[difficulty]}
+                    title={<DifficultyLabel difficulty={difficulty} />}
                     openSubtitle={
                       difficulty === "medium"
                         ? "Featured above as Daily Logic"
@@ -490,7 +512,7 @@ export default async function HomePage() {
                     <ChallengePlayRow
                       key={difficulty}
                       href={`/play/${puzzleType}/${difficulty}`}
-                      title={DIFFICULTY_LABELS[difficulty]}
+                      title={<DifficultyLabel difficulty={difficulty} />}
                       openSubtitle={wordGameBlurb(puzzleType, difficulty)}
                       doneSubtitle={doneCopy(play)}
                       puzzleType={puzzleType}

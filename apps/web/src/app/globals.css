@@ -12,6 +12,11 @@
   --on-ember: #07161a;
   --mint: #6fbfa5;
   --danger: #d65b5b;
+  --diff-easy: #3f9a78;
+  --diff-medium: #e08a2e;
+  --diff-hard: #d65b5b;
+  --diff-obscure: #9b7fd4;
+  --diff-impossible: #c45c8a;
   --correct: #3f9a78;
   --present: #c9a227;
   --absent: #2a4550;
@@ -41,6 +46,11 @@ html.light {
   --on-ember: #142428;
   --mint: #2f8f78;
   --danger: #c24747;
+  --diff-easy: #2d7a5e;
+  --diff-medium: #d47820;
+  --diff-hard: #c24747;
+  --diff-obscure: #7a5fb8;
+  --diff-impossible: #a84874;
   --correct: #2d7a5e;
   --present: #b8921f;
   --absent: #c5d2d7;

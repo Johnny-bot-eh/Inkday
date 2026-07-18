@@ -9,7 +9,6 @@ import {
 } from "react";
 import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
-  DIFFICULTY_LABELS,
   checkCryptogramAnswer,
   cryptogramHintDisplay,
   cryptogramSlots,
@@ -25,6 +24,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
 type Props = {
@@ -316,7 +316,7 @@ export function CryptogramGame({
             >
               Cryptogram
             </Link>{" "}
-            · {DIFFICULTY_LABELS[difficulty]}
+            · <DifficultyLabel difficulty={difficulty} />
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">

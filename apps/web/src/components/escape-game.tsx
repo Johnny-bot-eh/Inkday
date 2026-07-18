@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { Difficulty } from "@daily-puzzle/puzzle-core";
 import {
-  DIFFICULTY_LABELS,
   checkEscapeAnswer,
   getEscapeRoom,
   todayKey,
@@ -17,6 +16,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
@@ -251,7 +251,7 @@ export function EscapeGame({
             >
               Escape Room
             </Link>{" "}
-            · {DIFFICULTY_LABELS[difficulty]}
+            · <DifficultyLabel difficulty={difficulty} />
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {room.title}
