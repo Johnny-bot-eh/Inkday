@@ -45,24 +45,79 @@ const ESCAPE_EXPLANATIONS: Record<string, string[]> = {
   ],
 };
 
+/**
+ * Logic-grid writeups: walk the clue chain, not a restatement of the filled grid.
+ * Keyed by template slug.
+ */
+const LOGIC_EXPLANATIONS: Record<string, string[]> = {
+  "missing-necklace": [
+    "Alice is in the library, and the library person has the key → Alice has the key (not the necklace).",
+    "Bob is in the garden; Daniel has the letter; the office person has the watch.",
+    "Claire does not have the necklace, so after placing key/letter/watch the necklace is left with Bob in the garden.",
+  ],
+  "poisoned-pastry": [
+    "Pat’s pastry is lemon, so Pat is not chocolate.",
+    "Chocolate is at the east stall; Nora is not east, so Nora is not chocolate.",
+    "Quinn is therefore at east with chocolate — the spiked pastry.",
+  ],
+  "cipher-club": [
+    "Eva is at the window, and the window seat holds the ledger → Eva has the ledger.",
+    "The remaining seats and props (door/fan, fire/mask, corner/coin) fill in around that link.",
+  ],
+  "garden-gnome": [
+    "Ivy is maple with the rake; Jon is pond with the hose; Leo is rose with the spade.",
+    "That leaves Kim in the hill yard, and the hill yard holds the gnome.",
+  ],
+  "night-train": [
+    "Opa is in A with the violin; Ned is in B with the umbrella.",
+    "The parcel is in C, so the only traveler left — Mira — has the parcel.",
+  ],
+  "studio-paint": [
+    "Ash is at easel 4, and easel 4 has the stolen palette → Ash took the palette.",
+    "Cam (easel 1, crimson) and Di (easel 3, ochre) confirm the other colors; Bea fills easel 2.",
+  ],
+  "harbor-lantern": [
+    "Rae is red with oilskin; Sid is blue with wool.",
+    "The lantern kit is at the green dock, so Tess — the remaining keeper — sabotaged the lantern.",
+  ],
+  "midnight-evidence": [
+    "8 o’clock carries the key; the note is exactly two hours after the key → note at 10.",
+    "The lens is at 9; Dax arrives one hour after the key-carrier → Dax at 9 with the lens.",
+    "Bram arrives earlier than Ada and 8 is the key → Bram is the 8/key arrival.",
+    "Cora is neither 8 nor 11, so Cora is at 10 with the note; Ada is left at 11 with the map.",
+  ],
+  "museum-after-hours": [
+    "Seal is on the roof; rope is in the gallery; kitchen does not have the file → file is in the archive.",
+    "Faye is neither archive nor kitchen, and carries neither file nor flask → Faye is roof/seal.",
+    "Elin carries neither seal nor file, and is not on the roof → Elin is gallery/rope.",
+    "Holt carries neither seal nor rope and is not in the archive → Holt is kitchen/flask.",
+    "Gus is left in the archive with the file.",
+  ],
+  "compass-vault": [
+    "Crown is west; ring is south.",
+    "Jory is neither east nor west, and not south → Jory is north; north is neither crown nor ring → Jory has the letter.",
+    "Inez is neither north nor south → Inez is east or west; east holds neither letter nor crown → east is gem or ring, but ring is south → east is gem → Inez has the gem.",
+    "Kian holds neither letter nor ring and is not east → Kian is west with the crown; Lux is south with the ring.",
+  ],
+};
+
 export function buildEscapeExplanation(slug: string): string | undefined {
   const steps = ESCAPE_EXPLANATIONS[slug];
   if (!steps?.length) return undefined;
   return steps.join(" ");
 }
 
-export function buildLogicExplanation(puzzle: LogicPuzzle): string {
-  const lines: string[] = [];
-  for (const subject of puzzle.subjects.values) {
-    const row = puzzle.solution[subject];
-    if (!row) continue;
-    const parts = puzzle.traits.map(
-      (trait) => `${trait.label.toLowerCase()} ${row[trait.id]}`,
-    );
-    lines.push(`${subject}: ${parts.join(", ")}.`);
+export function buildLogicExplanation(
+  slug: string,
+  puzzle: LogicPuzzle,
+): string {
+  const steps = LOGIC_EXPLANATIONS[slug];
+  if (steps?.length) {
+    return steps.join(" ");
   }
-  lines.push(`Therefore, ${puzzle.question.toLowerCase()} ${puzzle.answer}.`);
-  return lines.join(" ");
+  // Fallback: summarize the deduction goal without dumping the answer alone.
+  const traitLabels = puzzle.traits.map((t) => t.label.toLowerCase()).join(" / ");
+  return `Match each ${puzzle.subjects.label.toLowerCase()} to a unique ${traitLabels} using the clues (no repeats in a column). Follow links and eliminations until only one assignment answers: ${puzzle.question}`;
 }
 
 export function buildMonthlyExplanation(
@@ -70,19 +125,19 @@ export function buildMonthlyExplanation(
 ): string | undefined {
   switch (puzzle.kind) {
     case "riddle":
-      return `The clues point to “${puzzle.answer}.”`;
     case "mathlogic":
-      return `Work through the prompt step by step to reach ${puzzle.answer}.`;
     case "trivia":
-      return `The correct choice is “${puzzle.options[puzzle.answerIndex]}.”`;
-    case "pattern": {
-      const next = puzzle.options[puzzle.answerIndex];
-      return `The shown sequence continues with “${next}.”`;
-    }
+    case "pattern":
     case "deduction":
       return puzzle.explanation;
-    case "memory":
-      return `Memorize and replay the flashed sequence: ${puzzle.sequence.join(" ")}.`;
+    case "memory": {
+      const preview = puzzle.sequence.slice(0, 3).join(" → ");
+      const more =
+        puzzle.sequence.length > 3
+          ? ` … (${puzzle.sequence.length} symbols)`
+          : "";
+      return `Symbols flash one at a time — remember the order (${preview}${more}), then tap them back in the same sequence. Order matters; guessing the set without the order does not clear the case.`;
+    }
   }
 }
 
