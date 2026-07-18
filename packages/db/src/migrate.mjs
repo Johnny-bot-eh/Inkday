@@ -381,29 +381,50 @@ for (const statement of indexRebuilds) {
 try {
   const info = await client.execute(`PRAGMA table_info(garden_placement)`);
   const cols = new Set(
-    info.rows.map((row) => String(row.name ?? row[1] ?? "")),
+    info.rows.map((row) => {
+      const r = row;
+      if (r && typeof r === "object" && "name" in r) return String(r.name);
+      if (Array.isArray(r)) return String(r[1] ?? "");
+      return String(r ?? "");
+    }),
   );
-  if (cols.has("cell_index")) {
+  if (cols.has("cell_index") || (cols.size > 0 && !cols.has("x"))) {
+    await client.execute(`DROP TABLE IF EXISTS garden_placement_diorama`);
     await client.execute(`CREATE TABLE garden_placement_diorama (
   id TEXT PRIMARY KEY NOT NULL,
-  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
   item_id TEXT NOT NULL,
   x INTEGER NOT NULL DEFAULT 50,
   y INTEGER NOT NULL DEFAULT 60,
   layer TEXT NOT NULL DEFAULT 'middle',
   placed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 )`);
-    await client.execute(`INSERT OR IGNORE INTO garden_placement_diorama
+    // Prefer cell_index when present; otherwise keep any existing x/y.
+    if (cols.has("cell_index")) {
+      await client.execute(`INSERT OR IGNORE INTO garden_placement_diorama
   (id, user_id, item_id, x, y, layer, placed_at)
   SELECT
     id,
     user_id,
     item_id,
-    COALESCE(x, 20 + (cell_index % 3) * 28),
-    COALESCE(y, 45 + (cell_index / 3) * 16),
+    20 + (cell_index % 3) * 28,
+    45 + (cell_index / 3) * 16,
+    'middle',
+    placed_at
+  FROM garden_placement`);
+    } else {
+      await client.execute(`INSERT OR IGNORE INTO garden_placement_diorama
+  (id, user_id, item_id, x, y, layer, placed_at)
+  SELECT
+    id,
+    user_id,
+    item_id,
+    COALESCE(x, 50),
+    COALESCE(y, 60),
     COALESCE(layer, 'middle'),
     placed_at
   FROM garden_placement`);
+    }
     await client.execute(`DROP TABLE garden_placement`);
     await client.execute(
       `ALTER TABLE garden_placement_diorama RENAME TO garden_placement`,
@@ -418,6 +439,7 @@ try {
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
   if (!/no such table/i.test(message)) {
+    console.error("garden_placement diorama migration failed:", message);
     throw err;
   }
 }

@@ -18,9 +18,15 @@ const links = [
 
 export async function SiteHeader() {
   const session = await getSession();
-  const stats = session?.user
-    ? await ensureUserStats(session.user.id)
-    : null;
+  let stats: Awaited<ReturnType<typeof ensureUserStats>> | null = null;
+  if (session?.user) {
+    try {
+      stats = await ensureUserStats(session.user.id);
+    } catch (err) {
+      console.error("Header stats failed", err);
+      stats = null;
+    }
+  }
   let coins: number | null = null;
   let avatarId = "avatar_default";
   if (session?.user) {

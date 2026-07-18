@@ -5,12 +5,26 @@ import { getSession } from "@/lib/session";
 
 export default async function CompanionPage() {
   const session = await getSession();
-  const snapshot = session?.user
-    ? await getCompanionSnapshot(session.user.id)
-    : null;
+  let snapshot = null;
+  let loadError: string | null = null;
+
+  if (session?.user) {
+    try {
+      snapshot = await getCompanionSnapshot(session.user.id);
+    } catch (err) {
+      console.error("Companion snapshot failed", err);
+      loadError =
+        "Garden is updating — try refresh in a moment. If it keeps failing, run db migrate.";
+    }
+  }
 
   return (
     <div className="space-y-4">
+      {loadError ? (
+        <p className="mx-auto max-w-3xl rounded-xl border border-ember/40 bg-ember/10 px-4 py-3 text-sm">
+          {loadError}
+        </p>
+      ) : null}
       <CompanionClient
         signedIn={Boolean(session?.user)}
         initial={snapshot}

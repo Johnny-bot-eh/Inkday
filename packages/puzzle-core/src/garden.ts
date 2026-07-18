@@ -194,8 +194,9 @@ export function gardenSceneTone(
 }
 
 export function clampGardenCoord(n: number): number {
-  if (!Number.isFinite(n)) return 50;
-  return Math.min(92, Math.max(8, n));
+  const value = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(value)) return 50;
+  return Math.min(92, Math.max(8, value));
 }
 
 export function isValidGardenLayer(v: unknown): v is GardenLayer {

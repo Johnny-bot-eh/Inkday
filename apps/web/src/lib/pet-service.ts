@@ -337,43 +337,47 @@ async function repairMisinitializedStarterPet(
 async function ensureStarterGarden(userId: string) {
   const db = getDb();
 
-  for (const pose of STARTER_GARDEN_POSES) {
-    const itemId = pose.itemId;
-    const existingInv = await db.query.coinInventory.findFirst({
-      where: and(
-        eq(coinInventory.userId, userId),
-        eq(coinInventory.itemId, itemId),
-      ),
-    });
-    if (!existingInv) {
-      await db.insert(coinInventory).values({
-        id: randomUUID(),
-        userId,
-        itemId,
-        qty: 1,
+  try {
+    for (const pose of STARTER_GARDEN_POSES) {
+      const itemId = pose.itemId;
+      const existingInv = await db.query.coinInventory.findFirst({
+        where: and(
+          eq(coinInventory.userId, userId),
+          eq(coinInventory.itemId, itemId),
+        ),
       });
-    }
+      if (!existingInv) {
+        await db.insert(coinInventory).values({
+          id: randomUUID(),
+          userId,
+          itemId,
+          qty: 1,
+        });
+      }
 
-    const existingPlace = await db.query.gardenPlacement.findFirst({
-      where: and(
-        eq(gardenPlacement.userId, userId),
-        eq(gardenPlacement.itemId, itemId),
-      ),
-    });
-    if (existingPlace) continue;
-
-    try {
-      await db.insert(gardenPlacement).values({
-        id: randomUUID(),
-        userId,
-        itemId,
-        x: Math.round(pose.x),
-        y: Math.round(pose.y),
-        layer: pose.layer,
+      const existingPlace = await db.query.gardenPlacement.findFirst({
+        where: and(
+          eq(gardenPlacement.userId, userId),
+          eq(gardenPlacement.itemId, itemId),
+        ),
       });
-    } catch {
-      // Unique conflict — already seeded.
+      if (existingPlace) continue;
+
+      try {
+        await db.insert(gardenPlacement).values({
+          id: randomUUID(),
+          userId,
+          itemId,
+          x: Math.round(pose.x),
+          y: Math.round(pose.y),
+          layer: pose.layer,
+        });
+      } catch {
+        // Unique conflict or unmigrated schema — skip.
+      }
     }
+  } catch (err) {
+    console.error("ensureStarterGarden failed — run db migrate", err);
   }
 }
 
@@ -480,9 +484,23 @@ export async function getCompanionSnapshot(
   const ownedDecorIds = inventory
     .filter((row) => isDecorationItemId(row.itemId) && row.qty > 0)
     .map((row) => row.itemId);
-  const placements = await db.query.gardenPlacement.findMany({
-    where: eq(gardenPlacement.userId, userId),
-  });
+
+  let placements: Array<{
+    id: string;
+    itemId: string;
+    x: number;
+    y: number;
+    layer: string;
+  }> = [];
+  try {
+    placements = await db.query.gardenPlacement.findMany({
+      where: eq(gardenPlacement.userId, userId),
+    });
+  } catch (err) {
+    console.error("garden_placement query failed — run db migrate", err);
+    placements = [];
+  }
+
   const placedIds = new Set(placements.map((p) => p.itemId));
   const petLevel = petView?.level ?? 1;
   const tone = gardenSceneTone(account.level, petLevel);
@@ -528,8 +546,8 @@ export async function getCompanionSnapshot(
           id: p.id,
           itemId: p.itemId,
           title: getShopItem(p.itemId)?.title ?? p.itemId,
-          x: clampGardenCoord(p.x),
-          y: clampGardenCoord(p.y),
+          x: clampGardenCoord(Number(p.x)),
+          y: clampGardenCoord(Number(p.y)),
           layer,
           widthPct: visual.widthPct,
           motion: visual.motion,

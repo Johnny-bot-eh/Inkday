@@ -314,7 +314,7 @@ select {
     #ffffff33 0 20%,
     transparent 55%
   );
-  animation: garden-bob 7s ease-in-out infinite;
+  opacity: 0.85;
 }
 
 .garden-ambience-fireflies::before {
