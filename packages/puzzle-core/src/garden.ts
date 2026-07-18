@@ -26,10 +26,11 @@ export const GARDEN_SCENE = {
   height: 100,
   /** Preferred display aspect (width / height). */
   aspectRatio: 1.55,
-  sceneVersion: 2,
+  sceneVersion: 3,
   pet: {
+    /** Nest center — companion is bottom-anchored here so eggs sit on the ground. */
     x: 52,
-    y: 60,
+    y: 78,
     layer: "middle" as GardenLayer,
   },
 } as const;
