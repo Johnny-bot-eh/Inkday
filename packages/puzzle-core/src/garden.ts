@@ -26,11 +26,21 @@ export const GARDEN_SCENE = {
   height: 100,
   /** Preferred display aspect (width / height). */
   aspectRatio: 1.55,
-  sceneVersion: 3,
-  pet: {
-    /** Nest center — companion is bottom-anchored here so eggs sit on the ground. */
+  sceneVersion: 4,
+  /**
+   * One nest for now (Ink Plus may unlock extra nests later).
+   * One egg / companion per nest. Nest + pet share this anchor.
+   */
+  nest: {
+    maxNests: 1,
+    eggsPerNest: 1,
     x: 52,
-    y: 78,
+    y: 82,
+  },
+  pet: {
+    /** Bottom of companion sits in the nest hollow. */
+    x: 52,
+    y: 82,
     layer: "middle" as GardenLayer,
   },
 } as const;

@@ -237,8 +237,8 @@ export const HAPPINESS = {
   petBonus: 5,
   food: {
     food_apple: 10,
-    food_cookie: 18,
-    food_cake: 30,
+    food_cookie: 24,
+    food_cake: 55,
   } as Record<string, number>,
   dailyPuzzleBonus: 10,
   streakBonus: 5,
