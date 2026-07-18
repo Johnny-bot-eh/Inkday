@@ -5,7 +5,10 @@
 import {
   clampGardenCoord,
   gardenAmbience,
-  gardenSceneTone,
+  gardenClimateFromLocal,
+  gardenDailyWeather,
+  gardenSeason,
+  gardenTimeOfDay,
   GARDEN_SCENE,
 } from "./garden";
 import {
@@ -54,7 +57,42 @@ assert(xpForDailyWin("hard") > xpForDailyWin("easy"), "harder wins grant more XP
 assert(GARDEN_SCENE.aspectRatio > 1, "diorama is wider than tall");
 assert(clampGardenCoord(200) === 92, "garden coord clamps high");
 assert(clampGardenCoord(-4) === 8, "garden coord clamps low");
-assert(gardenSceneTone(1, 1) === "dawn", "starter tone dawn");
-assert(gardenAmbience({ accountLevel: 1, petLevel: 1, placedCount: 0 }).includes("pollen"), "base pollen");
+
+// Local-calendar helpers — construct with explicit local components.
+const localNoon = new Date(2026, 6, 18, 12, 0, 0); // July = summer
+assert(gardenTimeOfDay(localNoon) === "day", "noon is day");
+assert(gardenTimeOfDay(new Date(2026, 6, 18, 6, 30, 0)) === "dawn", "6:30 dawn");
+assert(gardenTimeOfDay(new Date(2026, 6, 18, 19, 0, 0)) === "dusk", "19:00 dusk");
+assert(gardenTimeOfDay(new Date(2026, 6, 18, 23, 0, 0)) === "night", "23:00 night");
+assert(gardenSeason(localNoon) === "summer", "July is summer");
+assert(gardenSeason(new Date(2026, 11, 1)) === "winter", "December winter");
+assert(gardenSeason(new Date(2026, 3, 1)) === "spring", "April spring");
+assert(gardenSeason(new Date(2026, 9, 1)) === "autumn", "October autumn");
+
+const w1 = gardenDailyWeather("2026-07-18", "summer");
+const w2 = gardenDailyWeather("2026-07-18", "summer");
+assert(w1 === w2, "daily weather stable for same local day");
+const climate = gardenClimateFromLocal(localNoon);
+assert(climate.season === "summer", "climate season");
+assert(climate.tone === "day", "climate tone");
+
+assert(
+  gardenAmbience({
+    accountLevel: 1,
+    petLevel: 1,
+    placedCount: 0,
+    tone: "day",
+  }).includes("pollen"),
+  "day pollen",
+);
+assert(
+  gardenAmbience({
+    accountLevel: 20,
+    petLevel: 10,
+    placedCount: 0,
+    tone: "night",
+  }).includes("star_glints"),
+  "night stars",
+);
 
 console.log("pets.selftest: ok");
