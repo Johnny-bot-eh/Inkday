@@ -213,6 +213,9 @@ export function CompanionClient({ signedIn, initial }: Props) {
             void post({ action: "place", itemId, x, y }).then((data) => {
               if (data?.ok) {
                 setSelectedDecor(null);
+                if (typeof data.xpEarned === "number" && data.xpEarned > 0) {
+                  setMessage(`+${data.xpEarned} XP`);
+                }
               }
             });
           }}

@@ -231,7 +231,15 @@ export const XP_AWARD = {
   } as Record<Difficulty, number>,
   monthlySlot: 40,
   streak7: 75,
+  /** Base XP for first-time placement of a garden decoration. */
+  gardenPlaceBase: 6,
 } as const;
+
+/** XP for first placing a decoration (scales with unlock level). */
+export function xpForGardenPlace(requiredLevel = 1): number {
+  const level = Math.max(1, Math.floor(requiredLevel));
+  return XP_AWARD.gardenPlaceBase + level;
+}
 
 export const HAPPINESS = {
   max: 100,

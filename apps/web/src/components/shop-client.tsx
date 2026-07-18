@@ -303,10 +303,6 @@ export function ShopClient({
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
           Garden decorations
         </h2>
-        <p className="text-sm text-fog">
-          New decorations unlock at account levels 1, 5, 10, 20, 30, 40, 50,
-          60, 80, and 100.
-        </p>
         <ul className="space-y-3">
           {decorations.map((item) => {
             const locked = Boolean(item.levelLocked);
