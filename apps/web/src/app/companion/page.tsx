@@ -17,7 +17,6 @@ export default async function CompanionPage() {
       />
       {session?.user ? (
         <p className="mx-auto max-w-3xl text-center text-xs text-fog">
-          Pets never die or lose XP. Happiness only softens visuals and gifts.{" "}
           <Link href="/" className="text-ember hover:underline">
             Back to today
           </Link>
