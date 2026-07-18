@@ -11,6 +11,7 @@ import {
 } from "@daily-puzzle/puzzle-core";
 import { useRouter } from "next/navigation";
 import { CaseFileBackLink } from "@/components/case-file-back-link";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { PlayResultsCard } from "@/components/play-results-card";
 
@@ -52,8 +53,47 @@ export function MonthlyOnlyGame({
     alreadyCleared ? "Already cleared this month" : null,
   );
   const [done, setDone] = useState(alreadyCleared);
+  const [skipped, setSkipped] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bonusNote, setBonusNote] = useState<string | null>(null);
+  const [coinHint, setCoinHint] = useState<string | null>(null);
+
+  function applyMonthlyHint() {
+    switch (puzzle.kind) {
+      case "riddle": {
+        const soft =
+          puzzle.hint && puzzle.hint !== "No further hints."
+            ? puzzle.hint
+            : null;
+        setCoinHint(
+          soft ??
+            `Starts with “${puzzle.answer[0]!.toUpperCase()}”.`,
+        );
+        return;
+      }
+      case "mathlogic":
+        setCoinHint(
+          `First character is “${puzzle.answer[0]!}” (${puzzle.answer.length} total).`,
+        );
+        return;
+      case "trivia":
+      case "pattern":
+      case "deduction": {
+        const wrong = puzzle.options.find(
+          (_, i) => i !== puzzle.answerIndex,
+        );
+        setCoinHint(
+          wrong
+            ? `It isn’t “${wrong}”.`
+            : `Look again at the ${puzzle.kind === "deduction" ? "clues" : "options"}.`,
+        );
+        return;
+      }
+      case "memory":
+        setCoinHint(`First symbol: ${puzzle.sequence[0]}`);
+        return;
+    }
+  }
 
   async function save(payload: {
     answer?: string;
@@ -131,6 +171,23 @@ export function MonthlyOnlyGame({
         onSubmit={save}
       />
 
+      {!done && !alreadyCleared && (
+        <CoinConsumableBar
+          signedIn={signedIn}
+          disabled={submitting}
+          onHint={applyMonthlyHint}
+          onSkip={() => {
+            setSkipped(true);
+            setDone(true);
+            setStatus("Skipped — no Case File credit this slot.");
+          }}
+        />
+      )}
+
+      {coinHint && !done && (
+        <p className="mt-2 text-sm text-mint">{coinHint}</p>
+      )}
+
       {status && (
         <p className="mt-4 rounded-lg border border-[var(--line)] bg-panel/60 px-4 py-3 text-sm">
           {status}
@@ -143,7 +200,7 @@ export function MonthlyOnlyGame({
       {(done || alreadyCleared) && clearedAnswer ? (
         <div className="mt-4">
           <PlayResultsCard
-            won
+            won={!skipped}
             answer={clearedAnswer}
             explanation={clearedExplanation}
           />

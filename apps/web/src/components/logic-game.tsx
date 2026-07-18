@@ -17,6 +17,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
@@ -53,6 +54,9 @@ export function LogicGame({
     Array<Record<string, GridMark>>
   >([]);
   const [answer, setAnswer] = useState("");
+  const [attempts, setAttempts] = useState(0);
+  const [bonusAttempts, setBonusAttempts] = useState(0);
+  const [coinHint, setCoinHint] = useState<string | null>(null);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -60,6 +64,7 @@ export function LogicGame({
       : null,
   );
   const [submitting, setSubmitting] = useState(false);
+  const maxAttempts = 1 + bonusAttempts;
   const [results, setResults] = useState<{
     won: boolean;
     elapsedMs?: number;
@@ -123,13 +128,18 @@ export function LogicGame({
     return "";
   }
 
-  async function submitAnswer() {
-    if (!answer || done) return;
+  async function finishLogic(opts: { won: boolean; answer: string }) {
     const elapsedMs = timer.freeze();
-    if (!monthly) markBoardPlayed(dateKey, "logic", difficulty, seasonId ?? (premium ? "plus" : null));
+    if (!monthly) {
+      markBoardPlayed(
+        dateKey,
+        "logic",
+        difficulty,
+        seasonId ?? (premium ? "plus" : null),
+      );
+    }
     const timeLabel = formatDuration(elapsedMs);
-    const correct =
-      answer.trim().toLowerCase() === puzzle.answer.trim().toLowerCase();
+    const correct = opts.won;
 
     if (monthly) {
       if (!correct) {
@@ -147,7 +157,7 @@ export function LogicGame({
       setSubmitting(true);
       try {
         const mres = await submitMonthlyFromGame(monthly, {
-          answer,
+          answer: opts.answer,
           elapsedMs,
         });
         if (!mres.ok) {
@@ -201,7 +211,7 @@ export function LogicGame({
           puzzleType: "logic",
           difficulty,
           dateKey,
-          answer,
+          answer: opts.answer,
           elapsedMs,
           seasonId: seasonId || undefined,
           premium: premium || undefined,
@@ -240,6 +250,49 @@ export function LogicGame({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function submitAnswer() {
+    if (!answer || done || submitting) return;
+    const correct =
+      answer.trim().toLowerCase() === puzzle.answer.trim().toLowerCase();
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
+
+    if (correct) {
+      void finishLogic({ won: true, answer });
+      return;
+    }
+
+    if (nextAttempts >= maxAttempts) {
+      void finishLogic({ won: false, answer });
+      return;
+    }
+
+    setStatus(
+      `Not quite · ${maxAttempts - nextAttempts} attempt${
+        maxAttempts - nextAttempts === 1 ? "" : "s"
+      } left`,
+    );
+  }
+
+  function revealLogicHint() {
+    const subject = puzzle.subjects.values.find(
+      (name) => name.toLowerCase() === puzzle.answer.toLowerCase(),
+    );
+    if (!subject) {
+      setCoinHint(puzzle.clues[0] ?? "Re-read the clues carefully.");
+      return;
+    }
+    const row = puzzle.solution[subject];
+    const trait = puzzle.traits[0];
+    if (row && trait) {
+      setCoinHint(
+        `Hint: ${subject}’s ${trait.label.toLowerCase()} is ${row[trait.id]}.`,
+      );
+      return;
+    }
+    setCoinHint(puzzle.clues[0] ?? "Re-read the clues carefully.");
   }
 
   return (
@@ -390,13 +443,27 @@ export function LogicGame({
             </select>
             <button
               type="button"
-              onClick={() => void submitAnswer()}
+              onClick={() => submitAnswer()}
               disabled={!answer || submitting}
               className="rounded-lg bg-ember px-5 py-3 font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
             >
               Accuse
             </button>
           </div>
+        )}
+        {!done && !alreadyPlayed && (
+          <CoinConsumableBar
+            signedIn={signedIn}
+            disabled={submitting}
+            onHint={revealLogicHint}
+            onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
+            onSkip={() => {
+              void finishLogic({ won: false, answer: puzzle.answer });
+            }}
+          />
+        )}
+        {coinHint && !done && (
+          <p className="mt-2 text-sm text-mint">{coinHint}</p>
         )}
       </section>
 
