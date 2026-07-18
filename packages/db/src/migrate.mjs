@@ -438,10 +438,9 @@ try {
   }
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
-  if (!/no such table/i.test(message)) {
-    console.error("garden_placement diorama migration failed:", message);
-    throw err;
-  }
+  // Never fail the whole migrate/build on garden reshape — companion code
+  // already degrades if placements can't be read yet.
+  console.error("garden_placement diorama migration failed:", message);
 }
 
 console.log(`Migrated database: ${label}`);

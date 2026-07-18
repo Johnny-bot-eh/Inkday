@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "node ../../packages/db/src/migrate.mjs && next build",
+    "build": "node ./scripts/migrate-for-build.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "node ../../packages/db/src/migrate.mjs"

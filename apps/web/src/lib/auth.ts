@@ -26,6 +26,10 @@ function trustedOrigins() {
 }
 
 export const auth = betterAuth({
+  secret:
+    process.env.BETTER_AUTH_SECRET ??
+    // Build/collect can import auth without secrets; runtime should set env.
+    "inkday-dev-secret-change-me",
   database: drizzleAdapter(getDb(), {
     provider: "sqlite",
     schema: {
