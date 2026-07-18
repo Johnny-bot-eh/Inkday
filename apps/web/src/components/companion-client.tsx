@@ -1,30 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
+import { GardenDiorama } from "@/components/garden-diorama";
 import { PetMark } from "@/components/pet-mark";
-import type { CompanionSnapshot, PetSpeciesId } from "@daily-puzzle/puzzle-core";
+import type { CompanionSnapshot } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   signedIn: boolean;
   initial: CompanionSnapshot | null;
 };
-
-function decoMark(itemId: string): { label: string; tone: string } {
-  if (itemId.includes("moss")) return { label: "Moss", tone: "#4f7a3a" };
-  if (itemId.includes("pebble") || itemId.includes("stone"))
-    return { label: "Stone", tone: "#6d6a63" };
-  if (itemId.includes("fern")) return { label: "Fern", tone: "#3f6b48" };
-  if (itemId.includes("daisy") || itemId.includes("tulip") || itemId.includes("flower"))
-    return { label: "Bloom", tone: "#c45c8a" };
-  if (itemId.includes("pond")) return { label: "Pond", tone: "#3d6f8f" };
-  if (itemId.includes("tree") || itemId.includes("oak") || itemId.includes("willow"))
-    return { label: "Tree", tone: "#3d5c2e" };
-  if (itemId.includes("lantern")) return { label: "Lamp", tone: "#c9a227" };
-  if (itemId.includes("obelisk")) return { label: "Relic", tone: "#7a5cff" };
-  return { label: "Decor", tone: "#8a6b4a" };
-}
 
 export function CompanionClient({ signedIn, initial }: Props) {
   const [snapshot, setSnapshot] = useState<CompanionSnapshot | null>(initial);
@@ -35,7 +21,6 @@ export function CompanionClient({ signedIn, initial }: Props) {
     null,
   );
 
-  // Server page already hydrates `initial`; client refresh is only for signed-in empty state.
   useEffect(() => {
     if (!signedIn || snapshot) return;
     let cancelled = false;
@@ -68,13 +53,9 @@ export function CompanionClient({ signedIn, initial }: Props) {
               ? "Starter already claimed."
               : data.error === "none"
                 ? "No food left — buy some in the Shop."
-                : data.error === "cell_taken"
-                  ? "That plot is taken."
-                  : data.error === "pet_cell"
-                    ? "That’s your companion’s nest."
-                    : data.error === "out_of_bounds"
-                      ? "Outside the garden."
-                      : (data.error ?? "Something went wrong"),
+                : data.error === "already_placed"
+                  ? "That decoration is already in the scene."
+                  : (data.error ?? "Something went wrong"),
         );
         return null;
       }
@@ -92,13 +73,6 @@ export function CompanionClient({ signedIn, initial }: Props) {
     }
   }
 
-  const gridStyle = useMemo(() => {
-    if (!snapshot) return undefined;
-    return {
-      gridTemplateColumns: `repeat(${snapshot.garden.cols}, minmax(0, 1fr))`,
-    } as CSSProperties;
-  }, [snapshot]);
-
   if (!signedIn) {
     return (
       <div className="mx-auto max-w-lg animate-rise space-y-6 text-center">
@@ -107,8 +81,8 @@ export function CompanionClient({ signedIn, initial }: Props) {
           Companions & garden
         </h1>
         <p className="text-fog">
-          Sign in to choose a starter egg, raise a companion, and decorate your
-          garden.
+          Sign in to choose a starter egg and watch your living garden scene
+          grow richer over time.
         </p>
         <Link
           href="/auth"
@@ -184,7 +158,6 @@ export function CompanionClient({ signedIn, initial }: Props) {
   }
 
   const pet = snapshot.pet!;
-  const petCell = snapshot.garden.petCellIndex;
 
   return (
     <div className="mx-auto max-w-3xl animate-rise space-y-8">
@@ -251,144 +224,53 @@ export function CompanionClient({ signedIn, initial }: Props) {
       <section className="space-y-4">
         <div>
           <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-            Garden plot
+            Living garden
           </h2>
           <p className="text-sm text-fog">
-            Your companion lives here. Select a decoration, then a free plot.
+            A fixed diorama — select a decoration, then click to place. Drag to
+            rearrange. Double-click to put one back.
           </p>
         </div>
 
-        <div
-          className="relative overflow-hidden rounded-3xl border border-[var(--line)] p-4 sm:p-5"
-          style={{
-            background:
-              "linear-gradient(180deg, #cfe3f4 0%, #d7ebc8 42%, #b7d39a 100%)",
-          }}
-        >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 15%, #fff8 0 18%, transparent 19%), radial-gradient(circle at 80% 10%, #fff6 0 12%, transparent 13%), repeating-linear-gradient(0deg, transparent 0 18px, #0000000a 18px 19px), repeating-linear-gradient(90deg, transparent 0 18px, #0000000a 18px 19px)",
-            }}
-          />
-          <div className="relative grid gap-2" style={gridStyle}>
-            {Array.from({ length: snapshot.garden.cells }).map((_, cellIndex) => {
-              const isPet = cellIndex === petCell;
-              const placed = snapshot.garden.placements.find(
-                (p) => p.cellIndex === cellIndex,
-              );
-              const selected = selectedPlacement === placed?.id;
-
-              if (isPet) {
-                return (
-                  <div
-                    key={cellIndex}
-                    className="relative flex aspect-square flex-col items-center justify-end overflow-hidden rounded-2xl border border-[#6f8f4e]/55 bg-[#9fbf6e]/55 p-1 shadow-[inset_0_-10px_0_#00000014]"
-                  >
-                    <div className="absolute inset-x-3 bottom-2 h-3 rounded-full bg-[#6d8f45]/55 blur-[1px]" />
-                    <PetMark
-                      speciesId={pet.speciesId as PetSpeciesId}
-                      stage={pet.stage}
-                      colors={pet.colors}
-                      happinessState={pet.happinessState}
-                      size={96}
-                    />
-                  </div>
-                );
+        <GardenDiorama
+          garden={snapshot.garden}
+          pet={pet}
+          selectedDecor={selectedDecor}
+          selectedPlacement={selectedPlacement}
+          busy={busy}
+          onSelectPlacement={setSelectedPlacement}
+          onPlace={(itemId, x, y) => {
+            void post({ action: "place", itemId, x, y }).then((data) => {
+              if (data?.ok) {
+                setSelectedDecor(null);
+                setMessage("Placed in the garden.");
               }
-
-              return (
-                <button
-                  key={cellIndex}
-                  type="button"
-                  onClick={() => {
-                    if (selectedDecor) {
-                      void post({
-                        action: "place",
-                        itemId: selectedDecor,
-                        cellIndex,
-                      }).then((data) => {
-                        if (data?.ok) {
-                          setSelectedDecor(null);
-                          setMessage("Decoration placed.");
-                        }
-                      });
-                      return;
-                    }
-                    if (placed && selectedPlacement === placed.id) {
-                      void post({
-                        action: "remove",
-                        placementId: placed.id,
-                      }).then((data) => {
-                        if (data?.ok) {
-                          setSelectedPlacement(null);
-                          setMessage("Decoration returned to inventory.");
-                        }
-                      });
-                      return;
-                    }
-                    if (
-                      placed &&
-                      selectedPlacement &&
-                      selectedPlacement !== placed.id
-                    ) {
-                      void post({
-                        action: "move",
-                        placementId: selectedPlacement,
-                        cellIndex,
-                      }).then((data) => {
-                        if (data?.ok) {
-                          setSelectedPlacement(null);
-                          setMessage("Moved.");
-                        }
-                      });
-                      return;
-                    }
-                    setSelectedPlacement(placed ? placed.id : null);
-                  }}
-                  className={[
-                    "aspect-square rounded-2xl border text-xs transition",
-                    placed
-                      ? selected
-                        ? "border-ember/70 bg-[#f4e7c8]/85"
-                        : "border-[#6f8f4e]/45 bg-[#d9ecc0]/75"
-                      : "border-[#6f8f4e]/30 bg-[#c5dd9f]/45 hover:border-ember/40",
-                  ].join(" ")}
-                >
-                  {placed ? (
-                    <span className="flex h-full flex-col items-center justify-center gap-1 px-1 font-medium text-[#2d3b1f]">
-                      <span
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                        style={{ background: decoMark(placed.itemId).tone }}
-                        aria-hidden
-                      >
-                        {decoMark(placed.itemId).label.slice(0, 1)}
-                      </span>
-                      <span className="line-clamp-2 text-[10px] leading-tight">
-                        {placed.title}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="text-[#4d6234]/35">{cellIndex + 1}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <p className="relative mt-4 text-center text-sm italic text-[#2d3b1f]/80">
-            “{pet.dialogue}”
-          </p>
-        </div>
+            });
+          }}
+          onMove={(placementId, x, y) => {
+            void post({ action: "move", placementId, x, y }).then((data) => {
+              if (data?.ok) setMessage("Moved.");
+            });
+          }}
+          onRemove={(placementId) => {
+            void post({ action: "remove", placementId }).then((data) => {
+              if (data?.ok) {
+                setSelectedPlacement(null);
+                setMessage("Returned to your collection.");
+              }
+            });
+          }}
+        />
 
         <div className="flex flex-wrap gap-2">
           {snapshot.garden.inventoryDecor.length === 0 ? (
             <p className="text-sm text-fog">
-              All starter pieces are placed. More flower plots unlock in the{" "}
+              Everything you own is in the scene. More decorations unlock in the{" "}
               <Link href="/shop" className="text-ember hover:underline">
                 Shop
               </Link>{" "}
-              at account level 20.
+              as account XP rises — the garden stays the same size and grows
+              richer.
             </p>
           ) : (
             snapshot.garden.inventoryDecor.map((item) => (
@@ -413,6 +295,10 @@ export function CompanionClient({ signedIn, initial }: Props) {
             ))
           )}
         </div>
+        <p className="text-xs text-fog">
+          Scene tone: {snapshot.garden.tone} · Ambience:{" "}
+          {snapshot.garden.ambience.join(", ")}
+        </p>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

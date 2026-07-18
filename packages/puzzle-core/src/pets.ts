@@ -256,15 +256,6 @@ export function isFoodItemId(id: string): id is FoodItemId {
   return (FOOD_ITEM_IDS as readonly string[]).includes(id);
 }
 
-/** Garden grid sizes by collection milestone (owned decorations). */
-export const GARDEN_GRID_BY_OWNED_DECOR = [
-  { owned: 0, cols: 3, rows: 3 },
-  { owned: 2, cols: 4, rows: 3 },
-  { owned: 5, cols: 4, rows: 4 },
-  { owned: 9, cols: 5, rows: 4 },
-  { owned: 14, cols: 5, rows: 5 },
-] as const;
-
 /**
  * XP required to reach a given level from the previous one.
  * Level 1 starts at 0 XP; level N requires cumulative sum.
@@ -363,22 +354,6 @@ export function requiredLevelForShopItem(
 ): number {
   if (!category) return 1;
   return SHOP_UNLOCK_LEVELS[category] ?? 1;
-}
-
-export function gardenGridSize(ownedDecorations: number): {
-  cols: number;
-  rows: number;
-  cells: number;
-} {
-  let cols = 3;
-  let rows = 3;
-  for (const row of GARDEN_GRID_BY_OWNED_DECOR) {
-    if (ownedDecorations >= row.owned) {
-      cols = row.cols;
-      rows = row.rows;
-    }
-  }
-  return { cols, rows, cells: cols * rows };
 }
 
 export function pickPersonality(
@@ -494,11 +469,4 @@ export const STARTER_DECORATION_IDS = [
 
 export function isDecorationItemId(id: string): id is DecorationItemId {
   return (DECORATION_ITEM_IDS as readonly string[]).includes(id);
-}
-
-/** Center nest cell for the companion on a garden grid. */
-export function gardenPetCellIndex(cols: number, rows: number): number {
-  const c = Math.max(1, cols);
-  const r = Math.max(1, rows);
-  return Math.floor(r / 2) * c + Math.floor(c / 2);
 }

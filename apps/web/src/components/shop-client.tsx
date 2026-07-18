@@ -304,7 +304,8 @@ export function ShopClient({
           Garden decorations
         </h2>
         <p className="text-sm text-fog">
-          Account XP unlocks categories. Coins still buy every decoration.
+          Account XP unlocks categories. Coins buy decorations that enrich the
+          fixed garden scene — it never expands, it deepens.
         </p>
         <ul className="space-y-3">
           {decorations.map((item) => {

@@ -1,4 +1,5 @@
 import type { PetSpeciesId, ShopCategoryId } from "./pets";
+import type { GardenAmbientId, GardenLayer, GardenSceneTone } from "./garden";
 
 export type CompanionPetView = {
   id: string;
@@ -33,6 +34,19 @@ export type CompanionGiftView = {
   rewardLabel: string;
 } | null;
 
+export type CompanionGardenPlacement = {
+  id: string;
+  itemId: string;
+  title: string;
+  x: number;
+  y: number;
+  layer: GardenLayer;
+  widthPct: number;
+  motion: string;
+  mark: string;
+  tone: string;
+};
+
 export type CompanionSnapshot = {
   needsStarter: boolean;
   starters: Array<{
@@ -50,16 +64,13 @@ export type CompanionSnapshot = {
   pet: CompanionPetView | null;
   gift: CompanionGiftView;
   garden: {
-    cols: number;
-    rows: number;
-    cells: number;
-    petCellIndex: number;
-    placements: Array<{
-      id: string;
-      itemId: string;
-      title: string;
-      cellIndex: number;
-    }>;
+    /** Wallpaper-ready scene metadata */
+    sceneVersion: number;
+    aspectRatio: number;
+    tone: GardenSceneTone;
+    ambience: GardenAmbientId[];
+    pet: { x: number; y: number; layer: GardenLayer };
+    placements: CompanionGardenPlacement[];
     inventoryDecor: Array<{ itemId: string; title: string; qty: number }>;
   };
   foodInventory: Array<{ itemId: string; title: string; qty: number }>;

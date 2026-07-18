@@ -17,6 +17,7 @@ export * from "./wordladder";
 export * from "./monthly-puzzles";
 export * from "./monthly";
 export * from "./pets";
+export * from "./garden";
 export * from "./companion-types";
 export * from "./coins";
 export * from "./puzzle-design";

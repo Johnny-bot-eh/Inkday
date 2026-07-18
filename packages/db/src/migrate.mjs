@@ -302,10 +302,11 @@ const statements = [
   id TEXT PRIMARY KEY NOT NULL,
   user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
   item_id TEXT NOT NULL,
-  cell_index INTEGER NOT NULL,
+  x INTEGER NOT NULL DEFAULT 50,
+  y INTEGER NOT NULL DEFAULT 60,
+  layer TEXT NOT NULL DEFAULT 'middle',
   placed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS garden_placement_cell_idx ON garden_placement(user_id, cell_index)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
   `CREATE INDEX IF NOT EXISTS garden_placement_user_idx ON garden_placement(user_id)`,
 ];
@@ -321,12 +322,16 @@ const alters = [
   `ALTER TABLE user_stats ADD COLUMN challenge_wins INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE play_result ADD COLUMN season_id TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE user ADD COLUMN equipped_avatar_id TEXT`,
+  `ALTER TABLE garden_placement ADD COLUMN x INTEGER NOT NULL DEFAULT 50`,
+  `ALTER TABLE garden_placement ADD COLUMN y INTEGER NOT NULL DEFAULT 60`,
+  `ALTER TABLE garden_placement ADD COLUMN layer TEXT NOT NULL DEFAULT 'middle'`,
 ];
 
 /** Index rebuilds that must replace older definitions. */
 const indexRebuilds = [
   `DROP INDEX IF EXISTS play_once_per_day_idx`,
   `CREATE UNIQUE INDEX IF NOT EXISTS play_once_per_day_idx ON play_result(user_id, puzzle_type, difficulty, date_key, season_id)`,
+  `DROP INDEX IF EXISTS garden_placement_cell_idx`,
 ];
 
 function createDbClient() {
@@ -370,6 +375,51 @@ for (const statement of alters) {
 
 for (const statement of indexRebuilds) {
   await client.execute(statement);
+}
+
+/** Rebuild garden_placement if it still uses the old grid cell_index column. */
+try {
+  const info = await client.execute(`PRAGMA table_info(garden_placement)`);
+  const cols = new Set(
+    info.rows.map((row) => String(row.name ?? row[1] ?? "")),
+  );
+  if (cols.has("cell_index")) {
+    await client.execute(`CREATE TABLE garden_placement_diorama (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  item_id TEXT NOT NULL,
+  x INTEGER NOT NULL DEFAULT 50,
+  y INTEGER NOT NULL DEFAULT 60,
+  layer TEXT NOT NULL DEFAULT 'middle',
+  placed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`);
+    await client.execute(`INSERT OR IGNORE INTO garden_placement_diorama
+  (id, user_id, item_id, x, y, layer, placed_at)
+  SELECT
+    id,
+    user_id,
+    item_id,
+    COALESCE(x, 20 + (cell_index % 3) * 28),
+    COALESCE(y, 45 + (cell_index / 3) * 16),
+    COALESCE(layer, 'middle'),
+    placed_at
+  FROM garden_placement`);
+    await client.execute(`DROP TABLE garden_placement`);
+    await client.execute(
+      `ALTER TABLE garden_placement_diorama RENAME TO garden_placement`,
+    );
+    await client.execute(
+      `CREATE UNIQUE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
+    );
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS garden_placement_user_idx ON garden_placement(user_id)`,
+    );
+  }
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  if (!/no such table/i.test(message)) {
+    throw err;
+  }
 }
 
 console.log(`Migrated database: ${label}`);

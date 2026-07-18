@@ -1,19 +1,23 @@
 import {
   DECORATION_SHOP_ITEMS,
+  GARDEN_SCENE,
   HAPPINESS,
   PET_SPECIES,
-  STARTER_DECORATION_IDS,
+  STARTER_GARDEN_POSES,
   STARTER_SPECIES,
+  clampGardenCoord,
   clampHappiness,
   daysAway,
   decayedHappiness,
   dialogueFor,
-  gardenGridSize,
-  gardenPetCellIndex,
+  gardenAmbience,
+  gardenDecorVisual,
+  gardenSceneTone,
   getShopItem,
   happinessState,
   isDecorationItemId,
   isFoodItemId,
+  isValidGardenLayer,
   levelFromXp,
   pickPersonality,
   rollPetGift,
@@ -28,6 +32,7 @@ import {
   type CompanionSnapshot,
   type Difficulty,
   type FoodItemId,
+  type GardenLayer,
   type PetSpeciesId,
   type ShopCategoryId,
 } from "@daily-puzzle/puzzle-core";
@@ -331,20 +336,9 @@ async function repairMisinitializedStarterPet(
 
 async function ensureStarterGarden(userId: string) {
   const db = getDb();
-  const inventory = await listCoinInventory(userId);
-  const ownedDecor = inventory.filter(
-    (r) => isDecorationItemId(r.itemId) && r.qty > 0,
-  );
-  const grid = gardenGridSize(
-    Math.max(ownedDecor.length, STARTER_DECORATION_IDS.length),
-  );
-  const petCell = gardenPetCellIndex(grid.cols, grid.rows);
-  const starterCells = [0, grid.cols - 1, grid.cells - grid.cols].filter(
-    (cell, i, arr) => cell !== petCell && arr.indexOf(cell) === i,
-  );
 
-  for (let i = 0; i < STARTER_DECORATION_IDS.length; i++) {
-    const itemId = STARTER_DECORATION_IDS[i]!;
+  for (const pose of STARTER_GARDEN_POSES) {
+    const itemId = pose.itemId;
     const existingInv = await db.query.coinInventory.findFirst({
       where: and(
         eq(coinInventory.userId, userId),
@@ -368,22 +362,14 @@ async function ensureStarterGarden(userId: string) {
     });
     if (existingPlace) continue;
 
-    const cellIndex = starterCells[i] ?? i;
-    if (cellIndex === petCell) continue;
-    const taken = await db.query.gardenPlacement.findFirst({
-      where: and(
-        eq(gardenPlacement.userId, userId),
-        eq(gardenPlacement.cellIndex, cellIndex),
-      ),
-    });
-    if (taken) continue;
-
     try {
       await db.insert(gardenPlacement).values({
         id: randomUUID(),
         userId,
         itemId,
-        cellIndex,
+        x: Math.round(pose.x),
+        y: Math.round(pose.y),
+        layer: pose.layer,
       });
     } catch {
       // Unique conflict — already seeded.
@@ -498,8 +484,13 @@ export async function getCompanionSnapshot(
     where: eq(gardenPlacement.userId, userId),
   });
   const placedIds = new Set(placements.map((p) => p.itemId));
-  const grid = gardenGridSize(ownedDecorIds.length);
-  const petCellIndex = gardenPetCellIndex(grid.cols, grid.rows);
+  const petLevel = petView?.level ?? 1;
+  const tone = gardenSceneTone(account.level, petLevel);
+  const ambience = gardenAmbience({
+    accountLevel: account.level,
+    petLevel,
+    placedCount: placements.length,
+  });
 
   return {
     needsStarter: !prog.starterClaimed || !petView,
@@ -521,16 +512,31 @@ export async function getCompanionSnapshot(
     pet: petView,
     gift,
     garden: {
-      cols: grid.cols,
-      rows: grid.rows,
-      cells: grid.cells,
-      petCellIndex,
-      placements: placements.map((p) => ({
-        id: p.id,
-        itemId: p.itemId,
-        title: getShopItem(p.itemId)?.title ?? p.itemId,
-        cellIndex: p.cellIndex,
-      })),
+      sceneVersion: GARDEN_SCENE.sceneVersion,
+      aspectRatio: GARDEN_SCENE.aspectRatio,
+      tone,
+      ambience,
+      pet: {
+        x: GARDEN_SCENE.pet.x,
+        y: GARDEN_SCENE.pet.y,
+        layer: GARDEN_SCENE.pet.layer,
+      },
+      placements: placements.map((p) => {
+        const visual = gardenDecorVisual(p.itemId);
+        const layer = isValidGardenLayer(p.layer) ? p.layer : visual.layer;
+        return {
+          id: p.id,
+          itemId: p.itemId,
+          title: getShopItem(p.itemId)?.title ?? p.itemId,
+          x: clampGardenCoord(p.x),
+          y: clampGardenCoord(p.y),
+          layer,
+          widthPct: visual.widthPct,
+          motion: visual.motion,
+          mark: visual.mark,
+          tone: visual.tone,
+        };
+      }),
       inventoryDecor: ownedDecorIds
         .filter((id) => !placedIds.has(id))
         .map((id) => ({
@@ -808,7 +814,9 @@ export async function claimPetGift(
 export async function placeGardenItem(
   userId: string,
   itemId: string,
-  cellIndex: number,
+  x: number,
+  y: number,
+  layer?: GardenLayer,
 ): Promise<
   | { ok: true; snapshot: CompanionSnapshot }
   | { ok: false; reason: string }
@@ -820,18 +828,6 @@ export async function placeGardenItem(
   const owned = await getInventoryQty(userId, itemId);
   if (owned <= 0) return { ok: false, reason: "not_owned" };
 
-  const inventory = await listCoinInventory(userId);
-  const ownedDecorCount = inventory.filter(
-    (r) => isDecorationItemId(r.itemId) && r.qty > 0,
-  ).length;
-  const grid = gardenGridSize(ownedDecorCount);
-  if (cellIndex < 0 || cellIndex >= grid.cells) {
-    return { ok: false, reason: "out_of_bounds" };
-  }
-  if (cellIndex === gardenPetCellIndex(grid.cols, grid.rows)) {
-    return { ok: false, reason: "pet_cell" };
-  }
-
   const alreadyPlaced = await db.query.gardenPlacement.findFirst({
     where: and(
       eq(gardenPlacement.userId, userId),
@@ -840,20 +836,18 @@ export async function placeGardenItem(
   });
   if (alreadyPlaced) return { ok: false, reason: "already_placed" };
 
-  const cellTaken = await db.query.gardenPlacement.findFirst({
-    where: and(
-      eq(gardenPlacement.userId, userId),
-      eq(gardenPlacement.cellIndex, cellIndex),
-    ),
-  });
-  if (cellTaken) return { ok: false, reason: "cell_taken" };
+  const visual = gardenDecorVisual(itemId);
+  const resolvedLayer =
+    layer && isValidGardenLayer(layer) ? layer : visual.layer;
 
   try {
     await db.insert(gardenPlacement).values({
       id: randomUUID(),
       userId,
       itemId,
-      cellIndex,
+      x: Math.round(clampGardenCoord(x)),
+      y: Math.round(clampGardenCoord(y)),
+      layer: resolvedLayer,
     });
   } catch {
     return { ok: false, reason: "conflict" };
@@ -865,7 +859,8 @@ export async function placeGardenItem(
 export async function moveGardenItem(
   userId: string,
   placementId: string,
-  cellIndex: number,
+  x: number,
+  y: number,
 ): Promise<
   | { ok: true; snapshot: CompanionSnapshot }
   | { ok: false; reason: string }
@@ -879,31 +874,12 @@ export async function moveGardenItem(
   });
   if (!placement) return { ok: false, reason: "not_found" };
 
-  const inventory = await listCoinInventory(userId);
-  const ownedDecorCount = inventory.filter(
-    (r) => isDecorationItemId(r.itemId) && r.qty > 0,
-  ).length;
-  const grid = gardenGridSize(ownedDecorCount);
-  if (cellIndex < 0 || cellIndex >= grid.cells) {
-    return { ok: false, reason: "out_of_bounds" };
-  }
-  if (cellIndex === gardenPetCellIndex(grid.cols, grid.rows)) {
-    return { ok: false, reason: "pet_cell" };
-  }
-
-  const cellTaken = await db.query.gardenPlacement.findFirst({
-    where: and(
-      eq(gardenPlacement.userId, userId),
-      eq(gardenPlacement.cellIndex, cellIndex),
-    ),
-  });
-  if (cellTaken && cellTaken.id !== placementId) {
-    return { ok: false, reason: "cell_taken" };
-  }
-
   await db
     .update(gardenPlacement)
-    .set({ cellIndex })
+    .set({
+      x: Math.round(clampGardenCoord(x)),
+      y: Math.round(clampGardenCoord(y)),
+    })
     .where(eq(gardenPlacement.id, placementId));
 
   return { ok: true, snapshot: await getCompanionSnapshot(userId) };

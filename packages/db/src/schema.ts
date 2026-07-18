@@ -828,7 +828,7 @@ export const petGift = sqliteTable(
   ],
 );
 
-/** Placed garden decorations on an expanding grid. */
+/** Placed garden decorations on a fixed 2.5D diorama (normalized x/y). */
 export const gardenPlacement = sqliteTable(
   "garden_placement",
   {
@@ -837,13 +837,17 @@ export const gardenPlacement = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     itemId: text("item_id").notNull(),
-    cellIndex: integer("cell_index").notNull(),
+    /** Normalized 0–100 canvas X (left → right). */
+    x: integer("x").notNull().default(50),
+    /** Normalized 0–100 canvas Y (top → bottom). */
+    y: integer("y").notNull().default(60),
+    /** background | middle | foreground */
+    layer: text("layer").notNull().default("middle"),
     placedAt: integer("placed_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
   },
   (t) => [
-    uniqueIndex("garden_placement_cell_idx").on(t.userId, t.cellIndex),
     uniqueIndex("garden_placement_item_idx").on(t.userId, t.itemId),
     index("garden_placement_user_idx").on(t.userId),
   ],

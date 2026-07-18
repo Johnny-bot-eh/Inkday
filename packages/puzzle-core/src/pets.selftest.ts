@@ -3,10 +3,14 @@
  * Run: pnpm --filter @daily-puzzle/puzzle-core exec tsx src/pets.selftest.ts
  */
 import {
+  clampGardenCoord,
+  gardenAmbience,
+  gardenSceneTone,
+  GARDEN_SCENE,
+} from "./garden";
+import {
   clampHappiness,
   decayedHappiness,
-  gardenGridSize,
-  gardenPetCellIndex,
   levelFromXp,
   shopCategoryUnlocked,
   stageFromLevel,
@@ -46,10 +50,11 @@ assert(!shopCategoryUnlocked(19, "flowers"), "flowers locked before 20");
 assert(shopCategoryUnlocked(20, "flowers"), "flowers at 20");
 assert(shopCategoryUnlocked(100, "legendary"), "legendary at 100");
 
-assert(gardenGridSize(0).cells === 9, "base garden 3x3");
-assert(gardenGridSize(5).cols === 4 && gardenGridSize(5).rows === 4, "expand at 5");
 assert(xpForDailyWin("hard") > xpForDailyWin("easy"), "harder wins grant more XP");
-assert(gardenPetCellIndex(3, 3) === 4, "pet nest is center of 3x3");
-assert(gardenPetCellIndex(4, 3) === 6, "pet nest on 4x3");
+assert(GARDEN_SCENE.aspectRatio > 1, "diorama is wider than tall");
+assert(clampGardenCoord(200) === 92, "garden coord clamps high");
+assert(clampGardenCoord(-4) === 8, "garden coord clamps low");
+assert(gardenSceneTone(1, 1) === "dawn", "starter tone dawn");
+assert(gardenAmbience({ accountLevel: 1, petLevel: 1, placedCount: 0 }).includes("pollen"), "base pollen");
 
 console.log("pets.selftest: ok");

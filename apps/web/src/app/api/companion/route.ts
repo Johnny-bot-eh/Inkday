@@ -39,7 +39,9 @@ export async function POST(req: Request) {
     itemId?: string;
     giftId?: string;
     placementId?: string;
-    cellIndex?: number;
+    x?: number;
+    y?: number;
+    layer?: "background" | "middle" | "foreground";
   };
 
   if (body.action === "claim_starter") {
@@ -84,13 +86,23 @@ export async function POST(req: Request) {
   }
 
   if (body.action === "place") {
-    if (!body.itemId || typeof body.cellIndex !== "number") {
+    if (
+      !body.itemId ||
+      typeof body.x !== "number" ||
+      typeof body.y !== "number"
+    ) {
       return NextResponse.json(
-        { error: "itemId and cellIndex required" },
+        { error: "itemId, x, and y required" },
         { status: 400 },
       );
     }
-    const result = await placeGardenItem(userId, body.itemId, body.cellIndex);
+    const result = await placeGardenItem(
+      userId,
+      body.itemId,
+      body.x,
+      body.y,
+      body.layer,
+    );
     if (!result.ok) {
       return NextResponse.json({ error: result.reason }, { status: 400 });
     }
@@ -98,16 +110,21 @@ export async function POST(req: Request) {
   }
 
   if (body.action === "move") {
-    if (!body.placementId || typeof body.cellIndex !== "number") {
+    if (
+      !body.placementId ||
+      typeof body.x !== "number" ||
+      typeof body.y !== "number"
+    ) {
       return NextResponse.json(
-        { error: "placementId and cellIndex required" },
+        { error: "placementId, x, and y required" },
         { status: 400 },
       );
     }
     const result = await moveGardenItem(
       userId,
       body.placementId,
-      body.cellIndex,
+      body.x,
+      body.y,
     );
     if (!result.ok) {
       return NextResponse.json({ error: result.reason }, { status: 400 });

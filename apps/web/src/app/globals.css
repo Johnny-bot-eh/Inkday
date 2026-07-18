@@ -185,3 +185,172 @@ select {
 .tile-flip {
   animation: flip-tile 0.45s ease;
 }
+
+/* —— Garden diorama (living wallpaper) —— */
+@keyframes garden-sway {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(-2deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(2.5deg);
+  }
+}
+
+@keyframes garden-bob {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-6%);
+  }
+}
+
+@keyframes garden-sparkle {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    filter: brightness(1.25);
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+@keyframes garden-ripple {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scaleX(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate(-50%, -50%) scaleX(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes garden-pet-idle {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-3%);
+  }
+}
+
+@keyframes garden-drift-a {
+  0% {
+    transform: translate(0, 10%) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(12%, -110%) scale(1);
+    opacity: 0;
+  }
+}
+
+.garden-sway {
+  animation: garden-sway 4.5s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.garden-bob {
+  animation: garden-bob 3.2s ease-in-out infinite;
+}
+
+.garden-sparkle {
+  animation: garden-sparkle 2.6s ease-in-out infinite;
+}
+
+.garden-ripple {
+  animation: garden-ripple 3.8s ease-in-out infinite;
+}
+
+.garden-pet-idle {
+  animation: garden-pet-idle 3.6s ease-in-out infinite;
+}
+
+.garden-ambience-pollen::before,
+.garden-ambience-pollen::after,
+.garden-ambience-fireflies::before,
+.garden-ambience-fireflies::after,
+.garden-ambience-spark::before,
+.garden-ambience-stars::before {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fff8d0;
+  animation: garden-drift-a 9s linear infinite;
+}
+
+.garden-ambience-pollen::before {
+  left: 18%;
+  bottom: 20%;
+  background: #ffe8a8aa;
+  animation-duration: 11s;
+}
+
+.garden-ambience-pollen::after {
+  left: 62%;
+  bottom: 12%;
+  width: 4px;
+  height: 4px;
+  background: #fff3c6aa;
+  animation-duration: 8s;
+  animation-delay: 2s;
+}
+
+.garden-ambience-mist {
+  background: radial-gradient(
+    ellipse at 50% 70%,
+    #ffffff33 0 20%,
+    transparent 55%
+  );
+  animation: garden-bob 7s ease-in-out infinite;
+}
+
+.garden-ambience-fireflies::before {
+  left: 30%;
+  bottom: 35%;
+  background: #e8ff8a;
+  box-shadow: 0 0 10px #e8ff8a;
+  animation-duration: 6s;
+}
+
+.garden-ambience-fireflies::after {
+  left: 70%;
+  bottom: 42%;
+  background: #c9ff6a;
+  box-shadow: 0 0 12px #c9ff6a;
+  animation-duration: 7.5s;
+  animation-delay: 1.4s;
+}
+
+.garden-ambience-spark::before {
+  left: 48%;
+  bottom: 55%;
+  background: #fff;
+  box-shadow: 0 0 14px #fff;
+  animation-duration: 5s;
+}
+
+.garden-ambience-stars::before {
+  left: 55%;
+  top: 18%;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  box-shadow:
+    12vw 8vh 0 #fff8,
+    -18vw 14vh 0 #fff6,
+    22vw 4vh 0 #fffc;
+  animation: garden-sparkle 4s ease-in-out infinite;
+}
