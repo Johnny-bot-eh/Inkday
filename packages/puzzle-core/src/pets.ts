@@ -2,6 +2,14 @@ import type { Difficulty } from "./types";
 import { dayIndex, hashSeed, pickIndex } from "./types";
 
 /** Permanent account XP never decreases. */
+
+/**
+ * XP model:
+ * - Pet XP is per companion — grows that pet’s level/stage from hatch.
+ * - Account XP is the unlock pool: total XP from every pet + other progression
+ *   (historical puzzle wins, monthly clears, streak bonuses). Higher account XP
+ *   unlocks more shop categories and garden goods for your pets.
+ */
 export type PetSpeciesId = "ink_owl" | "moss_fox" | "star_cat";
 
 export type PetPersonalityId =
