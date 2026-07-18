@@ -264,9 +264,15 @@ export function WordleGame({
               obscureTheme ? "text-red-400" : "text-ember",
             ].join(" ")}
           >
-            {config.categoryTitle
-              ? `Surprise · ${config.categoryTitle}`
-              : `${wordleTitle(difficulty)} · ${DIFFICULTY_LABELS[difficulty]}`}
+            <Link
+              href="/#word-puzzles"
+              className="transition-colors hover:text-paper hover:underline"
+            >
+              {config.categoryTitle
+                ? `Surprise · ${config.categoryTitle}`
+                : wordleTitle(difficulty)}
+            </Link>
+            {!config.categoryTitle && <> · {DIFFICULTY_LABELS[difficulty]}</>}
           </p>
           <h1
             className={[

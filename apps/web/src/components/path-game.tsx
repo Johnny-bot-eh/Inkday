@@ -225,7 +225,13 @@ export function PathGame({
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-ember">
-            Path Puzzle · {DIFFICULTY_LABELS[difficulty]}
+            <Link
+              href="/#path-puzzle"
+              className="transition-colors hover:text-paper hover:underline"
+            >
+              Path Puzzle
+            </Link>{" "}
+            · {DIFFICULTY_LABELS[difficulty]}
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {puzzle.title}

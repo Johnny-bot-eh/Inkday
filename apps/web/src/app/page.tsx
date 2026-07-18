@@ -340,7 +340,10 @@ export default async function HomePage() {
         )}
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+          <article
+            id="word-puzzles"
+            className="scroll-mt-24 rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
+          >
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
               Word puzzles
             </h3>
@@ -407,7 +410,10 @@ export default async function HomePage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+          <article
+            id="escape-room"
+            className="scroll-mt-24 rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
+          >
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
               Escape Room
             </h3>
@@ -435,7 +441,10 @@ export default async function HomePage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+          <article
+            id="logic-grid"
+            className="scroll-mt-24 rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
+          >
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
               Logic Grid
             </h3>
@@ -465,7 +474,10 @@ export default async function HomePage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6">
+          <article
+            id="path-puzzle"
+            className="scroll-mt-24 rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
+          >
             <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
               Path Puzzle
             </h3>
@@ -498,7 +510,8 @@ export default async function HomePage() {
           {WORD_GAME_TYPES.map((puzzleType) => (
             <article
               key={puzzleType}
-              className="rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
+              id={`${puzzleType}-puzzles`}
+              className="scroll-mt-24 rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
             >
               <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
                 {PUZZLE_LABELS[puzzleType]}

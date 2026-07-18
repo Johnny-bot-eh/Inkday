@@ -219,7 +219,13 @@ export function LogicGame({
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-ember">
-            Logic Grid · {DIFFICULTY_LABELS[difficulty]}
+            <Link
+              href="/#logic-grid"
+              className="transition-colors hover:text-paper hover:underline"
+            >
+              Logic Grid
+            </Link>{" "}
+            · {DIFFICULTY_LABELS[difficulty]}
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {puzzle.title}
