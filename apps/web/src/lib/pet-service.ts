@@ -42,6 +42,7 @@ import {
 import {
   gardenPlacement,
   getDb,
+  getLibsqlClient,
   petGift,
   playResult,
   progressionEvent,
@@ -442,6 +443,7 @@ export async function getCompanionSnapshot(
     });
   }
 
+  await ensureGardenAllowsDuplicateItems();
   await clearHabitatInventoryNoise(userId);
 
   const inventory = await listCoinInventory(userId);
@@ -856,6 +858,19 @@ export async function grantGardenBuyXp(
   return xp;
 }
 
+/** Drop legacy unique (user,item) index so duplicate decorations can be placed. */
+async function ensureGardenAllowsDuplicateItems() {
+  const client = getLibsqlClient();
+  try {
+    await client.execute(`DROP INDEX IF EXISTS garden_placement_item_idx`);
+    await client.execute(
+      `CREATE INDEX IF NOT EXISTS garden_placement_user_item_idx ON garden_placement(user_id, item_id)`,
+    );
+  } catch (err) {
+    console.error("ensureGardenAllowsDuplicateItems failed", err);
+  }
+}
+
 export async function placeGardenItem(
   userId: string,
   itemId: string,
@@ -887,17 +902,33 @@ export async function placeGardenItem(
   const resolvedLayer =
     layer && isValidGardenLayer(layer) ? layer : visual.layer;
 
+  const values = {
+    id: randomUUID(),
+    userId,
+    itemId,
+    x: Math.round(clampGardenCoord(x)),
+    y: Math.round(clampGardenCoord(y)),
+    layer: resolvedLayer,
+  };
+
   try {
-    await db.insert(gardenPlacement).values({
-      id: randomUUID(),
-      userId,
-      itemId,
-      x: Math.round(clampGardenCoord(x)),
-      y: Math.round(clampGardenCoord(y)),
-      layer: resolvedLayer,
-    });
-  } catch {
-    return { ok: false, reason: "conflict" };
+    await db.insert(gardenPlacement).values(values);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    // Legacy unique index still present — drop it and retry once.
+    if (/unique|constraint/i.test(message)) {
+      await ensureGardenAllowsDuplicateItems();
+      try {
+        await db.insert(gardenPlacement).values({
+          ...values,
+          id: randomUUID(),
+        });
+      } catch {
+        return { ok: false, reason: "conflict" };
+      }
+    } else {
+      return { ok: false, reason: "conflict" };
+    }
   }
 
   return {

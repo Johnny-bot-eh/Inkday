@@ -211,7 +211,12 @@ export function CompanionClient({ signedIn, initial }: Props) {
           onSelectPlacement={setSelectedPlacement}
           onPlace={(itemId, x, y) => {
             void post({ action: "place", itemId, x, y }).then((data) => {
-              if (data?.ok) {
+              if (!data?.ok) return;
+              // Keep selection if more copies remain to place.
+              const remaining = data.snapshot?.garden?.inventoryDecor?.find(
+                (d: { itemId: string; qty: number }) => d.itemId === itemId,
+              );
+              if (!remaining || remaining.qty < 1) {
                 setSelectedDecor(null);
               }
             });
@@ -226,31 +231,35 @@ export function CompanionClient({ signedIn, initial }: Props) {
           }}
         />
 
-        {snapshot.garden.inventoryDecor.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {snapshot.garden.inventoryDecor.map((item) => (
-              <button
-                key={item.itemId}
-                type="button"
-                onClick={() => {
-                  setSelectedPlacement(null);
-                  setSelectedDecor(
-                    selectedDecor === item.itemId ? null : item.itemId,
-                  );
-                }}
-                className={[
-                  "rounded-lg border px-3 py-2 text-sm",
-                  selectedDecor === item.itemId
-                    ? "border-ember/50 bg-ember/10 text-paper"
-                    : "border-[var(--line)] text-fog hover:text-paper",
-                ].join(" ")}
-              >
-                {item.title}
-                {item.qty > 1 ? ` ×${item.qty}` : ""}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {snapshot.garden.inventoryDecor.map((item) => (
+            <button
+              key={item.itemId}
+              type="button"
+              onClick={() => {
+                setSelectedPlacement(null);
+                setSelectedDecor(
+                  selectedDecor === item.itemId ? null : item.itemId,
+                );
+              }}
+              className={[
+                "rounded-lg border px-3 py-2 text-sm",
+                selectedDecor === item.itemId
+                  ? "border-ember/50 bg-ember/10 text-paper"
+                  : "border-[var(--line)] text-fog hover:text-paper",
+              ].join(" ")}
+            >
+              {item.title}
+              {item.qty > 1 ? ` ×${item.qty}` : ""}
+            </button>
+          ))}
+          <Link
+            href="/shop"
+            className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-fog hover:text-paper"
+          >
+            Buy decorations
+          </Link>
+        </div>
       </section>
 
       <section className="space-y-3">
