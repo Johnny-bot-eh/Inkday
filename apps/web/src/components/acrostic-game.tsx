@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
-  DIFFICULTY_LABELS,
   checkAcrosticAnswers,
   checkAcrosticMessage,
   getAcrosticPuzzle,
@@ -18,6 +17,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
 type Props = {
@@ -239,7 +239,7 @@ export function AcrosticGame({
             >
               Acrostic
             </Link>{" "}
-            · {DIFFICULTY_LABELS[difficulty]}
+            · <DifficultyLabel difficulty={difficulty} />
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {puzzle.title}

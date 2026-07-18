@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Difficulty, MonthlyOnlyPuzzle } from "@daily-puzzle/puzzle-core";
 import {
-  DIFFICULTY_LABELS,
   checkMonthlyOnlyAnswer,
   getMonthlyOnlyExplanation,
   getMonthlyOnlyPuzzle,
@@ -12,6 +11,7 @@ import {
 } from "@daily-puzzle/puzzle-core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { PlayResultsCard } from "@/components/play-results-card";
 
 type Props = {
@@ -114,7 +114,7 @@ export function MonthlyOnlyGame({
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-ember">
-            Case File #{slotIndex} · {DIFFICULTY_LABELS[difficulty]}
+            Case File #{slotIndex} · <DifficultyLabel difficulty={difficulty} />
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {label}

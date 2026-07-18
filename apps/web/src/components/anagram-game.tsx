@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
-  DIFFICULTY_LABELS,
   checkAnagramAnswer,
   getAnagramPuzzle,
   todayKey,
@@ -17,6 +16,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
@@ -249,7 +249,7 @@ export function AnagramGame({
             >
               Anagrams
             </Link>{" "}
-            · {DIFFICULTY_LABELS[difficulty]}
+            · <DifficultyLabel difficulty={difficulty} />
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {puzzle.title}

@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { Difficulty, LetterMark } from "@daily-puzzle/puzzle-core";
 import {
-  DIFFICULTY_LABELS,
   evaluateGuess,
   getWordleConfig,
   isValidWordleGuess,
@@ -19,6 +18,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
@@ -295,7 +295,7 @@ export function WordleGame({
                 ? `Surprise · ${config.categoryTitle}`
                 : wordleTitle(difficulty)}
             </Link>
-            {!config.categoryTitle && <> · {DIFFICULTY_LABELS[difficulty]}</>}
+            {!config.categoryTitle && <> · <DifficultyLabel difficulty={difficulty} /></>}
           </p>
           <h1
             className={[

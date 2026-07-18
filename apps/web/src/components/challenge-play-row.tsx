@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   isBoardPlayedLocally,
   playBoardKey,
@@ -9,11 +9,11 @@ import {
 
 type Props = {
   href: string;
-  title: string;
+  title: ReactNode;
   /** Shown when not completed */
-  openSubtitle: string;
+  openSubtitle: ReactNode;
   /** Shown when completed (server knows the score) */
-  doneSubtitle: string;
+  doneSubtitle: ReactNode;
   puzzleType: string;
   difficulty: string;
   dateKey: string;

@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
-  DIFFICULTY_LABELS,
   checkWordLadder,
   getWordLadderPuzzle,
   isKnownLadderWord,
@@ -19,6 +18,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
 type Props = {
@@ -273,7 +273,7 @@ export function WordLadderGame({
             >
               Word Ladder
             </Link>{" "}
-            · {DIFFICULTY_LABELS[difficulty]}
+            · <DifficultyLabel difficulty={difficulty} />
           </p>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {puzzle.start.toUpperCase()} → {puzzle.end.toUpperCase()}
