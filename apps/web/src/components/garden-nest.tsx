@@ -11,40 +11,42 @@ export function GardenNest({ night = false, className }: Props) {
   const twigLit = night ? "#5c4834" : "#8a6844";
   const lining = night ? "#243020" : "#3f6234";
   const liningLit = night ? "#2e4030" : "#557844";
+  const moss = night ? "#2a3a24" : "#4a6b38";
 
   return (
     <svg
-      viewBox="0 0 140 90"
+      viewBox="0 0 120 72"
       className={className}
       aria-hidden
       preserveAspectRatio="xMidYMid meet"
     >
-      <ellipse cx="70" cy="80" rx="58" ry="9" fill="#00000030" />
-      {/* Deep outer bowl */}
+      <ellipse cx="60" cy="64" rx="42" ry="6" fill="#00000028" />
+      {/* Compact bowl */}
       <path
-        d="M12 38 C18 18 40 10 70 10 C100 10 122 18 128 38 C132 52 124 70 70 78 C16 70 8 52 12 38 Z"
+        d="M16 34 C22 16 38 10 60 10 C82 10 98 16 104 34 C108 46 100 58 60 64 C20 58 12 46 16 34 Z"
         fill={twigDark}
       />
       <path
-        d="M18 40 C24 22 44 16 70 16 C96 16 116 22 122 40 C126 52 118 66 70 72 C22 66 14 52 18 40 Z"
+        d="M20 35 C26 20 42 15 60 15 C78 15 94 20 100 35 C104 45 96 55 60 60 C24 55 16 45 20 35 Z"
         fill={twig}
       />
-      {/* Inner hollow / moss bed */}
-      <ellipse cx="70" cy="42" rx="42" ry="20" fill={lining} />
-      <ellipse cx="70" cy="40" rx="34" ry="14" fill={liningLit} opacity="0.9" />
-      {/* Back rim twigs (behind pet) */}
+      {/* Soft moss lining */}
+      <ellipse cx="60" cy="38" rx="30" ry="14" fill={lining} />
+      <ellipse cx="60" cy="36" rx="24" ry="10" fill={liningLit} opacity="0.9" />
+      <ellipse cx="60" cy="38" rx="18" ry="7" fill={moss} opacity="0.55" />
+      {/* Back rim twigs */}
       <path
-        d="M22 36 Q40 22 58 30 Q70 20 82 30 Q100 22 118 36"
+        d="M24 32 Q38 20 52 28 Q60 18 68 28 Q82 20 96 32"
         fill="none"
         stroke={twigDark}
-        strokeWidth="4"
+        strokeWidth="3.2"
         strokeLinecap="round"
       />
       <path
-        d="M26 40 Q46 28 64 34 Q70 26 76 34 Q94 28 114 40"
+        d="M28 36 Q42 26 54 32 Q60 24 66 32 Q78 26 92 36"
         fill="none"
         stroke={twigLit}
-        strokeWidth="3"
+        strokeWidth="2.4"
         strokeLinecap="round"
         opacity="0.85"
       />
@@ -60,44 +62,34 @@ export function GardenNestRim({ night = false, className }: Props) {
 
   return (
     <svg
-      viewBox="0 0 140 48"
+      viewBox="0 0 120 40"
       className={className}
       aria-hidden
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* Filled front crescent that covers the bottom of the egg */}
       <path
-        d="M10 8 C28 28 48 36 70 36 C92 36 112 28 130 8 C124 30 104 46 70 46 C36 46 16 30 10 8 Z"
+        d="M12 6 C26 22 42 28 60 28 C78 28 94 22 108 6 C102 24 86 36 60 36 C34 36 18 24 12 6 Z"
         fill={twigDark}
       />
       <path
-        d="M16 10 C32 28 50 34 70 34 C90 34 108 28 124 10 C118 28 100 40 70 40 C40 40 22 28 16 10 Z"
+        d="M16 8 C30 22 44 26 60 26 C76 26 90 22 104 8 C98 22 84 32 60 32 C36 32 22 22 16 8 Z"
         fill={twig}
       />
-      {/* Twig weave on the front lip */}
       <path
-        d="M20 14 Q40 30 58 24 Q70 34 82 24 Q100 30 120 14"
+        d="M22 12 Q38 24 52 20 Q60 28 68 20 Q82 24 98 12"
         fill="none"
         stroke={twigLit}
-        strokeWidth="3"
+        strokeWidth="2.4"
         strokeLinecap="round"
         opacity="0.9"
       />
       <path
-        d="M24 20 Q44 34 62 28 Q70 36 78 28 Q96 34 116 20"
+        d="M26 16 Q42 28 58 22 Q60 30 62 22 Q78 28 94 16"
         fill="none"
         stroke={twigDark}
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        opacity="0.85"
-      />
-      <path
-        d="M30 26 Q50 38 70 34 Q90 38 110 26"
-        fill="none"
-        stroke={twigLit}
         strokeWidth="2"
         strokeLinecap="round"
-        opacity="0.75"
+        opacity="0.8"
       />
     </svg>
   );

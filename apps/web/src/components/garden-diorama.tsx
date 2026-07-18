@@ -11,7 +11,7 @@ import { GardenDecorSprite } from "@/components/garden-decor-sprite";
 import { GardenHabitat } from "@/components/garden-habitat";
 import { GardenNest, GardenNestRim } from "@/components/garden-nest";
 import { GardenWeatherLayer } from "@/components/garden-weather";
-import { PetMark } from "@/components/pet-mark";
+import { PetMark, usePetStageMotion } from "@/components/pet-mark";
 import { useLocalGardenClimate } from "@/lib/garden-climate";
 import type {
   CompanionGardenPlacement,
@@ -161,6 +161,7 @@ export function GardenDiorama({
 
   const night = tone === "night" || tone === "dusk";
   const bubbleLeft = garden.pet.x >= 55;
+  const petMotion = usePetStageMotion(pet.id, pet.stage);
 
   return (
     <div
@@ -273,26 +274,30 @@ export function GardenDiorama({
 
         {/* One nest · one companion (Plus may unlock extra nests later) */}
         <div
-          className="garden-pet-idle pointer-events-none absolute"
+          className="pointer-events-none absolute"
           style={{
             left: `${garden.pet.x}%`,
             top: `${garden.pet.y}%`,
             zIndex: layerZ(garden.pet.layer) + Math.round(garden.pet.y) + 1,
-            width: "min(32%, 180px)",
-            transform: "translate(-50%, -78%)",
+            width: "min(22%, 128px)",
+            transform: "translate(-50%, -72%)",
           }}
         >
-          <div className="relative mx-auto aspect-[140/110] w-full">
-            {/* Back of nest */}
+          <div className="relative mx-auto aspect-[120/90] w-full">
             <GardenNest
               night={night}
               className="absolute inset-x-0 bottom-0 z-[1] h-auto w-full drop-shadow-md"
             />
-            {/* Egg sunk into the hollow — bottom third hidden by front rim */}
             <div
-              className="absolute left-1/2 z-[2] w-[58%] -translate-x-1/2 [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full"
+              className={[
+                "absolute left-1/2 z-[2] -translate-x-1/2 [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full",
+                pet.stage === "egg" || petMotion === "hatch"
+                  ? "w-[70%]"
+                  : "w-[78%]",
+              ].join(" ")}
               style={{
-                bottom: pet.stage === "egg" ? "8%" : "16%",
+                bottom:
+                  pet.stage === "egg" || petMotion === "hatch" ? "4%" : "12%",
               }}
             >
               <PetMark
@@ -300,10 +305,10 @@ export function GardenDiorama({
                 stage={pet.stage}
                 colors={pet.colors}
                 happinessState={pet.happinessState}
+                motion={petMotion}
                 size={120}
               />
             </div>
-            {/* Solid front wall overlapping the egg */}
             <GardenNestRim
               night={night}
               className="absolute inset-x-0 bottom-0 z-[3] h-auto w-full"
@@ -311,8 +316,8 @@ export function GardenDiorama({
           </div>
           <div
             className={[
-              "absolute top-[2%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-              bubbleLeft ? "right-[90%]" : "left-[90%]",
+              "absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+              bubbleLeft ? "right-[95%]" : "left-[95%]",
             ].join(" ")}
             style={{
               background: "rgba(255,255,255,0.92)",

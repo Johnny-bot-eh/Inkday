@@ -234,11 +234,181 @@ select {
 @keyframes garden-pet-idle {
   0%,
   100% {
-    transform: translate(-50%, -78%) translateY(0);
+    transform: translate(-50%, -72%) translateY(0);
   }
   50% {
-    transform: translate(-50%, -78%) translateY(-1%);
+    transform: translate(-50%, -72%) translateY(-1%);
   }
+}
+
+@keyframes pet-egg-wobble {
+  0%,
+  100% {
+    transform: rotate(-2.5deg) translateY(0);
+  }
+  25% {
+    transform: rotate(3deg) translateY(-1%);
+  }
+  50% {
+    transform: rotate(-2deg) translateY(0);
+  }
+  75% {
+    transform: rotate(2.5deg) translateY(-0.5%);
+  }
+}
+
+@keyframes pet-egg-breathe {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.03) translateY(-1%);
+  }
+}
+
+@keyframes pet-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3%) scale(1.02);
+  }
+}
+
+@keyframes pet-happy-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10%);
+  }
+  50% {
+    transform: translateY(-2%);
+  }
+  70% {
+    transform: translateY(-8%);
+  }
+}
+
+@keyframes pet-sleepy-sway {
+  0%,
+  100% {
+    transform: rotate(-1.5deg) translateY(1%);
+  }
+  50% {
+    transform: rotate(1.5deg) translateY(2%);
+  }
+}
+
+@keyframes pet-hatch {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  10% {
+    transform: scale(1.02) rotate(-6deg);
+  }
+  20% {
+    transform: scale(1.04) rotate(7deg);
+  }
+  35% {
+    transform: scale(1.06) rotate(-8deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(6deg);
+  }
+  65% {
+    transform: scale(1.15) rotate(-4deg);
+  }
+  80% {
+    transform: scale(0.9) rotate(0);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pet-hatch-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  35% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+@keyframes pet-evolve {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(1.12);
+    filter: brightness(1.25);
+  }
+  50% {
+    transform: scale(0.96);
+    filter: brightness(1.4);
+  }
+  75% {
+    transform: scale(1.08);
+    filter: brightness(1.15);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.pet-egg-wobble {
+  animation: pet-egg-wobble 2.8s ease-in-out infinite;
+  transform-origin: 50% 85%;
+}
+
+.pet-egg-breathe {
+  animation: pet-egg-breathe 3.4s ease-in-out infinite;
+  transform-origin: 50% 85%;
+}
+
+.pet-breathe {
+  animation: pet-breathe 3.2s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.pet-happy-bounce {
+  animation: pet-happy-bounce 1.4s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.pet-sleepy-sway {
+  animation: pet-sleepy-sway 4s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.pet-hatch {
+  animation: pet-hatch 2.6s ease-in-out 1 both;
+  transform-origin: 50% 85%;
+}
+
+.pet-hatch-burst {
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff6c8cc 0 18%, #ffd27866 28%, transparent 55%);
+  animation: pet-hatch-burst 2.4s ease-out 1 both;
+}
+
+.pet-evolve {
+  animation: pet-evolve 2s ease-in-out 1 both;
+  transform-origin: 50% 90%;
 }
 
 @keyframes garden-drift-a {
