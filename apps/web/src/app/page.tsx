@@ -208,7 +208,12 @@ export default async function HomePage() {
               <ChallengePlayRow
                 key={`${challenge.id}-${dateKey}`}
                 href={challenge.href}
-                title={`${challenge.title} · ${challenge.difficultyLabel}`}
+                title={
+                  <>
+                    {challenge.title} ·{" "}
+                    <DifficultyLabel difficulty={challenge.difficulty} />
+                  </>
+                }
                 openSubtitle={headline}
                 doneSubtitle={doneCopy(play)}
                 puzzleType={challenge.puzzleType}
@@ -241,7 +246,9 @@ export default async function HomePage() {
                       key={challenge.id}
                       href={challenge.href}
                       title={challenge.title}
-                      openSubtitle={challenge.difficultyLabel}
+                      openSubtitle={
+                        <DifficultyLabel difficulty={challenge.difficulty} />
+                      }
                       doneSubtitle={doneCopy(play)}
                       puzzleType={challenge.puzzleType}
                       difficulty={challenge.difficulty}
