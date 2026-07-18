@@ -27,6 +27,69 @@ type Props = {
   signedIn: boolean;
 };
 
+/** Escalating paid hints — each purchase unlocks the next rung. */
+function buildHintLadder(puzzle: MonthlyOnlyPuzzle): string[] {
+  switch (puzzle.kind) {
+    case "riddle": {
+      const ans = puzzle.answer.trim();
+      const steps: string[] = [];
+      if (puzzle.hint && puzzle.hint !== "No further hints.") {
+        steps.push(puzzle.hint);
+      }
+      steps.push(`The answer has ${ans.length} letter${ans.length === 1 ? "" : "s"}.`);
+      steps.push(`Starts with “${ans[0]!.toUpperCase()}”.`);
+      if (ans.length > 2) {
+        steps.push(`Ends with “${ans[ans.length - 1]!.toUpperCase()}”.`);
+      }
+      if (ans.length > 3) {
+        const pattern = ans
+          .split("")
+          .map((ch, i) => (i === 0 || i === ans.length - 1 ? ch : "_"))
+          .join(" ");
+        steps.push(`Outline: ${pattern}`);
+      }
+      if (ans.length > 4) {
+        const shown = Math.min(3, ans.length - 1);
+        steps.push(`Begins “${ans.slice(0, shown)}…”.`);
+      }
+      return steps;
+    }
+    case "mathlogic": {
+      const ans = puzzle.answer.trim();
+      return [
+        `The answer is ${ans.length} character${ans.length === 1 ? "" : "s"} long.`,
+        `Starts with “${ans[0]}”.`,
+        ...(ans.length > 1
+          ? [`Ends with “${ans[ans.length - 1]}”.`]
+          : []),
+        puzzle.explanation,
+      ];
+    }
+    case "trivia":
+    case "pattern":
+    case "deduction": {
+      const wrong = puzzle.options
+        .map((opt, i) => ({ opt, i }))
+        .filter((row) => row.i !== puzzle.answerIndex)
+        .map((row) => row.opt);
+      const steps = wrong.map((opt) => `It isn’t “${opt}”.`);
+      if (puzzle.kind === "deduction") {
+        steps.push("Re-read the clues and eliminate impossibilities.");
+      } else if (puzzle.kind === "pattern") {
+        steps.push("Name the rule that turns each term into the next.");
+      }
+      steps.push(puzzle.explanation);
+      return steps;
+    }
+    case "memory": {
+      return puzzle.sequence.map(
+        (symbol, i) =>
+          `Symbol ${i + 1} of ${puzzle.sequence.length} is ${symbol}.`,
+      );
+    }
+  }
+}
+
 export function MonthlyOnlyGame({
   collectionId,
   slotIndex,
@@ -48,6 +111,7 @@ export function MonthlyOnlyGame({
     () => getMonthlyOnlyExplanation(puzzle),
     [puzzle],
   );
+  const hintLadder = useMemo(() => buildHintLadder(puzzle), [puzzle]);
 
   const [status, setStatus] = useState<string | null>(
     alreadyCleared ? "Already cleared this month" : null,
@@ -56,43 +120,25 @@ export function MonthlyOnlyGame({
   const [skipped, setSkipped] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bonusNote, setBonusNote] = useState<string | null>(null);
-  const [coinHint, setCoinHint] = useState<string | null>(null);
+  const [hintStep, setHintStep] = useState(0);
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
 
   function applyMonthlyHint() {
-    switch (puzzle.kind) {
-      case "riddle": {
-        const soft =
-          puzzle.hint && puzzle.hint !== "No further hints."
-            ? puzzle.hint
-            : null;
-        setCoinHint(
-          soft ??
-            `Starts with “${puzzle.answer[0]!.toUpperCase()}”.`,
-        );
-        return;
-      }
-      case "mathlogic":
-        setCoinHint(
-          `First character is “${puzzle.answer[0]!}” (${puzzle.answer.length} total).`,
-        );
-        return;
-      case "trivia":
-      case "pattern":
-      case "deduction": {
-        const wrong = puzzle.options.find(
-          (_, i) => i !== puzzle.answerIndex,
-        );
-        setCoinHint(
-          wrong
-            ? `It isn’t “${wrong}”.`
-            : `Look again at the ${puzzle.kind === "deduction" ? "clues" : "options"}.`,
-        );
-        return;
-      }
-      case "memory":
-        setCoinHint(`First symbol: ${puzzle.sequence[0]}`);
-        return;
+    if (hintLadder.length === 0) {
+      setUnlockedHints(["No hints available for this board."]);
+      return;
     }
+    if (hintStep >= hintLadder.length) {
+      setUnlockedHints((prev) =>
+        prev[prev.length - 1] === "No further paid hints."
+          ? prev
+          : [...prev, "No further paid hints."],
+      );
+      return;
+    }
+    const next = hintLadder[hintStep]!;
+    setUnlockedHints((prev) => [...prev, next]);
+    setHintStep((n) => n + 1);
   }
 
   async function save(payload: {
@@ -168,6 +214,7 @@ export function MonthlyOnlyGame({
         puzzle={puzzle}
         done={done}
         submitting={submitting}
+        showFreeHint={difficulty === "easy"}
         onSubmit={save}
       />
 
@@ -184,8 +231,15 @@ export function MonthlyOnlyGame({
         />
       )}
 
-      {coinHint && !done && (
-        <p className="mt-2 text-sm text-mint">{coinHint}</p>
+      {unlockedHints.length > 0 && !done && (
+        <ul className="mt-3 space-y-1.5 text-sm text-mint">
+          {unlockedHints.map((hint, i) => (
+            <li key={`${i}-${hint}`}>
+              <span className="text-fog">Hint {i + 1}: </span>
+              {hint}
+            </li>
+          ))}
+        </ul>
       )}
 
       {status && (
@@ -214,11 +268,13 @@ function MonthlyOnlyBody({
   puzzle,
   done,
   submitting,
+  showFreeHint,
   onSubmit,
 }: {
   puzzle: MonthlyOnlyPuzzle;
   done: boolean;
   submitting: boolean;
+  showFreeHint: boolean;
   onSubmit: (p: {
     answer?: string;
     choiceIndex?: number;
@@ -241,11 +297,14 @@ function MonthlyOnlyBody({
     return (
       <div className="space-y-4">
         <p className="rounded-xl border border-[var(--line)] bg-panel/60 px-4 py-4">
-          {puzzle.kind === "riddle" ? puzzle.prompt : puzzle.prompt}
+          {puzzle.prompt}
         </p>
-        {puzzle.kind === "riddle" && (
-          <p className="text-xs text-fog">{puzzle.hint}</p>
-        )}
+        {puzzle.kind === "riddle" &&
+          showFreeHint &&
+          puzzle.hint &&
+          puzzle.hint !== "No further hints." && (
+            <p className="text-xs text-fog">{puzzle.hint}</p>
+          )}
         {!done && (
           <div className="flex gap-2">
             <input
