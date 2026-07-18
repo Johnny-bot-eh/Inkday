@@ -27,7 +27,7 @@ import {
   todayKey,
   welcomeBackLine,
   xpForDailyWin,
-  xpForGardenPlace,
+  xpForGardenBuy,
   xpForMonthlySlot,
   xpForStreak7,
   type CompanionGiftView,
@@ -453,14 +453,12 @@ export async function getCompanionSnapshot(
       qty: row.qty,
     }));
 
-  const ownedDecorIds = inventory
-    .filter(
-      (row) =>
-        isDecorationItemId(row.itemId) &&
-        !isHabitatDecorItemId(row.itemId) &&
-        row.qty > 0,
-    )
-    .map((row) => row.itemId);
+  const ownedDecor = inventory.filter(
+    (row) =>
+      isDecorationItemId(row.itemId) &&
+      !isHabitatDecorItemId(row.itemId) &&
+      row.qty > 0,
+  );
 
   let placements: Array<{
     id: string;
@@ -480,7 +478,11 @@ export async function getCompanionSnapshot(
 
   placements = placements.filter((p) => !isHabitatDecorItemId(p.itemId));
 
-  const placedIds = new Set(placements.map((p) => p.itemId));
+  const placedCounts = new Map<string, number>();
+  for (const p of placements) {
+    placedCounts.set(p.itemId, (placedCounts.get(p.itemId) ?? 0) + 1);
+  }
+
   const petLevel = petView?.level ?? 1;
   const tone = gardenSceneTone(account.level, petLevel);
   const ambience = gardenAmbience({
@@ -534,13 +536,17 @@ export async function getCompanionSnapshot(
           tone: visual.tone,
         };
       }),
-      inventoryDecor: ownedDecorIds
-        .filter((id) => !placedIds.has(id))
-        .map((id) => ({
-          itemId: id,
-          title: getShopItem(id)?.title ?? id,
-          qty: 1,
-        })),
+      inventoryDecor: ownedDecor
+        .map((row) => {
+          const placed = placedCounts.get(row.itemId) ?? 0;
+          const remaining = Math.max(0, row.qty - placed);
+          return {
+            itemId: row.itemId,
+            title: getShopItem(row.itemId)?.title ?? row.itemId,
+            qty: remaining,
+          };
+        })
+        .filter((row) => row.qty > 0),
     },
     foodInventory,
   };
@@ -808,6 +814,48 @@ export async function claimPetGift(
   };
 }
 
+/** Grant diminishing XP when buying another copy of a decoration. */
+export async function grantGardenBuyXp(
+  userId: string,
+  itemId: string,
+  requiredLevel: number,
+  ownedBefore: number,
+): Promise<number> {
+  const xp = xpForGardenBuy(requiredLevel, ownedBefore);
+  if (xp <= 0) return 0;
+
+  const db = getDb();
+  await ensureProgression(userId);
+  const event = await recordEvent({
+    userId,
+    kind: "xp",
+    amount: xp,
+    sourceType: "garden_buy",
+    sourceId: `${itemId}:${ownedBefore}`,
+  });
+  if (event.duplicate) return 0;
+
+  await db
+    .update(userProgression)
+    .set({
+      accountXp: sql`${userProgression.accountXp} + ${xp}`,
+      updatedAt: new Date(),
+    })
+    .where(eq(userProgression.userId, userId));
+
+  const pet = await getActivePet(userId);
+  if (pet) {
+    await db
+      .update(userPet)
+      .set({
+        petXp: sql`${userPet.petXp} + ${xp}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userPet.id, pet.id));
+  }
+  return xp;
+}
+
 export async function placeGardenItem(
   userId: string,
   itemId: string,
@@ -815,7 +863,7 @@ export async function placeGardenItem(
   y: number,
   layer?: GardenLayer,
 ): Promise<
-  | { ok: true; snapshot: CompanionSnapshot; xpEarned: number }
+  | { ok: true; snapshot: CompanionSnapshot }
   | { ok: false; reason: string }
 > {
   if (!isDecorationItemId(itemId) || isHabitatDecorItemId(itemId)) {
@@ -825,13 +873,15 @@ export async function placeGardenItem(
   const owned = await getInventoryQty(userId, itemId);
   if (owned <= 0) return { ok: false, reason: "not_owned" };
 
-  const alreadyPlaced = await db.query.gardenPlacement.findFirst({
+  const placedRows = await db.query.gardenPlacement.findMany({
     where: and(
       eq(gardenPlacement.userId, userId),
       eq(gardenPlacement.itemId, itemId),
     ),
   });
-  if (alreadyPlaced) return { ok: false, reason: "already_placed" };
+  if (placedRows.length >= owned) {
+    return { ok: false, reason: "already_placed" };
+  }
 
   const visual = gardenDecorVisual(itemId);
   const resolvedLayer =
@@ -850,45 +900,8 @@ export async function placeGardenItem(
     return { ok: false, reason: "conflict" };
   }
 
-  // First-time placement of each decoration grants account + pet XP.
-  const shopItem = getShopItem(itemId);
-  const xp = xpForGardenPlace(shopItem?.requiredLevel ?? 1);
-  let xpEarned = 0;
-  if (xp > 0) {
-    await ensureProgression(userId);
-    const event = await recordEvent({
-      userId,
-      kind: "xp",
-      amount: xp,
-      sourceType: "garden_place",
-      sourceId: itemId,
-    });
-    if (!event.duplicate) {
-      await db
-        .update(userProgression)
-        .set({
-          accountXp: sql`${userProgression.accountXp} + ${xp}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(userProgression.userId, userId));
-
-      const pet = await getActivePet(userId);
-      if (pet) {
-        await db
-          .update(userPet)
-          .set({
-            petXp: sql`${userPet.petXp} + ${xp}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(userPet.id, pet.id));
-      }
-      xpEarned = xp;
-    }
-  }
-
   return {
     ok: true,
-    xpEarned,
     snapshot: await getCompanionSnapshot(userId),
   };
 }

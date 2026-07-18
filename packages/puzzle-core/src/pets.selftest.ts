@@ -17,8 +17,10 @@ import {
   levelFromXp,
   shopCategoryUnlocked,
   stageFromLevel,
+  isDecorationVisibleInShop,
+  nextDecorationUnlockLevel,
   xpForDailyWin,
-  xpForGardenPlace,
+  xpForGardenBuy,
   xpToNextLevel,
 } from "./pets";
 
@@ -56,9 +58,13 @@ assert(shopCategoryUnlocked(20, "flowers"), "flowers at 20");
 assert(shopCategoryUnlocked(100, "legendary"), "legendary at 100");
 
 assert(xpForDailyWin("hard") > xpForDailyWin("easy"), "harder wins grant more XP");
-assert(xpForGardenPlace(1) === 7, "garden place lv1 XP");
-assert(xpForGardenPlace(50) === 56, "garden place lv50 XP");
-assert(xpForGardenPlace(50) > xpForGardenPlace(1), "higher unlock more place XP");
+assert(xpForGardenBuy(1, 0) === 7, "garden buy first copy");
+assert(xpForGardenBuy(1, 1) < xpForGardenBuy(1, 0), "repeat buy less XP");
+assert(xpForGardenBuy(50, 0) === 56, "garden buy lv50");
+assert(nextDecorationUnlockLevel(7) === 10, "next unlock after 7 is 10");
+assert(isDecorationVisibleInShop(5, 7), "unlocked visible");
+assert(isDecorationVisibleInShop(10, 7), "next tier visible");
+assert(!isDecorationVisibleInShop(20, 7), "later locked hidden");
 assert(GARDEN_SCENE.aspectRatio > 1, "diorama is wider than tall");
 assert(clampGardenCoord(200) === 92, "garden coord clamps high");
 assert(clampGardenCoord(-4) === 8, "garden coord clamps low");

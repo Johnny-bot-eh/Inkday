@@ -848,7 +848,8 @@ export const gardenPlacement = sqliteTable(
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
   },
   (t) => [
-    uniqueIndex("garden_placement_item_idx").on(t.userId, t.itemId),
+    /** Non-unique: players may place multiple copies of the same decoration. */
+    index("garden_placement_item_idx").on(t.userId, t.itemId),
     index("garden_placement_user_idx").on(t.userId),
   ],
 );
