@@ -46,7 +46,7 @@ export async function SiteHeader() {
     <header className="relative z-20 border-b border-[var(--line)] backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <Link href="/" className="group flex items-baseline gap-2">
-          <span className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-paper transition group-hover:text-ember sm:text-3xl">
+          <span className="font-[family-name:var(--font-display)] text-2xl font-bold text-paper transition group-hover:text-ember sm:text-3xl">
             Inkday
           </span>
           <span className="hidden text-xs uppercase tracking-[0.22em] text-fog sm:inline">

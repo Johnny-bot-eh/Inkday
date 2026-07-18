@@ -312,7 +312,7 @@ function Tile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-[var(--line)] bg-ink-2/80 px-4 py-3">
       <div className="text-xs uppercase tracking-wider text-fog">{label}</div>
-      <div className="mt-1 truncate font-[family-name:var(--font-display)] text-2xl font-bold">
+      <div className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold">
         {value}
       </div>
     </div>
