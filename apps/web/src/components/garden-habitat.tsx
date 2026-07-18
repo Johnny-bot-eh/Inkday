@@ -253,7 +253,7 @@ export function GardenHabitat({ night, season }: Props) {
         ) : null}
       </svg>
 
-      {/* Long hanging vines from canopy */}
+      {/* Long hanging vines from canopy — kept off the tree trunks */}
       {season !== "winter" ? (
         <svg
           viewBox="0 0 400 220"
@@ -261,7 +261,7 @@ export function GardenHabitat({ night, season }: Props) {
           className="absolute inset-x-0 top-0 h-[72%] w-full"
         >
           <path
-            d="M48 0 C52 40 40 80 46 120 C50 150 42 180 48 210"
+            d="M22 0 C26 40 14 80 20 120 C24 150 16 180 22 210"
             fill="none"
             stroke={vine}
             strokeWidth="2.4"
@@ -269,7 +269,7 @@ export function GardenHabitat({ night, season }: Props) {
             opacity="0.9"
           />
           <path
-            d="M70 0 C66 35 78 70 72 110 C68 145 76 175 70 205"
+            d="M38 0 C34 35 46 70 40 110 C36 145 44 175 38 205"
             fill="none"
             stroke={vine}
             strokeWidth="1.8"
@@ -277,7 +277,7 @@ export function GardenHabitat({ night, season }: Props) {
             opacity="0.75"
           />
           <path
-            d="M330 0 C326 45 338 85 332 125 C328 155 336 185 330 215"
+            d="M362 0 C358 45 370 85 364 125 C360 155 368 185 362 215"
             fill="none"
             stroke={vine}
             strokeWidth="2.2"
@@ -285,19 +285,19 @@ export function GardenHabitat({ night, season }: Props) {
             opacity="0.88"
           />
           <path
-            d="M352 0 C358 38 346 78 354 118 C358 150 348 180 356 208"
+            d="M380 0 C386 38 374 78 382 118 C386 150 376 180 384 208"
             fill="none"
             stroke={vine}
             strokeWidth="1.6"
             strokeLinecap="round"
             opacity="0.7"
           />
-          <ellipse cx="48" cy="208" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
-          <ellipse cx="42" cy="200" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
-          <ellipse cx="70" cy="202" rx="4.5" ry="7" fill={p.leafMid} opacity="0.8" />
-          <ellipse cx="330" cy="212" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
-          <ellipse cx="336" cy="204" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
-          <ellipse cx="356" cy="206" rx="4" ry="7" fill={p.leafMid} opacity="0.75" />
+          <ellipse cx="22" cy="208" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
+          <ellipse cx="16" cy="200" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
+          <ellipse cx="38" cy="202" rx="4.5" ry="7" fill={p.leafMid} opacity="0.8" />
+          <ellipse cx="362" cy="212" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
+          <ellipse cx="368" cy="204" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
+          <ellipse cx="384" cy="206" rx="4" ry="7" fill={p.leafMid} opacity="0.75" />
         </svg>
       ) : null}
 
