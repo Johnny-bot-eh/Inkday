@@ -96,35 +96,36 @@ export function GardenHabitat({ night, season }: Props) {
         />
       </svg>
 
-      {/* Left oak-like tree — upright, rooted behind the mid-ground shrub belt */}
+      {/* Left oak-like tree — clean upright trunk, canopy covers the tip */}
       <svg
         viewBox="0 0 120 160"
-        className="absolute bottom-[22%] left-[-2%] h-[68%] w-[30%] garden-habitat-sway"
+        className="absolute bottom-[22%] left-[-1%] h-[66%] w-[28%] garden-habitat-sway"
         style={{
           transformOrigin: "50% 100%",
           animationDirection: "reverse",
-          animationDuration: "6s",
+          animationDuration: "6.4s",
         }}
       >
-        <ellipse cx="56" cy="152" rx="26" ry="6" fill="#00000028" />
+        <ellipse cx="60" cy="152" rx="24" ry="5" fill="#00000028" />
+        {/* Straight trunk — tip ends inside the canopy so no brown spikes peek out */}
         <path
-          d="M50 152 C49 118 48 96 52 74 C46 82 42 92 40 104 C44 92 50 82 56 76 C58 68 60 62 62 58 C60 74 58 110 56 152 Z"
+          d="M54 152 L52 88 L56 78 L64 78 L68 88 L66 152 Z"
           fill={trunk}
         />
         <path
-          d="M52 108 C58 98 66 94 74 96 C68 102 60 106 54 114 Z"
+          d="M58 148 L57 90 L60 82 L62 90 L61 148 Z"
           fill={trunkLit}
-          opacity="0.55"
+          opacity="0.4"
         />
         {season === "winter" ? (
           <>
             <path
-              d="M38 72 C34 56 42 40 56 38 C52 28 62 22 74 28 C84 20 96 30 92 44 C102 50 98 64 86 66 C78 76 54 74 42 66 Z"
+              d="M42 78 C36 60 46 42 60 40 C56 28 68 22 80 30 C90 22 102 34 98 48 C108 54 104 68 92 70 C84 80 56 78 46 70 Z"
               fill={p.leafMid}
               opacity="0.45"
             />
             <path
-              d="M54 74 L40 50 M54 74 L54 42 M54 74 L68 48 M54 74 L80 56"
+              d="M60 78 L46 52 M60 78 L60 40 M60 78 L74 50 M60 78 L86 58"
               stroke={trunk}
               strokeWidth="2"
               fill="none"
@@ -133,49 +134,54 @@ export function GardenHabitat({ night, season }: Props) {
         ) : (
           <>
             <path
-              d="M30 80 C22 64 28 44 44 38 C38 28 44 16 58 16 C66 8 82 12 88 24 C98 18 110 30 106 44 C116 52 110 70 96 74 C98 88 86 96 72 92 C64 102 48 98 38 90 C30 94 26 88 30 80 Z"
+              d="M28 84 C18 66 26 44 44 38 C38 26 48 12 64 14 C74 4 94 10 100 26 C112 20 124 36 118 52 C128 62 122 80 106 84 C108 98 94 108 76 102 C64 112 44 108 34 96 C24 100 20 92 28 84 Z"
               fill={p.leafDark}
             />
             <path
-              d="M38 72 C32 58 40 42 54 40 C50 30 60 22 72 26 C82 18 96 28 94 42 C104 46 104 60 94 66 C96 78 84 84 72 80 C64 88 48 84 42 76 Z"
+              d="M36 78 C28 62 38 44 54 42 C48 30 60 20 76 24 C88 16 104 28 100 44 C110 50 108 66 96 72 C98 84 84 92 70 86 C58 94 42 90 38 80 Z"
               fill={p.leafMid}
             />
             <path
-              d="M48 58 C46 48 54 40 64 42 C62 34 72 30 80 36 C88 32 94 40 92 50 C98 54 96 62 88 64 C84 72 70 70 60 64 Z"
+              d="M50 60 C46 50 56 40 68 42 C66 34 76 30 86 38 C94 34 100 44 96 52 C102 56 100 66 90 66 C84 74 66 72 56 64 Z"
               fill={p.leafLit}
               opacity="0.9"
             />
             {blossom !== "transparent" ? (
               <>
-                <circle cx="46" cy="44" r="3" fill={blossom} />
-                <circle cx="76" cy="38" r="2.5" fill={blossom} />
-                <circle cx="60" cy="30" r="2.2" fill={blossom} opacity="0.85" />
+                <circle cx="48" cy="44" r="3" fill={blossom} />
+                <circle cx="82" cy="40" r="2.5" fill={blossom} />
+                <circle cx="64" cy="30" r="2.2" fill={blossom} opacity="0.85" />
               </>
             ) : null}
           </>
         )}
       </svg>
 
-      {/* Right denser tree — rooted behind the mid-ground shrub belt */}
+      {/* Right denser tree — matching upright trunk language */}
       <svg
         viewBox="0 0 120 160"
-        className="absolute bottom-[20%] right-[-3%] h-[72%] w-[32%] garden-habitat-sway"
+        className="absolute bottom-[20%] right-[-2%] h-[70%] w-[30%] garden-habitat-sway"
         style={{ transformOrigin: "50% 100%", animationDelay: "-1.8s" }}
       >
-        <ellipse cx="62" cy="154" rx="30" ry="6" fill="#00000028" />
+        <ellipse cx="60" cy="154" rx="26" ry="5" fill="#00000028" />
         <path
-          d="M56 154 C54 118 52 96 58 76 C50 84 42 96 38 110 C46 96 54 84 62 78 C66 70 70 64 74 60 C72 78 70 112 68 154 Z"
+          d="M54 154 L52 90 L56 80 L64 80 L68 90 L66 154 Z"
           fill={trunk}
+        />
+        <path
+          d="M58 150 L57 92 L60 84 L62 92 L61 150 Z"
+          fill={trunkLit}
+          opacity="0.4"
         />
         {season === "winter" ? (
           <>
             <path
-              d="M34 78 C26 60 36 42 54 40 C48 28 62 20 78 28 C92 20 108 34 102 48 C112 56 108 72 92 74 C80 86 50 84 38 74 Z"
+              d="M36 82 C28 62 40 42 58 40 C52 28 66 20 82 28 C94 20 110 34 104 48 C114 56 110 72 94 74 C82 86 50 84 40 74 Z"
               fill={p.leafMid}
               opacity="0.4"
             />
             <path
-              d="M58 76 L42 50 M58 76 L60 38 M58 76 L78 48 M58 76 L90 56"
+              d="M60 80 L44 52 M60 80 L60 40 M60 80 L76 50 M60 80 L90 58"
               stroke={trunk}
               strokeWidth="2"
               fill="none"
@@ -184,22 +190,22 @@ export function GardenHabitat({ night, season }: Props) {
         ) : (
           <>
             <path
-              d="M22 86 C12 68 18 44 38 38 C30 26 40 12 58 14 C68 4 88 10 94 24 C108 18 122 32 116 48 C128 58 122 78 106 82 C110 96 96 108 78 102 C66 112 44 108 32 98 C22 104 16 96 22 86 Z"
+              d="M24 88 C14 68 22 44 42 38 C34 24 46 10 64 12 C76 2 96 10 102 26 C116 20 128 36 122 54 C132 64 126 84 110 88 C112 102 96 112 78 106 C66 116 44 112 32 100 C22 106 16 96 24 88 Z"
               fill={p.leafDark}
             />
             <path
-              d="M34 78 C26 62 34 46 52 44 C46 32 58 22 74 26 C86 18 104 28 102 44 C112 50 112 66 100 72 C102 86 88 94 72 88 C60 96 42 92 36 82 Z"
+              d="M34 80 C26 64 36 46 54 44 C48 32 60 22 76 26 C88 18 106 28 102 46 C112 52 112 68 100 74 C102 88 88 96 72 90 C60 98 42 94 36 84 Z"
               fill={p.leafMid}
             />
             <path
-              d="M50 60 C46 50 56 40 68 42 C66 34 78 30 88 38 C96 34 104 44 100 54 C106 58 104 68 94 68 C88 76 70 74 58 66 Z"
+              d="M50 62 C46 52 56 42 68 44 C66 36 78 32 88 40 C96 36 104 46 100 56 C106 60 104 70 94 70 C88 78 70 76 58 68 Z"
               fill={p.leafLit}
               opacity="0.88"
             />
             {blossom !== "transparent" ? (
               <>
-                <circle cx="48" cy="40" r="2.8" fill={blossom} />
-                <circle cx="86" cy="44" r="2.4" fill={blossom} />
+                <circle cx="48" cy="42" r="2.8" fill={blossom} />
+                <circle cx="86" cy="46" r="2.4" fill={blossom} />
               </>
             ) : null}
           </>
@@ -247,7 +253,7 @@ export function GardenHabitat({ night, season }: Props) {
         ) : null}
       </svg>
 
-      {/* Long hanging vines from canopy */}
+      {/* Long hanging vines from canopy — kept off the tree trunks */}
       {season !== "winter" ? (
         <svg
           viewBox="0 0 400 220"
@@ -255,7 +261,7 @@ export function GardenHabitat({ night, season }: Props) {
           className="absolute inset-x-0 top-0 h-[72%] w-full"
         >
           <path
-            d="M48 0 C52 40 40 80 46 120 C50 150 42 180 48 210"
+            d="M22 0 C26 40 14 80 20 120 C24 150 16 180 22 210"
             fill="none"
             stroke={vine}
             strokeWidth="2.4"
@@ -263,7 +269,7 @@ export function GardenHabitat({ night, season }: Props) {
             opacity="0.9"
           />
           <path
-            d="M70 0 C66 35 78 70 72 110 C68 145 76 175 70 205"
+            d="M38 0 C34 35 46 70 40 110 C36 145 44 175 38 205"
             fill="none"
             stroke={vine}
             strokeWidth="1.8"
@@ -271,7 +277,7 @@ export function GardenHabitat({ night, season }: Props) {
             opacity="0.75"
           />
           <path
-            d="M330 0 C326 45 338 85 332 125 C328 155 336 185 330 215"
+            d="M362 0 C358 45 370 85 364 125 C360 155 368 185 362 215"
             fill="none"
             stroke={vine}
             strokeWidth="2.2"
@@ -279,19 +285,19 @@ export function GardenHabitat({ night, season }: Props) {
             opacity="0.88"
           />
           <path
-            d="M352 0 C358 38 346 78 354 118 C358 150 348 180 356 208"
+            d="M380 0 C386 38 374 78 382 118 C386 150 376 180 384 208"
             fill="none"
             stroke={vine}
             strokeWidth="1.6"
             strokeLinecap="round"
             opacity="0.7"
           />
-          <ellipse cx="48" cy="208" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
-          <ellipse cx="42" cy="200" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
-          <ellipse cx="70" cy="202" rx="4.5" ry="7" fill={p.leafMid} opacity="0.8" />
-          <ellipse cx="330" cy="212" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
-          <ellipse cx="336" cy="204" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
-          <ellipse cx="356" cy="206" rx="4" ry="7" fill={p.leafMid} opacity="0.75" />
+          <ellipse cx="22" cy="208" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
+          <ellipse cx="16" cy="200" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
+          <ellipse cx="38" cy="202" rx="4.5" ry="7" fill={p.leafMid} opacity="0.8" />
+          <ellipse cx="362" cy="212" rx="5" ry="8" fill={p.leafMid} opacity="0.85" />
+          <ellipse cx="368" cy="204" rx="4" ry="6" fill={p.leafLit} opacity="0.7" />
+          <ellipse cx="384" cy="206" rx="4" ry="7" fill={p.leafMid} opacity="0.75" />
         </svg>
       ) : null}
 
