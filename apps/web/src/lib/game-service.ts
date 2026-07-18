@@ -1322,10 +1322,8 @@ export async function grantPremium(opts: {
 }
 
 export async function redeemPremiumPromo(userId: string, code: string) {
-  const expected = (process.env.PREMIUM_PROMO_CODE ?? "inkday-plus")
-    .trim()
-    .toLowerCase();
-  if (code.trim().toLowerCase() !== expected) {
+  const expected = process.env.PREMIUM_PROMO_CODE?.trim().toLowerCase();
+  if (!expected || code.trim().toLowerCase() !== expected) {
     return { ok: false as const, reason: "invalid_code" as const };
   }
   const premium = await grantPremium({
