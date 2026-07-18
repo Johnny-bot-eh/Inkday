@@ -1,5 +1,5 @@
 import type { Difficulty } from "./types";
-import { dayIndex, hashSeed, pickIndex } from "./types";
+import { dailyRotationIndex, hashSeed } from "./types";
 import {
   ALL_WORDS,
   WORDS_5,
@@ -46,9 +46,10 @@ export function getAnagramPuzzle(
   dateKey: string,
   difficulty: Difficulty,
 ): AnagramPuzzle {
-  const pool = BY_DIFFICULTY[difficulty];
-  const seed = hashSeed("anagram", dateKey, difficulty, dayIndex(dateKey));
-  const answer = pool[pickIndex(seed, pool.length)]!;
+  const pool = [...new Set(BY_DIFFICULTY[difficulty])];
+  const answer =
+    pool[dailyRotationIndex(dateKey, pool.length, "anagram", difficulty)]!;
+  const seed = hashSeed("anagram-scramble", dateKey, difficulty, answer);
   const scrambled = scrambleWord(answer, seed ^ 0x9e3779b9);
   return {
     title: "Daily Anagram",

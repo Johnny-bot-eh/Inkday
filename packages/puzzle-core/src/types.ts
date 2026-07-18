@@ -223,3 +223,18 @@ export function hashSeed(...parts: (string | number)[]): number {
 export function pickIndex(seed: number, length: number): number {
   return length === 0 ? 0 : seed % length;
 }
+
+/**
+ * Selects a daily item by rotating through the whole pool before repeating.
+ * The scope controls the stable starting offset, while consecutive dates always
+ * advance exactly one position.
+ */
+export function dailyRotationIndex(
+  dateKey: string,
+  length: number,
+  ...scope: (string | number)[]
+): number {
+  if (length === 0) return 0;
+  const offset = pickIndex(hashSeed(...scope), length);
+  return (dayIndex(dateKey) + offset) % length;
+}

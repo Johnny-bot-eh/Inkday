@@ -1,5 +1,5 @@
 import type { Difficulty } from "./types";
-import { dayIndex, hashSeed, pickIndex } from "./types";
+import { dailyRotationIndex } from "./types";
 import { ALL_WORDS, WORDS_5, WORDS_6, WORDS_7 } from "./words";
 import {
   WORDLE_CATEGORIES,
@@ -67,13 +67,8 @@ export function getWordleConfig(
   if (categoryId) {
     const category = WORDLE_CATEGORIES[categoryId];
     const pool = sanitizeWordPool(category.answers, 5);
-    const seed = hashSeed(
-      "wordle-cat",
-      categoryId,
-      dateKey,
-      dayIndex(dateKey),
-    );
-    const answer = pool[pickIndex(seed, pool.length)]!;
+    const answer =
+      pool[dailyRotationIndex(dateKey, pool.length, "wordle-cat", categoryId)]!;
     const dict = dictionaryForLength(answer.length);
     return {
       wordLength: answer.length,
@@ -100,8 +95,10 @@ export function getWordleConfig(
       ? pool
       : BY_DIFFICULTY[difficulty].map((w) => w.toLowerCase());
 
-  const seed = hashSeed("wordle", dateKey, difficulty, dayIndex(dateKey));
-  const answer = answerPool[pickIndex(seed, answerPool.length)]!;
+  const answer =
+    answerPool[
+      dailyRotationIndex(dateKey, answerPool.length, "wordle", difficulty)
+    ]!;
   const dict = dictionaryForLength(answer.length);
   const allowed = Array.from(
     new Set([answer, ...answerPool, ...WORDS_5, ...WORDS_6, ...WORDS_7, ...dict]),
