@@ -231,6 +231,14 @@ export function CryptogramGame({
           Spaces stay in place. Type the complete normal English phrase in the
           box below.
         </p>
+        <div className="mt-3 rounded-lg border border-ember/30 bg-ember/10 px-3 py-3">
+          <p className="text-xs uppercase tracking-wider text-ember">
+            Theme · {puzzle.theme}
+          </p>
+          <p className="mt-1 text-paper">
+            <span className="font-semibold">Phrase clue:</span> {puzzle.clue}
+          </p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-[var(--line)] bg-panel/60 px-5 py-6">

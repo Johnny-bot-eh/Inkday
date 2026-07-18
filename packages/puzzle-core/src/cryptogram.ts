@@ -12,41 +12,44 @@ export type CryptogramPuzzle = {
   mapping: Record<string, string>;
   /** Plaintext letters already revealed as hints */
   revealed: string[];
+  theme: string;
+  /** Semantic clue that narrows the phrase without directly revealing it */
+  clue: string;
   maxAttempts: number;
   hint: string;
 };
 
-type PhrasePack = { phrase: string; theme: string };
+type PhrasePack = { phrase: string; theme: string; clue: string };
 
 const EASY: PhrasePack[] = [
-  { phrase: "time flies", theme: "Idiom" },
-  { phrase: "open doors", theme: "Opportunity" },
-  { phrase: "bright mind", theme: "Thought" },
-  { phrase: "quiet night", theme: "Evening" },
-  { phrase: "fresh start", theme: "Beginnings" },
-  { phrase: "clear water", theme: "Nature" },
-  { phrase: "golden hour", theme: "Light" },
-  { phrase: "brave heart", theme: "Courage" },
+  { phrase: "time flies", theme: "Idiom", clue: "What time seems to do when you are having fun." },
+  { phrase: "open doors", theme: "Opportunity", clue: "New chances can do this for you." },
+  { phrase: "bright mind", theme: "Thought", clue: "A description of someone intelligent and quick-thinking." },
+  { phrase: "quiet night", theme: "Evening", clue: "A peaceful period after sunset." },
+  { phrase: "fresh start", theme: "Beginnings", clue: "A chance to begin again without past mistakes." },
+  { phrase: "clear water", theme: "Nature", clue: "Water transparent enough to see through." },
+  { phrase: "golden hour", theme: "Light", clue: "The warm period shortly after sunrise or before sunset." },
+  { phrase: "brave heart", theme: "Courage", clue: "A courageous spirit described in two words." },
 ];
 
 const MEDIUM: PhrasePack[] = [
-  { phrase: "knowledge is power", theme: "Proverb" },
-  { phrase: "patience wins races", theme: "Virtue" },
-  { phrase: "stars guide sailors", theme: "Navigation" },
-  { phrase: "silence holds secrets", theme: "Mystery" },
-  { phrase: "rivers carve stone", theme: "Nature" },
-  { phrase: "hope outlasts fear", theme: "Spirit" },
-  { phrase: "maps hide treasure", theme: "Adventure" },
-  { phrase: "books open worlds", theme: "Reading" },
+  { phrase: "knowledge is power", theme: "Proverb", clue: "Learning gives a person strength and influence." },
+  { phrase: "patience wins races", theme: "Virtue", clue: "Staying calm and persistent can beat speed." },
+  { phrase: "stars guide sailors", theme: "Navigation", clue: "Before GPS, people at sea used the night sky to find their way." },
+  { phrase: "silence holds secrets", theme: "Mystery", clue: "What remains unspoken can preserve hidden truths." },
+  { phrase: "rivers carve stone", theme: "Nature", clue: "Flowing water slowly shapes even hard rock." },
+  { phrase: "hope outlasts fear", theme: "Spirit", clue: "Optimism can remain after anxiety fades." },
+  { phrase: "maps hide treasure", theme: "Adventure", clue: "A pirate may conceal riches behind clues on a chart." },
+  { phrase: "books open worlds", theme: "Reading", clue: "Reading lets the imagination visit entirely new places." },
 ];
 
 const HARD: PhrasePack[] = [
-  { phrase: "curiosity unlocks hidden doors", theme: "Discovery" },
-  { phrase: "wisdom grows from quiet mistakes", theme: "Learning" },
-  { phrase: "courage is fear that kept walking", theme: "Bravery" },
-  { phrase: "shadows lengthen when the sun sets", theme: "Evening" },
-  { phrase: "every puzzle leaves a small map", theme: "Meta" },
-  { phrase: "truth wears many borrowed masks", theme: "Philosophy" },
+  { phrase: "curiosity unlocks hidden doors", theme: "Discovery", clue: "Asking questions reveals opportunities others overlook." },
+  { phrase: "wisdom grows from quiet mistakes", theme: "Learning", clue: "Good judgment develops by reflecting on errors." },
+  { phrase: "courage is fear that kept walking", theme: "Bravery", clue: "Being brave means continuing despite being afraid." },
+  { phrase: "shadows lengthen when the sun sets", theme: "Evening", clue: "Low evening light stretches dark shapes across the ground." },
+  { phrase: "every puzzle leaves a small map", theme: "Meta", clue: "Each solved challenge provides directions toward something larger." },
+  { phrase: "truth wears many borrowed masks", theme: "Philosophy", clue: "Reality may appear disguised by different perspectives." },
 ];
 
 const PACKS: Record<Difficulty, PhrasePack[]> = {
@@ -66,11 +69,11 @@ const ATTEMPTS: Record<Difficulty, number> = {
 };
 
 const REVEAL_COUNT: Record<Difficulty, number> = {
-  easy: 3,
-  medium: 2,
-  hard: 1,
-  obscure: 1,
-  impossible: 0,
+  easy: 4,
+  medium: 4,
+  hard: 3,
+  obscure: 2,
+  impossible: 1,
 };
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
@@ -153,6 +156,8 @@ export function getCryptogramPuzzle(
     plaintext: pack.phrase,
     mapping,
     revealed,
+    theme: pack.theme,
+    clue: pack.clue,
     maxAttempts: ATTEMPTS[difficulty],
     hint:
       difficulty === "easy"
