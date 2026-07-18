@@ -23,7 +23,11 @@ export type LogicPuzzle = {
   explanation?: string;
 };
 
-type LogicTemplate = Omit<LogicPuzzle, "id"> & { slug: string };
+type LogicTemplate = Omit<LogicPuzzle, "id"> & {
+  slug: string;
+  /** Hard boards use deduction-only templates instead of direct lookup clues. */
+  tier?: "standard" | "deduction";
+};
 
 const LOGIC_PUZZLES: LogicTemplate[] = [
   {
@@ -297,6 +301,135 @@ const LOGIC_PUZZLES: LogicTemplate[] = [
       Tess: { dock: "Green", coat: "Lantern" },
     },
   },
+  {
+    slug: "midnight-evidence",
+    tier: "deduction",
+    title: "Midnight Evidence",
+    synopsis:
+      "Four investigators arrived at different hours carrying different evidence. Determine who brought the anonymous note.",
+    subjects: {
+      id: "investigator",
+      label: "Investigator",
+      values: ["Ada", "Bram", "Cora", "Dax"],
+    },
+    traits: [
+      {
+        id: "hour",
+        label: "Arrival",
+        values: ["8", "9", "10", "11"],
+      },
+      {
+        id: "evidence",
+        label: "Evidence",
+        values: ["Map", "Key", "Lens", "Note"],
+      },
+    ],
+    clues: [
+      "Dax arrived exactly one hour after the person carrying the key.",
+      "Bram arrived earlier than Ada.",
+      "The 8 o’clock arrival carried the key.",
+      "The lens arrived at 9 o’clock.",
+      "Cora arrived at neither 8 nor 11 o’clock.",
+      "Ada carried neither the key nor the note.",
+      "Bram did not carry the map.",
+      "The note arrived exactly two hours after the key.",
+    ],
+    question: "Who brought the anonymous note?",
+    answer: "Cora",
+    solution: {
+      Ada: { hour: "11", evidence: "Map" },
+      Bram: { hour: "8", evidence: "Key" },
+      Cora: { hour: "10", evidence: "Note" },
+      Dax: { hour: "9", evidence: "Lens" },
+    },
+  },
+  {
+    slug: "museum-after-hours",
+    tier: "deduction",
+    title: "Museum After Hours",
+    synopsis:
+      "Four staff members were found in different rooms with different objects. Work out who removed the sealed file.",
+    subjects: {
+      id: "staff",
+      label: "Staff member",
+      values: ["Elin", "Faye", "Gus", "Holt"],
+    },
+    traits: [
+      {
+        id: "room",
+        label: "Room",
+        values: ["Archive", "Gallery", "Kitchen", "Roof"],
+      },
+      {
+        id: "object",
+        label: "Object",
+        values: ["Seal", "Rope", "Flask", "File"],
+      },
+    ],
+    clues: [
+      "Faye was in neither the archive nor the kitchen.",
+      "Elin was not on the roof.",
+      "Gus was in neither the gallery nor on the roof.",
+      "The seal was found on the roof.",
+      "The rope was found in the gallery.",
+      "Holt carried neither the seal nor the rope.",
+      "Faye carried neither the file nor the flask.",
+      "The kitchen did not contain the file.",
+      "Elin carried neither the seal nor the file.",
+      "Holt was not in the archive.",
+    ],
+    question: "Who removed the sealed file?",
+    answer: "Gus",
+    solution: {
+      Elin: { room: "Gallery", object: "Rope" },
+      Faye: { room: "Roof", object: "Seal" },
+      Gus: { room: "Archive", object: "File" },
+      Holt: { room: "Kitchen", object: "Flask" },
+    },
+  },
+  {
+    slug: "compass-vault",
+    tier: "deduction",
+    title: "The Compass Vault",
+    synopsis:
+      "Four suspects occupied four explicitly named compass desks, each with a different token. Deduce who held the gem.",
+    subjects: {
+      id: "suspect",
+      label: "Suspect",
+      values: ["Inez", "Jory", "Kian", "Lux"],
+    },
+    traits: [
+      {
+        id: "desk",
+        label: "Compass desk",
+        values: ["North", "East", "South", "West"],
+      },
+      {
+        id: "token",
+        label: "Token",
+        values: ["Crown", "Ring", "Letter", "Gem"],
+      },
+    ],
+    clues: [
+      "The crown was at the west desk.",
+      "The ring was at the south desk.",
+      "Inez sat at neither the north nor the south desk.",
+      "Jory sat at neither the east nor the west desk.",
+      "Kian held neither the letter nor the ring.",
+      "Lux held neither the crown nor the gem.",
+      "The east desk held neither the letter nor the crown.",
+      "Jory was not at the south desk.",
+      "Kian was not at the east desk.",
+    ],
+    question: "Who held the gem?",
+    answer: "Inez",
+    solution: {
+      Inez: { desk: "East", token: "Gem" },
+      Jory: { desk: "North", token: "Letter" },
+      Kian: { desk: "West", token: "Crown" },
+      Lux: { desk: "South", token: "Ring" },
+    },
+  },
 ];
 
 const SIZE_FOR: Record<Difficulty, number[]> = {
@@ -313,8 +446,14 @@ export function getLogicPuzzle(
   seasonId: string | null = null,
 ): LogicPuzzle {
   const sizes = SIZE_FOR[difficulty];
-  const pool = LOGIC_PUZZLES.filter((p) =>
-    sizes.includes(p.subjects.values.length),
+  const deductionOnly =
+    difficulty === "hard" ||
+    difficulty === "obscure" ||
+    difficulty === "impossible";
+  const pool = LOGIC_PUZZLES.filter(
+    (p) =>
+      sizes.includes(p.subjects.values.length) &&
+      (deductionOnly ? p.tier === "deduction" : p.tier !== "deduction"),
   );
   const seed = hashSeed(
     "logic",
@@ -325,14 +464,9 @@ export function getLogicPuzzle(
   );
   const template = pool[pickIndex(seed, pool.length)]!;
 
-  let clues = [...template.clues];
-  if ((difficulty === "hard" || difficulty === "obscure" || difficulty === "impossible") && clues.length > 5) {
-    // Keep the densest info; drop the last clue as extra challenge when safe
-    clues = clues.slice(0, -1);
-  }
-  if (difficulty === "impossible" && clues.length > 4) {
-    clues = clues.slice(0, -1);
-  }
+  // Never remove clues merely to increase difficulty: every stated fact may
+  // be necessary to preserve a unique solution.
+  const clues = [...template.clues];
 
   const title = seasonId
     ? `Seasonal: ${template.title}`

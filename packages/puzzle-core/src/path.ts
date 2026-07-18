@@ -171,17 +171,17 @@ const TEMPLATES: PathTemplate[] = [
     slug: "archive-switchback",
     title: "Archive Switchback",
     briefing:
-      "A larger logic path. Visit 1 → 2 → 3 in order, then find the concealed exit.",
+      "A larger logic path with false passages. Visit 1 → 2 → 3 in order, then reach the exit.",
     rows: 9,
     cols: 9,
     waypoints: ["1", "2", "3"],
     map: [
       "S........",
-      "########1",
+      "###.####1",
       ".........",
-      "2########",
+      "2####.###",
       ".........",
-      "########3",
+      "####.###3",
       ".........",
       ".########",
       "........E",
@@ -191,20 +191,21 @@ const TEMPLATES: PathTemplate[] = [
     slug: "catacomb-loop",
     title: "Catacomb Loop",
     briefing:
-      "Long corridors, false branches, no revisits. Visit 1 → 2 → 3 before the exit.",
-    rows: 10,
+      "Long switchbacks and false passages, no revisits. Visit 1 → 2 → 3 in order before the exit.",
+    rows: 11,
     cols: 10,
     waypoints: ["1", "2", "3"],
     map: [
       "S.........",
-      "#########.",
+      "####.####.",
       "........1.",
-      ".#########",
+      ".#####.###",
       "...2......",
-      "#########.",
+      "##.######.",
       "....3.....",
       ".#########",
       "..........",
+      "#########.",
       "E.........",
     ],
   },
@@ -212,17 +213,17 @@ const TEMPLATES: PathTemplate[] = [
     slug: "observatory-night",
     title: "Observatory Night",
     briefing:
-      "A large night board with three instruments to pass before the final dome.",
+      "A large night board with deceptive passages. Visit three instruments before the final dome.",
     rows: 9,
     cols: 10,
     waypoints: ["1", "2", "3"],
     map: [
       "S.........",
-      "#########1",
+      "###.#####1",
       "..........",
-      "2#########",
+      "2####.####",
       "..........",
-      "#########3",
+      "####.####3",
       "..........",
       ".#########",
       ".........E",
@@ -287,6 +288,55 @@ export function pathHasSolution(
   return dfs(start.r, start.c, 0, new Set());
 }
 
+/** Count simple valid paths, stopping once `limit` is reached. */
+function countPathSolutions(
+  grid: PathCell[][],
+  waypoints: string[],
+  limit = 2,
+): number {
+  const start = findCell(grid, "S");
+  if (!start) return 0;
+
+  const rows = grid.length;
+  const cols = grid[0]?.length ?? 0;
+  let solutions = 0;
+
+  const dfs = (r: number, c: number, wp: number, seen: Set<string>) => {
+    if (solutions >= limit) return;
+    const key = `${r},${c}`;
+    if (seen.has(key)) return;
+    const tile = grid[r]?.[c];
+    if (!tile || tile === "#") return;
+
+    let nextWp = wp;
+    if (nextWp < waypoints.length && tile === waypoints[nextWp]) {
+      nextWp += 1;
+    }
+
+    if (tile === "E") {
+      if (nextWp === waypoints.length) solutions += 1;
+      return;
+    }
+
+    const nextSeen = new Set(seen);
+    nextSeen.add(key);
+    for (const [dr, dc] of [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ] as const) {
+      const nr = r + dr;
+      const nc = c + dc;
+      if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+      dfs(nr, nc, nextWp, nextSeen);
+    }
+  };
+
+  dfs(start.r, start.c, 0, new Set());
+  return solutions;
+}
+
 function assertTemplatesSolvable() {
   for (const template of TEMPLATES) {
     const grid = parseMap(template.map);
@@ -298,6 +348,15 @@ function assertTemplatesSolvable() {
     }
     if (!pathHasSolution(grid, template.waypoints)) {
       throw new Error(`Path template ${template.slug} has no solution`);
+    }
+    if (
+      template.rows >= 9 &&
+      template.waypoints.length >= 3 &&
+      countPathSolutions(grid, template.waypoints) !== 1
+    ) {
+      throw new Error(
+        `Hard path template ${template.slug} must have exactly one solution`,
+      );
     }
     const start = findCell(grid, "S");
     if (!start) throw new Error(`Path template ${template.slug} missing S`);

@@ -78,10 +78,6 @@ export function PathGame({
     [path],
   );
   const head = path[path.length - 1]!;
-  const hideTargetLabels =
-    difficulty === "hard" ||
-    difficulty === "obscure" ||
-    difficulty === "impossible";
 
   function commitPath(nextPath: PathCoord[]) {
     pathRef.current = nextPath;
@@ -249,9 +245,7 @@ export function PathGame({
         {puzzle.briefing}
         {puzzle.waypoints.length > 0 && (
           <span className="mt-2 block text-sm text-fog">
-            {hideTargetLabels
-              ? "Hard paths conceal checkpoints and the exit. Build a route, then submit to test it."
-              : `Checkpoints in order: ${puzzle.waypoints.join(" → ")} → E`}
+            Checkpoints in order: {puzzle.waypoints.join(" → ")} → E
           </span>
         )}
       </p>
@@ -274,10 +268,7 @@ export function PathGame({
             const isHead = head.r === r && head.c === c;
             const wall = tile === "#";
             const target = tile === "E" || puzzle.waypoints.includes(tile);
-            const label =
-              tile === "." || tile === "#" || (hideTargetLabels && target)
-                ? ""
-                : tile;
+            const label = tile === "." || tile === "#" ? "" : tile;
 
             return (
               <button
@@ -298,7 +289,7 @@ export function PathGame({
                   !wall && !onPath && "border-[var(--line)] bg-ink-2/80 hover:border-ember/50",
                   onPath && !isHead && "border-transparent bg-path/35 text-paper",
                   isHead && "border-transparent bg-path-head text-on-ember",
-                  (tile === "S" || (!hideTargetLabels && target)) &&
+                  (tile === "S" || target) &&
                     !onPath &&
                     "text-ember",
                 ]
