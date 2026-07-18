@@ -402,17 +402,22 @@ export function CompanionClient({ signedIn, initial }: Props) {
           }}
           onMove={(placementId, x, y, from) => {
             setSelectedPlacement(null);
+            const to = { x: Math.round(x), y: Math.round(y) };
+            const fromRounded = {
+              x: Math.round(from.x),
+              y: Math.round(from.y),
+            };
             if (
-              Math.abs(from.x - x) < 0.35 &&
-              Math.abs(from.y - y) < 0.35
+              Math.abs(fromRounded.x - to.x) < 1 &&
+              Math.abs(fromRounded.y - to.y) < 1
             ) {
               return;
             }
             pushUndo({
               type: "move",
               placementId,
-              from,
-              to: { x, y },
+              from: fromRounded,
+              to,
             });
             setSnapshot((prev) => {
               if (!prev) return prev;
@@ -421,13 +426,13 @@ export function CompanionClient({ signedIn, initial }: Props) {
                 garden: {
                   ...prev.garden,
                   placements: prev.garden.placements.map((p) =>
-                    p.id === placementId ? { ...p, x, y } : p,
+                    p.id === placementId ? { ...p, x: to.x, y: to.y } : p,
                   ),
                 },
               };
             });
             void post(
-              { action: "move", placementId, x, y },
+              { action: "move", placementId, x: to.x, y: to.y },
               { silent: true },
             ).then((data) => {
               if (data?.ok) return;
@@ -439,7 +444,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
                     ...prev.garden,
                     placements: prev.garden.placements.map((p) =>
                       p.id === placementId
-                        ? { ...p, x: from.x, y: from.y }
+                        ? { ...p, x: fromRounded.x, y: fromRounded.y }
                         : p,
                     ),
                   },
@@ -450,25 +455,30 @@ export function CompanionClient({ signedIn, initial }: Props) {
           }}
           onMoveNest={(x, y, from) => {
             setSelectedPlacement(null);
+            const to = { x: Math.round(x), y: Math.round(y) };
+            const fromRounded = {
+              x: Math.round(from.x),
+              y: Math.round(from.y),
+            };
             if (
-              Math.abs(from.x - x) < 0.35 &&
-              Math.abs(from.y - y) < 0.35
+              Math.abs(fromRounded.x - to.x) < 1 &&
+              Math.abs(fromRounded.y - to.y) < 1
             ) {
               return;
             }
-            pushUndo({ type: "move_nest", from, to: { x, y } });
+            pushUndo({ type: "move_nest", from: fromRounded, to });
             setSnapshot((prev) => {
               if (!prev) return prev;
               return {
                 ...prev,
                 garden: {
                   ...prev.garden,
-                  pet: { ...prev.garden.pet, x, y },
+                  pet: { ...prev.garden.pet, x: to.x, y: to.y },
                 },
               };
             });
             void post(
-              { action: "move_nest", x, y },
+              { action: "move_nest", x: to.x, y: to.y },
               { silent: true },
             ).then((data) => {
               if (data?.ok) return;
@@ -480,8 +490,8 @@ export function CompanionClient({ signedIn, initial }: Props) {
                     ...prev.garden,
                     pet: {
                       ...prev.garden.pet,
-                      x: from.x,
-                      y: from.y,
+                      x: fromRounded.x,
+                      y: fromRounded.y,
                     },
                   },
                 };
