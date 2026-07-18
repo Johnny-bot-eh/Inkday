@@ -114,6 +114,13 @@ export function WordleGame({
     }
   }
 
+  function undoGuess() {
+    if (done || guesses.length === 0 || submitting) return;
+    setGuesses((prev) => prev.slice(0, -1));
+    setMarks((prev) => prev.slice(0, -1));
+    setStatus(null);
+  }
+
   async function finish(finalGuesses: string[], won: boolean) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "wordle", difficulty, seasonId);
@@ -388,6 +395,14 @@ export function WordleGame({
             className="rounded-lg bg-ember px-4 font-semibold text-on-ember hover:bg-ember-deep"
           >
             Guess
+          </button>
+          <button
+            type="button"
+            onClick={undoGuess}
+            disabled={guesses.length === 0 || submitting}
+            className="rounded-lg border border-[var(--line)] px-4 text-fog hover:text-paper disabled:opacity-40"
+          >
+            Undo
           </button>
         </div>
       )}

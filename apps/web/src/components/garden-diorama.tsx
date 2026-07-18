@@ -27,8 +27,17 @@ type Props = {
   selectedDecor: string | null;
   busy: string | null;
   onPlace: (itemId: string, x: number, y: number) => void;
-  onMove: (placementId: string, x: number, y: number) => void;
-  onMoveNest: (x: number, y: number) => void;
+  onMove: (
+    placementId: string,
+    x: number,
+    y: number,
+    from: { x: number; y: number },
+  ) => void;
+  onMoveNest: (
+    x: number,
+    y: number,
+    from: { x: number; y: number },
+  ) => void;
   onSelectPlacement: (placementId: string | null) => void;
   selectedPlacement: string | null;
   onRemove: (placementId: string) => void;
@@ -77,6 +86,10 @@ function motionClass(motion: string): string {
   return "";
 }
 
+type DragTarget =
+  | { kind: "decor"; id: string; fromX: number; fromY: number }
+  | { kind: "nest"; fromX: number; fromY: number };
+
 export function GardenDiorama({
   garden,
   pet,
@@ -91,23 +104,22 @@ export function GardenDiorama({
   onRemove,
 }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
-  const nestElRef = useRef<HTMLButtonElement>(null);
-  const dragIdRef = useRef<string | null>(null);
-  const dragNestRef = useRef(false);
-  const dragPosRef = useRef<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<DragTarget | null>(null);
+  const livePosRef = useRef<{ x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
-  const decorElsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [draggingNest, setDraggingNest] = useState(false);
+  const [drag, setDrag] = useState<DragTarget | null>(null);
+  const [livePos, setLivePos] = useState<{ x: number; y: number } | null>(null);
   const [placeGhost, setPlaceGhost] = useState<{ x: number; y: number } | null>(
     null,
   );
 
+  const dragging = drag != null;
   const climate = useLocalGardenClimate({
     accountLevel,
     petLevel: pet.level,
     placedCount: garden.placements.length,
+    paused: dragging,
   });
 
   const tone = climate.tone;
@@ -134,39 +146,20 @@ export function GardenDiorama({
     };
   }, []);
 
-  const paintDrag = useCallback((id: string, x: number, y: number) => {
-    const el = decorElsRef.current.get(id);
-    if (!el) return;
-    el.style.left = `${x}%`;
-    el.style.top = `${y}%`;
-    el.style.zIndex = String(40);
-  }, []);
-
-  const paintNest = useCallback((x: number, y: number) => {
-    const el = nestElRef.current;
-    if (!el) return;
-    el.style.left = `${x}%`;
-    el.style.top = `${y}%`;
-    el.style.zIndex = String(40);
-  }, []);
-
-  const flushDragFrame = useCallback(() => {
+  const flushLive = useCallback(() => {
     rafRef.current = null;
-    const pos = dragPosRef.current;
-    if (!pos) return;
-    if (dragNestRef.current) {
-      paintNest(pos.x, pos.y);
-      return;
-    }
-    const id = dragIdRef.current;
-    if (!id) return;
-    paintDrag(id, pos.x, pos.y);
-  }, [paintDrag, paintNest]);
+    const pos = livePosRef.current;
+    if (pos) setLivePos(pos);
+  }, []);
 
-  const queueDragPaint = useCallback(() => {
-    if (rafRef.current != null) return;
-    rafRef.current = window.requestAnimationFrame(flushDragFrame);
-  }, [flushDragFrame]);
+  const queueLive = useCallback(
+    (pos: { x: number; y: number }) => {
+      livePosRef.current = pos;
+      if (rafRef.current != null) return;
+      rafRef.current = window.requestAnimationFrame(flushLive);
+    },
+    [flushLive],
+  );
 
   useEffect(() => {
     return () => {
@@ -177,7 +170,6 @@ export function GardenDiorama({
   function onStagePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget && !(e.target as HTMLElement).dataset?.stage)
       return;
-    // Empty stage tap: place if buying, otherwise clear the selection ring.
     if (!selectedDecor) {
       if (selectedPlacement) onSelectPlacement(null);
       return;
@@ -188,100 +180,97 @@ export function GardenDiorama({
   }
 
   function onStagePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
-    if (selectedDecor) {
+    if (selectedDecor && !dragRef.current) {
       setPlaceGhost(toNorm(e.clientX, e.clientY));
-    } else if (!dragIdRef.current && !dragNestRef.current) {
+    } else if (!dragRef.current) {
       setPlaceGhost(null);
     }
   }
 
-  function beginDrag(
+  function beginDecorDrag(
     placement: CompanionGardenPlacement,
     e: ReactPointerEvent<HTMLButtonElement>,
   ) {
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragNestRef.current = false;
-    dragIdRef.current = placement.id;
-    dragPosRef.current = { x: placement.x, y: placement.y };
-    setDraggingNest(false);
-    setDragId(placement.id);
+    const target: DragTarget = {
+      kind: "decor",
+      id: placement.id,
+      fromX: placement.x,
+      fromY: placement.y,
+    };
+    dragRef.current = target;
+    livePosRef.current = { x: placement.x, y: placement.y };
+    setDrag(target);
+    setLivePos({ x: placement.x, y: placement.y });
     onSelectPlacement(placement.id);
-    paintDrag(placement.id, placement.x, placement.y);
   }
 
   function beginNestDrag(e: ReactPointerEvent<HTMLButtonElement>) {
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragIdRef.current = null;
-    dragNestRef.current = true;
-    dragPosRef.current = { x: garden.pet.x, y: garden.pet.y };
-    setDragId(null);
-    setDraggingNest(true);
+    const target: DragTarget = {
+      kind: "nest",
+      fromX: garden.pet.x,
+      fromY: garden.pet.y,
+    };
+    dragRef.current = target;
+    livePosRef.current = { x: garden.pet.x, y: garden.pet.y };
+    setDrag(target);
+    setLivePos({ x: garden.pet.x, y: garden.pet.y });
     onSelectPlacement(null);
-    paintNest(garden.pet.x, garden.pet.y);
   }
 
-  function onDecorPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
-    if (!dragIdRef.current && !dragNestRef.current) return;
-    dragPosRef.current = toNorm(e.clientX, e.clientY);
-    queueDragPaint();
+  function onDragPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
+    if (!dragRef.current) return;
+    queueLive(toNorm(e.clientX, e.clientY));
   }
 
   function endDrag(e: ReactPointerEvent<HTMLButtonElement>) {
-    if (!dragIdRef.current && !dragNestRef.current) return;
+    const current = dragRef.current;
+    if (!current) return;
     const pos = toNorm(e.clientX, e.clientY);
     if (rafRef.current != null) {
       window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    if (dragNestRef.current) {
-      paintNest(pos.x, pos.y);
-      dragNestRef.current = false;
-      dragPosRef.current = null;
-      setDraggingNest(false);
-      onMoveNest(pos.x, pos.y);
+    dragRef.current = null;
+    livePosRef.current = null;
+    setDrag(null);
+    setLivePos(null);
+    onSelectPlacement(null);
+
+    if (current.kind === "nest") {
+      onMoveNest(pos.x, pos.y, { x: current.fromX, y: current.fromY });
       return;
     }
-    const id = dragIdRef.current;
-    if (!id) return;
-    paintDrag(id, pos.x, pos.y);
-    dragIdRef.current = null;
-    dragPosRef.current = null;
-    setDragId(null);
-    onSelectPlacement(null);
-    onMove(id, pos.x, pos.y);
+    onMove(current.id, pos.x, pos.y, {
+      x: current.fromX,
+      y: current.fromY,
+    });
   }
 
   function cancelDrag() {
-    if (dragNestRef.current) {
-      if (rafRef.current != null) {
-        window.cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      paintNest(garden.pet.x, garden.pet.y);
-      dragNestRef.current = false;
-      dragPosRef.current = null;
-      setDraggingNest(false);
-      return;
-    }
-    if (!dragIdRef.current) return;
-    const id = dragIdRef.current;
-    const placement = garden.placements.find((p) => p.id === id);
+    if (!dragRef.current) return;
     if (rafRef.current != null) {
       window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    if (placement) paintDrag(id, placement.x, placement.y);
-    dragIdRef.current = null;
-    dragPosRef.current = null;
-    setDragId(null);
+    dragRef.current = null;
+    livePosRef.current = null;
+    setDrag(null);
+    setLivePos(null);
     onSelectPlacement(null);
   }
 
   const night = tone === "night" || tone === "dusk";
-  const bubbleLeft = garden.pet.x >= 55;
+  const nestX =
+    drag?.kind === "nest" && livePos ? livePos.x : garden.pet.x;
+  const nestY =
+    drag?.kind === "nest" && livePos ? livePos.y : garden.pet.y;
+  const bubbleLeft = nestX >= 55;
   const petMotion = usePetStageMotion(pet.id, pet.stage);
+  const draggingNest = drag?.kind === "nest";
 
   return (
     <div
@@ -295,7 +284,7 @@ export function GardenDiorama({
         onPointerDown={onStagePointerDown}
         onPointerMove={onStagePointerMove}
         onPointerLeave={() => {
-          if (!dragIdRef.current) setPlaceGhost(null);
+          if (!dragRef.current) setPlaceGhost(null);
         }}
         className={[
           "absolute inset-0 touch-none",
@@ -303,7 +292,6 @@ export function GardenDiorama({
         ].join(" ")}
         style={{ background: sky }}
       >
-        {/* Ground plane — forest clearing floor */}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[44%]"
           style={{
@@ -316,7 +304,6 @@ export function GardenDiorama({
                   : "linear-gradient(180deg, transparent 0%, #7eaa5e88 16%, #5f8c42 100%)",
           }}
         />
-        {/* Soft canopy light */}
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{
@@ -328,10 +315,8 @@ export function GardenDiorama({
         />
 
         <GardenHabitat night={night} season={climate.season} />
-
         <GardenWeatherLayer weather={climate.weather} night={night} />
 
-        {/* Ambient life */}
         {ambience.includes("pollen") ? (
           <div className="garden-ambience-pollen pointer-events-none absolute inset-0" />
         ) : null}
@@ -348,21 +333,18 @@ export function GardenDiorama({
           <div className="garden-ambience-stars pointer-events-none absolute inset-0" />
         ) : null}
 
-        {/* Placeable decorations */}
         {sorted.map((p) => {
-          const dragging = dragId === p.id;
-          const selected = selectedPlacement === p.id && !dragging;
+          const isDragging = drag?.kind === "decor" && drag.id === p.id;
+          const pos =
+            isDragging && livePos ? livePos : { x: p.x, y: p.y };
+          const selected = selectedPlacement === p.id && !isDragging;
           return (
             <button
               key={p.id}
               type="button"
               aria-label={p.title}
-              ref={(node) => {
-                if (node) decorElsRef.current.set(p.id, node);
-                else decorElsRef.current.delete(p.id);
-              }}
-              onPointerDown={(e) => beginDrag(p, e)}
-              onPointerMove={onDecorPointerMove}
+              onPointerDown={(e) => beginDecorDrag(p, e)}
+              onPointerMove={onDragPointerMove}
               onPointerUp={endDrag}
               onPointerCancel={cancelDrag}
               onDoubleClick={(e) => {
@@ -371,17 +353,18 @@ export function GardenDiorama({
               }}
               className={[
                 "absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border-0 bg-transparent p-0 cursor-grab",
-                dragging ? "garden-dragging" : motionClass(p.motion),
+                isDragging ? "garden-dragging" : motionClass(p.motion),
                 selected
                   ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent"
                   : "",
               ].join(" ")}
               style={{
-                left: `${p.x}%`,
-                top: `${p.y}%`,
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
                 width: `${p.widthPct}%`,
-                zIndex: layerZ(p.layer) + Math.round(p.y),
-                willChange: dragging ? "left, top" : undefined,
+                zIndex: isDragging
+                  ? 40
+                  : layerZ(p.layer) + Math.round(pos.y),
               }}
             >
               <GardenDecorSprite
@@ -393,13 +376,11 @@ export function GardenDiorama({
           );
         })}
 
-        {/* One nest · one companion (Plus may unlock extra nests later) */}
         <button
-          ref={nestElRef}
           type="button"
           aria-label="Move nest"
           onPointerDown={beginNestDrag}
-          onPointerMove={onDecorPointerMove}
+          onPointerMove={onDragPointerMove}
           onPointerUp={endDrag}
           onPointerCancel={cancelDrag}
           className={[
@@ -407,12 +388,13 @@ export function GardenDiorama({
             draggingNest ? "garden-dragging cursor-grabbing" : "",
           ].join(" ")}
           style={{
-            left: `${garden.pet.x}%`,
-            top: `${garden.pet.y}%`,
-            zIndex: layerZ(garden.pet.layer) + Math.round(garden.pet.y) + 1,
+            left: `${nestX}%`,
+            top: `${nestY}%`,
+            zIndex: draggingNest
+              ? 40
+              : layerZ(garden.pet.layer) + Math.round(nestY) + 1,
             width: "min(22%, 128px)",
             transform: "translate(-50%, -72%)",
-            willChange: draggingNest ? "left, top" : undefined,
           }}
         >
           <div className="relative mx-auto aspect-[120/90] w-full">
@@ -451,9 +433,7 @@ export function GardenDiorama({
               "pointer-events-none absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
               bubbleLeft ? "right-[95%]" : "left-[95%]",
             ].join(" ")}
-            style={{
-              background: "rgba(255,255,255,0.92)",
-            }}
+            style={{ background: "rgba(255,255,255,0.92)" }}
           >
             {pet.dialogue}
             <span
@@ -465,7 +445,6 @@ export function GardenDiorama({
           </div>
         </button>
 
-        {/* Placement ghost */}
         {selectedDecor && placeGhost ? (
           <div
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 opacity-60"
@@ -479,7 +458,6 @@ export function GardenDiorama({
           </div>
         ) : null}
 
-        {/* Foreground vignette */}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[14%]"
           style={{
