@@ -18,6 +18,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
@@ -44,6 +45,8 @@ export function WordLadderGame({
 
   const [chain, setChain] = useState<string[]>([puzzle.start]);
   const [current, setCurrent] = useState("");
+  const [bonusSteps, setBonusSteps] = useState(0);
+  const [coinHint, setCoinHint] = useState<string | null>(null);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -77,6 +80,7 @@ export function WordLadderGame({
   });
 
   const stepsUsed = Math.max(0, chain.length - 1);
+  const maxSteps = puzzle.maxSteps + bonusSteps;
   const nextStep = nextWordLadderStep(puzzle, chain.length);
 
   async function finish(finalChain: string[], won: boolean) {
@@ -252,7 +256,7 @@ export function WordLadderGame({
     setCurrent("");
     setStatus(null);
 
-    if (nextSteps >= puzzle.maxSteps) {
+    if (nextSteps >= maxSteps) {
       setDone(true);
       void finish(next, false);
     }
@@ -293,7 +297,7 @@ export function WordLadderGame({
 
       <p className="mb-4 text-sm text-fog">{puzzle.hint}</p>
       <p className="mb-4 text-xs text-fog">
-        Steps used {stepsUsed} / {puzzle.maxSteps}
+        Steps used {stepsUsed} / {maxSteps}
       </p>
 
       {!done && nextStep && (
@@ -360,6 +364,32 @@ export function WordLadderGame({
             Undo
           </button>
         </div>
+      )}
+
+      {!done && !alreadyPlayed && (
+        <CoinConsumableBar
+          signedIn={signedIn}
+          disabled={submitting}
+          onHint={() => {
+            if (!nextStep) {
+              setCoinHint("No further steps — you’re at the end.");
+              return;
+            }
+            setCurrent(nextStep.word);
+            setCoinHint(
+              `Filled the next word: ${nextStep.word.toUpperCase()}.`,
+            );
+          }}
+          onExtraAttempt={() => setBonusSteps((n) => n + 1)}
+          onSkip={() => {
+            setDone(true);
+            void finish(chain, false);
+          }}
+        />
+      )}
+
+      {coinHint && !done && (
+        <p className="mt-2 text-sm text-mint">{coinHint}</p>
       )}
 
       {status && (

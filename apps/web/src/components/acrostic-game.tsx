@@ -17,6 +17,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
@@ -46,12 +47,15 @@ export function AcrosticGame({
   );
   const [message, setMessage] = useState("");
   const [attempts, setAttempts] = useState(0);
+  const [bonusAttempts, setBonusAttempts] = useState(0);
+  const [coinHint, setCoinHint] = useState<string | null>(null);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
       ? `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
+  const maxAttempts = puzzle.maxAttempts + bonusAttempts;
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
     won: boolean;
@@ -213,7 +217,7 @@ export function AcrosticGame({
       return;
     }
 
-    if (nextAttempts >= puzzle.maxAttempts) {
+    if (nextAttempts >= maxAttempts) {
       void finish({
         won: false,
         attemptsUsed: nextAttempts,
@@ -224,9 +228,29 @@ export function AcrosticGame({
     }
 
     setStatus(
-      `Not yet · ${puzzle.maxAttempts - nextAttempts} attempt${
-        puzzle.maxAttempts - nextAttempts === 1 ? "" : "s"
+      `Not yet · ${maxAttempts - nextAttempts} attempt${
+        maxAttempts - nextAttempts === 1 ? "" : "s"
       } left`,
+    );
+  }
+
+  function revealAcrosticHint() {
+    const emptyIndex = answers.findIndex((a, i) => {
+      const need = puzzle.answers[i]!;
+      return a.trim().toLowerCase() !== need.toLowerCase();
+    });
+    if (emptyIndex < 0) {
+      setCoinHint(`Message starts with “${puzzle.message[0]!.toUpperCase()}”.`);
+      return;
+    }
+    const target = puzzle.answers[emptyIndex]!;
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[emptyIndex] = target[0]!;
+      return next;
+    });
+    setCoinHint(
+      `Clue ${emptyIndex + 1} starts with “${target[0]!.toUpperCase()}”.`,
     );
   }
 
@@ -326,6 +350,27 @@ export function AcrosticGame({
             Check solution
           </button>
         </div>
+      )}
+
+      {!done && !alreadyPlayed && (
+        <CoinConsumableBar
+          signedIn={signedIn}
+          disabled={submitting}
+          onHint={revealAcrosticHint}
+          onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
+          onSkip={() => {
+            void finish({
+              won: false,
+              attemptsUsed: attempts,
+              answer: puzzle.message,
+              clueAnswers: puzzle.answers,
+            });
+          }}
+        />
+      )}
+
+      {coinHint && !done && (
+        <p className="mt-2 text-sm text-mint">{coinHint}</p>
       )}
 
       {status && (
