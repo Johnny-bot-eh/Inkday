@@ -19,6 +19,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
@@ -443,6 +444,11 @@ export function WordleGame({
           </p>
         </div>
       ) : null}
+      <ShowAnswerPanel
+        available={Boolean(alreadyPlayed)}
+        answer={config.answer.toUpperCase()}
+        detail={config.definition}
+      />
 
       {results && (
         <div className="mt-4">

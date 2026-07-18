@@ -18,6 +18,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
 type Props = {
   difficulty: Difficulty;
@@ -330,6 +331,14 @@ export function AcrosticGame({
           {status}
         </p>
       )}
+      <ShowAnswerPanel
+        available={Boolean(alreadyPlayed)}
+        answer={puzzle.message}
+        items={puzzle.clues.map((clue, index) => ({
+          label: clue.clue,
+          answer: puzzle.answers[index]!,
+        }))}
+      />
 
       {results && (
         <div className="mt-4">

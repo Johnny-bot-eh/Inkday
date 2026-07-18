@@ -18,6 +18,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
 type Props = {
   difficulty: Difficulty;
@@ -303,6 +304,10 @@ export function CryptogramGame({
           {status}
         </p>
       )}
+      <ShowAnswerPanel
+        available={Boolean(alreadyPlayed)}
+        answer={puzzle.plaintext}
+      />
 
       {results && (
         <div className="mt-4">

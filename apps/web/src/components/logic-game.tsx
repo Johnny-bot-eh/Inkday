@@ -18,6 +18,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { ShowAnswerPanel } from "@/components/show-answer-panel";
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 
 type Props = {
@@ -402,6 +403,11 @@ export function LogicGame({
           {status}
         </p>
       )}
+      <ShowAnswerPanel
+        available={Boolean(alreadyPlayed)}
+        answer={puzzle.answer}
+        detail={puzzle.explanation}
+      />
 
       {results && <PlayResultsCard {...results} />}
     </div>

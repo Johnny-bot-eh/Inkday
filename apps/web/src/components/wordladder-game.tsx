@@ -19,6 +19,7 @@ import {
   PlayResultsCard,
   type PlayRanks,
 } from "@/components/play-results-card";
+import { ShowAnswerPanel } from "@/components/show-answer-panel";
 
 type Props = {
   difficulty: Difficulty;
@@ -364,6 +365,10 @@ export function WordLadderGame({
           {status}
         </p>
       )}
+      <ShowAnswerPanel
+        available={Boolean(alreadyPlayed)}
+        answer={puzzle.solution.map((w) => w.toUpperCase()).join(" → ")}
+      />
 
       {results && (
         <div className="mt-4 animate-rise">
