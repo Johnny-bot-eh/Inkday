@@ -31,6 +31,7 @@ type Props = {
   answer?: string | null;
   definition?: string | null;
   explanation?: string | null;
+  solutionItems?: Array<{ label: string; answer: string }>;
   newAchievements?: ProgressToast[];
   newUnlocks?: ProgressToast[];
   coinsEarned?: number | null;
@@ -47,6 +48,7 @@ export function PlayResultsCard({
   answer,
   definition,
   explanation,
+  solutionItems,
   newAchievements,
   newUnlocks,
   coinsEarned,
@@ -98,6 +100,29 @@ export function PlayResultsCard({
             How it works
           </p>
           <p className="mt-2 text-sm leading-relaxed text-paper">{explanation}</p>
+        </div>
+      ) : null}
+
+      {solutionItems && solutionItems.length > 0 ? (
+        <div className="rounded-xl border border-[var(--line)] bg-ink-2/60 px-4 py-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-fog">
+            Word solutions
+          </p>
+          <ol className="mt-3 space-y-2">
+            {solutionItems.map((item, index) => (
+              <li
+                key={`${index}-${item.answer}`}
+                className="flex items-start justify-between gap-4 text-sm"
+              >
+                <span className="text-fog">
+                  {index + 1}. {item.label}
+                </span>
+                <span className="font-semibold uppercase tracking-wide text-paper">
+                  {item.answer}
+                </span>
+              </li>
+            ))}
+          </ol>
         </div>
       ) : null}
 

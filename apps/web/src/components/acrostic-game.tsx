@@ -319,7 +319,13 @@ export function AcrosticGame({
 
       {results && (
         <div className="mt-4">
-          <PlayResultsCard {...results} />
+          <PlayResultsCard
+            {...results}
+            solutionItems={puzzle.clues.map((clue, index) => ({
+              label: clue.clue,
+              answer: puzzle.answers[index]!,
+            }))}
+          />
         </div>
       )}
     </div>
