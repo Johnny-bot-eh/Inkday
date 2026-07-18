@@ -1,10 +1,17 @@
 import type { Difficulty } from "./types";
 import { BASE_POINTS } from "./scoring";
 import { dayIndex, hashSeed, monthStartKey, todayKey } from "./types";
+import { getAcrosticPuzzle } from "./acrostic";
+import { getAnagramPuzzle } from "./anagram";
+import { getCryptogramPuzzle } from "./cryptogram";
+import { getEscapeRoom } from "./escape";
+import { getLogicPuzzle } from "./logic";
 import {
   getMonthlyOnlyPuzzle,
   type MonthlyOnlyType,
 } from "./monthly-puzzles";
+import { getWordLadderPuzzle } from "./wordladder";
+import { getWordleConfig } from "./wordle";
 
 /** Existing daily engines reused inside the Case File. */
 export type MonthlyExistingType =
@@ -253,6 +260,79 @@ export function getMonthTheme(month: number): MonthTheme {
   );
 }
 
+/**
+ * Identity of the concrete puzzle a slot resolves to.
+ * Used so a Case File never repeats the same board twice in one month.
+ */
+export function monthlyContentFingerprint(
+  puzzleType: MonthlyPuzzleType,
+  seedKey: string,
+  difficulty: Difficulty,
+): string {
+  if (isMonthlyOnlyType(puzzleType)) {
+    const puzzle = getMonthlyOnlyPuzzle(puzzleType, seedKey, difficulty);
+    switch (puzzle.kind) {
+      case "riddle":
+        return `riddle:${puzzle.answer}`;
+      case "trivia":
+        return `trivia:${puzzle.question}`;
+      case "mathlogic":
+        return `mathlogic:${puzzle.prompt}`;
+      case "memory":
+        return `memory:${puzzle.sequence.join(",")}`;
+      case "pattern":
+        return `pattern:${puzzle.shown.join(">")}`;
+      case "deduction":
+        return `deduction:${puzzle.briefing}`;
+    }
+  }
+
+  switch (puzzleType) {
+    case "wordle":
+      return `wordle:${getWordleConfig(seedKey, difficulty).answer}`;
+    case "escape":
+      return `escape:${getEscapeRoom(seedKey, difficulty).id.split("-")[0]}`;
+    case "logic":
+      return `logic:${getLogicPuzzle(seedKey, difficulty).id.split("-")[0]}`;
+    case "anagram":
+      return `anagram:${getAnagramPuzzle(seedKey, difficulty).answer}`;
+    case "cryptogram":
+      return `cryptogram:${getCryptogramPuzzle(seedKey, difficulty).plaintext}`;
+    case "acrostic": {
+      const puzzle = getAcrosticPuzzle(seedKey, difficulty);
+      return `acrostic:${puzzle.title}:${puzzle.message}`;
+    }
+    case "wordladder": {
+      const puzzle = getWordLadderPuzzle(seedKey, difficulty);
+      return `wordladder:${puzzle.start}>${puzzle.end}`;
+    }
+  }
+}
+
+function uniqueSeedKey(
+  collectionId: string,
+  index: number,
+  puzzleType: MonthlyPuzzleType,
+  difficulty: Difficulty,
+  used: Set<string>,
+): string {
+  const base = `${collectionId}:${String(index).padStart(2, "0")}`;
+  for (let attempt = 0; attempt < 256; attempt++) {
+    const seedKey = attempt === 0 ? base : `${base}:r${attempt}`;
+    const fingerprint = monthlyContentFingerprint(
+      puzzleType,
+      seedKey,
+      difficulty,
+    );
+    if (!used.has(fingerprint)) {
+      used.add(fingerprint);
+      return seedKey;
+    }
+  }
+  // Content pool exhausted for this type/difficulty — keep a deterministic key.
+  return `${base}:r255`;
+}
+
 export function buildMonthlySlots(collectionId: string): MonthlySlot[] {
   const seed = hashSeed("case-file", collectionId);
   const difficulties: Difficulty[] = [
@@ -268,15 +348,23 @@ export function buildMonthlySlots(collectionId: string): MonthlySlot[] {
   }
   shuffleInPlace(types, seed ^ 0x85ebca6b);
 
+  const usedFingerprints = new Set<string>();
   return difficulties.map((difficulty, i) => {
     const index = i + 1;
     const puzzleType = resolveMonthlyPoolType(types[i]!);
+    const seedKey = uniqueSeedKey(
+      collectionId,
+      index,
+      puzzleType,
+      difficulty,
+      usedFingerprints,
+    );
     return {
       index,
       puzzleType,
       difficulty,
       label: MONTHLY_TYPE_LABELS[puzzleType],
-      seedKey: `${collectionId}:${String(index).padStart(2, "0")}`,
+      seedKey,
       points: BASE_POINTS[difficulty],
     };
   });

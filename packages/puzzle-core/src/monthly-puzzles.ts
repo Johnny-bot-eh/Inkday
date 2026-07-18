@@ -347,6 +347,32 @@ const DEDUCTIONS: Array<{
     explanation:
       "Not Monday rules out Monday. Earlier than Thursday leaves Tuesday or Wednesday. After Tuesday leaves only Wednesday.",
   },
+  {
+    briefing: "Four painters hung one canvas each. Who hung the landscape?",
+    clues: [
+      "Rae hung the portrait.",
+      "Sid did not hang the still life.",
+      "Tess hung neither the portrait nor the landscape.",
+      "The abstract was not Sid’s.",
+    ],
+    options: ["Rae", "Sid", "Tess", "Uma"],
+    answerIndex: 1,
+    explanation:
+      "Rae has the portrait. Tess is not landscape. Sid is neither still life nor abstract, so Sid must have the landscape.",
+  },
+  {
+    briefing: "A courier left one of four parcels. Which color ribbon marks the urgent one?",
+    clues: [
+      "The blue ribbon is not urgent.",
+      "The urgent parcel is not green.",
+      "Red was used on a routine delivery.",
+      "Only one ribbon is gold, blue, green, or red.",
+    ],
+    options: ["Blue", "Green", "Red", "Gold"],
+    answerIndex: 3,
+    explanation:
+      "Blue and green are ruled out for urgent; red is routine. Gold is the only color left for the urgent parcel.",
+  },
 ];
 
 function rng(seed: number): () => number {

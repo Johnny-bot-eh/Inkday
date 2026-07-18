@@ -2,6 +2,7 @@
 
 import type { Difficulty, MonthlyPuzzleType } from "@daily-puzzle/puzzle-core";
 import { isMonthlyOnlyType } from "@daily-puzzle/puzzle-core";
+import { CaseFileBackLink } from "@/components/case-file-back-link";
 import { MonthlyOnlyGame } from "@/components/monthly-only-game";
 import { WordleGame } from "@/components/wordle-game";
 import { EscapeGame } from "@/components/escape-game";
@@ -10,7 +11,6 @@ import { AnagramGame } from "@/components/anagram-game";
 import { CryptogramGame } from "@/components/cryptogram-game";
 import { AcrosticGame } from "@/components/acrostic-game";
 import { WordLadderGame } from "@/components/wordladder-game";
-import Link from "next/link";
 
 type Props = {
   collectionId: string;
@@ -50,18 +50,6 @@ export function MonthlySlotPlayer(props: Props) {
     );
   }
 
-  const back = (
-    <p className="mb-4 text-sm">
-      <Link href="/monthly" className="text-fog hover:text-paper">
-        ← Case File
-      </Link>
-      <span className="mx-2 text-fog">·</span>
-      <span className="text-fog">
-        Slot #{props.slotIndex} · {props.label} · +{props.points} pts
-      </span>
-    </p>
-  );
-
   const common = {
     difficulty: props.difficulty,
     dateKey: props.seedKey,
@@ -72,7 +60,12 @@ export function MonthlySlotPlayer(props: Props) {
 
   return (
     <div>
-      {back}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-sm text-fog">
+          Slot #{props.slotIndex} · {props.label} · +{props.points} pts
+        </p>
+        <CaseFileBackLink collectionId={props.collectionId} />
+      </div>
       {props.puzzleType === "wordle" && <WordleGame {...common} />}
       {props.puzzleType === "escape" && <EscapeGame {...common} />}
       {props.puzzleType === "logic" && <LogicGame {...common} />}
