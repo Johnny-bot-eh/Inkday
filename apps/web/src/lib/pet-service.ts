@@ -1002,6 +1002,7 @@ export async function moveGardenNest(
   | { ok: true; snapshot: CompanionSnapshot }
   | { ok: false; reason: string }
 > {
+  await ensureNestColumns();
   await ensureProgression(userId);
   const db = getDb();
   await db
