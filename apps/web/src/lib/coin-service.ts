@@ -481,6 +481,7 @@ export async function useConsumable(
     ok: true as const,
     itemId,
     qtyLeft: await getInventoryQty(userId, itemId),
+    balance: await getCoinBalance(userId),
   };
 }
 
@@ -496,7 +497,14 @@ export async function buyAndUseConsumable(
   }
   const buy = await buyShopItem(userId, itemId);
   if (!buy.ok) return buy;
-  return useConsumable(userId, itemId, refId);
+  const used = await useConsumable(userId, itemId, refId);
+  if (!used.ok) return used;
+  // Always return the live wallet balance so the header chip updates mid-game.
+  return {
+    ...used,
+    balance: await getCoinBalance(userId),
+    spent: "spent" in buy && typeof buy.spent === "number" ? buy.spent : 0,
+  };
 }
 
 export async function hasClaimedDailyLogin(
