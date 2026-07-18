@@ -237,6 +237,20 @@ export function CompanionClient({ signedIn, initial }: Props) {
             });
             void post({ action: "move", placementId, x, y });
           }}
+          onMoveNest={(x, y) => {
+            setSelectedPlacement(null);
+            setSnapshot((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                garden: {
+                  ...prev.garden,
+                  pet: { ...prev.garden.pet, x, y },
+                },
+              };
+            });
+            void post({ action: "move_nest", x, y });
+          }}
           onRemove={(placementId) => {
             setSelectedPlacement(null);
             setSnapshot((prev) => {

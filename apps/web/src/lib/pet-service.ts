@@ -78,6 +78,8 @@ async function ensureProgression(userId: string) {
       activePetId: null as string | null,
       starterClaimed: false,
       backfilled: false,
+      nestX: null as number | null,
+      nestY: null as number | null,
       updatedAt: new Date(),
     }
   );
@@ -363,6 +365,7 @@ export async function getCompanionSnapshot(
   userId: string,
 ): Promise<CompanionSnapshot> {
   const db = getDb();
+  await ensureNestColumns();
   await backfillProgressionIfNeeded(userId);
   const prog = await ensureProgression(userId);
   const account = levelFromXp(prog.accountXp);
@@ -518,8 +521,14 @@ export async function getCompanionSnapshot(
       tone,
       ambience,
       pet: {
-        x: GARDEN_SCENE.pet.x,
-        y: GARDEN_SCENE.pet.y,
+        x:
+          prog.nestX != null
+            ? clampGardenCoord(prog.nestX)
+            : GARDEN_SCENE.pet.x,
+        y:
+          prog.nestY != null
+            ? clampGardenCoord(prog.nestY)
+            : GARDEN_SCENE.pet.y,
         layer: GARDEN_SCENE.pet.layer,
       },
       placements: placements.map((p) => {
@@ -871,6 +880,24 @@ async function ensureGardenAllowsDuplicateItems() {
   }
 }
 
+/** Ensure nest position columns exist (additive migrate may not have run yet). */
+let nestColumnsReady = false;
+async function ensureNestColumns() {
+  if (nestColumnsReady) return;
+  const client = getLibsqlClient();
+  try {
+    await client.execute(`ALTER TABLE user_progression ADD COLUMN nest_x INTEGER`);
+  } catch {
+    /* already present */
+  }
+  try {
+    await client.execute(`ALTER TABLE user_progression ADD COLUMN nest_y INTEGER`);
+  } catch {
+    /* already present */
+  }
+  nestColumnsReady = true;
+}
+
 export async function placeGardenItem(
   userId: string,
   itemId: string,
@@ -962,6 +989,29 @@ export async function moveGardenItem(
       y: Math.round(clampGardenCoord(y)),
     })
     .where(eq(gardenPlacement.id, placementId));
+
+  return { ok: true, snapshot: await getCompanionSnapshot(userId) };
+}
+
+/** Move the single nest + companion anchor on the garden canvas. */
+export async function moveGardenNest(
+  userId: string,
+  x: number,
+  y: number,
+): Promise<
+  | { ok: true; snapshot: CompanionSnapshot }
+  | { ok: false; reason: string }
+> {
+  await ensureProgression(userId);
+  const db = getDb();
+  await db
+    .update(userProgression)
+    .set({
+      nestX: Math.round(clampGardenCoord(x)),
+      nestY: Math.round(clampGardenCoord(y)),
+      updatedAt: new Date(),
+    })
+    .where(eq(userProgression.userId, userId));
 
   return { ok: true, snapshot: await getCompanionSnapshot(userId) };
 }

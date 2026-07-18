@@ -731,6 +731,10 @@ export const userProgression = sqliteTable("user_progression", {
   backfilled: integer("backfilled", { mode: "boolean" })
     .notNull()
     .default(false),
+  /** Nest + companion anchor X on the garden canvas (0–100). */
+  nestX: integer("nest_x"),
+  /** Nest + companion anchor Y on the garden canvas (0–100). */
+  nestY: integer("nest_y"),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),

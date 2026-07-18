@@ -28,6 +28,7 @@ type Props = {
   busy: string | null;
   onPlace: (itemId: string, x: number, y: number) => void;
   onMove: (placementId: string, x: number, y: number) => void;
+  onMoveNest: (x: number, y: number) => void;
   onSelectPlacement: (placementId: string | null) => void;
   selectedPlacement: string | null;
   onRemove: (placementId: string) => void;
@@ -84,17 +85,21 @@ export function GardenDiorama({
   busy,
   onPlace,
   onMove,
+  onMoveNest,
   onSelectPlacement,
   selectedPlacement,
   onRemove,
 }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
+  const nestElRef = useRef<HTMLButtonElement>(null);
   const dragIdRef = useRef<string | null>(null);
+  const dragNestRef = useRef(false);
   const dragPosRef = useRef<{ x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
   const decorElsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   const [dragId, setDragId] = useState<string | null>(null);
+  const [draggingNest, setDraggingNest] = useState(false);
   const [placeGhost, setPlaceGhost] = useState<{ x: number; y: number } | null>(
     null,
   );
@@ -137,13 +142,26 @@ export function GardenDiorama({
     el.style.zIndex = String(40);
   }, []);
 
+  const paintNest = useCallback((x: number, y: number) => {
+    const el = nestElRef.current;
+    if (!el) return;
+    el.style.left = `${x}%`;
+    el.style.top = `${y}%`;
+    el.style.zIndex = String(40);
+  }, []);
+
   const flushDragFrame = useCallback(() => {
     rafRef.current = null;
-    const id = dragIdRef.current;
     const pos = dragPosRef.current;
-    if (!id || !pos) return;
+    if (!pos) return;
+    if (dragNestRef.current) {
+      paintNest(pos.x, pos.y);
+      return;
+    }
+    const id = dragIdRef.current;
+    if (!id) return;
     paintDrag(id, pos.x, pos.y);
-  }, [paintDrag]);
+  }, [paintDrag, paintNest]);
 
   const queueDragPaint = useCallback(() => {
     if (rafRef.current != null) return;
@@ -172,7 +190,7 @@ export function GardenDiorama({
   function onStagePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
     if (selectedDecor) {
       setPlaceGhost(toNorm(e.clientX, e.clientY));
-    } else if (!dragIdRef.current) {
+    } else if (!dragIdRef.current && !dragNestRef.current) {
       setPlaceGhost(null);
     }
   }
@@ -183,27 +201,50 @@ export function GardenDiorama({
   ) {
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
+    dragNestRef.current = false;
     dragIdRef.current = placement.id;
     dragPosRef.current = { x: placement.x, y: placement.y };
+    setDraggingNest(false);
     setDragId(placement.id);
     onSelectPlacement(placement.id);
     paintDrag(placement.id, placement.x, placement.y);
   }
 
+  function beginNestDrag(e: ReactPointerEvent<HTMLButtonElement>) {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragIdRef.current = null;
+    dragNestRef.current = true;
+    dragPosRef.current = { x: garden.pet.x, y: garden.pet.y };
+    setDragId(null);
+    setDraggingNest(true);
+    onSelectPlacement(null);
+    paintNest(garden.pet.x, garden.pet.y);
+  }
+
   function onDecorPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
-    if (!dragIdRef.current) return;
+    if (!dragIdRef.current && !dragNestRef.current) return;
     dragPosRef.current = toNorm(e.clientX, e.clientY);
     queueDragPaint();
   }
 
   function endDrag(e: ReactPointerEvent<HTMLButtonElement>) {
-    if (!dragIdRef.current) return;
-    const id = dragIdRef.current;
+    if (!dragIdRef.current && !dragNestRef.current) return;
     const pos = toNorm(e.clientX, e.clientY);
     if (rafRef.current != null) {
       window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    if (dragNestRef.current) {
+      paintNest(pos.x, pos.y);
+      dragNestRef.current = false;
+      dragPosRef.current = null;
+      setDraggingNest(false);
+      onMoveNest(pos.x, pos.y);
+      return;
+    }
+    const id = dragIdRef.current;
+    if (!id) return;
     paintDrag(id, pos.x, pos.y);
     dragIdRef.current = null;
     dragPosRef.current = null;
@@ -213,6 +254,17 @@ export function GardenDiorama({
   }
 
   function cancelDrag() {
+    if (dragNestRef.current) {
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      paintNest(garden.pet.x, garden.pet.y);
+      dragNestRef.current = false;
+      dragPosRef.current = null;
+      setDraggingNest(false);
+      return;
+    }
     if (!dragIdRef.current) return;
     const id = dragIdRef.current;
     const placement = garden.placements.find((p) => p.id === id);
@@ -342,14 +394,25 @@ export function GardenDiorama({
         })}
 
         {/* One nest · one companion (Plus may unlock extra nests later) */}
-        <div
-          className="pointer-events-none absolute"
+        <button
+          ref={nestElRef}
+          type="button"
+          aria-label="Move nest"
+          onPointerDown={beginNestDrag}
+          onPointerMove={onDecorPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={cancelDrag}
+          className={[
+            "absolute cursor-grab border-0 bg-transparent p-0 text-left",
+            draggingNest ? "garden-dragging cursor-grabbing" : "",
+          ].join(" ")}
           style={{
             left: `${garden.pet.x}%`,
             top: `${garden.pet.y}%`,
             zIndex: layerZ(garden.pet.layer) + Math.round(garden.pet.y) + 1,
             width: "min(22%, 128px)",
             transform: "translate(-50%, -72%)",
+            willChange: draggingNest ? "left, top" : undefined,
           }}
         >
           <div className="relative mx-auto aspect-[120/90] w-full">
@@ -359,7 +422,7 @@ export function GardenDiorama({
             />
             <div
               className={[
-                "absolute left-1/2 z-[2] -translate-x-1/2 [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full",
+                "pointer-events-none absolute left-1/2 z-[2] -translate-x-1/2 [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full",
                 pet.stage === "egg" || petMotion === "hatch"
                   ? "w-[70%]"
                   : "w-[78%]",
@@ -380,12 +443,12 @@ export function GardenDiorama({
             </div>
             <GardenNestRim
               night={night}
-              className="absolute inset-x-0 bottom-0 z-[3] h-auto w-full"
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-auto w-full"
             />
           </div>
           <div
             className={[
-              "absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+              "pointer-events-none absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
               bubbleLeft ? "right-[95%]" : "left-[95%]",
             ].join(" ")}
             style={{
@@ -400,7 +463,7 @@ export function GardenDiorama({
               ].join(" ")}
             />
           </div>
-        </div>
+        </button>
 
         {/* Placement ghost */}
         {selectedDecor && placeGhost ? (

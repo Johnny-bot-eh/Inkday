@@ -4,6 +4,7 @@ import {
   feedCompanion,
   getCompanionSnapshot,
   moveGardenItem,
+  moveGardenNest,
   petCompanion,
   placeGardenItem,
   removeGardenItem,
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
       | "claim_gift"
       | "place"
       | "move"
+      | "move_nest"
       | "remove";
     speciesId?: string;
     itemId?: string;
@@ -126,6 +128,17 @@ export async function POST(req: Request) {
       body.x,
       body.y,
     );
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+    return NextResponse.json(result);
+  }
+
+  if (body.action === "move_nest") {
+    if (typeof body.x !== "number" || typeof body.y !== "number") {
+      return NextResponse.json({ error: "x and y required" }, { status: 400 });
+    }
+    const result = await moveGardenNest(userId, body.x, body.y);
     if (!result.ok) {
       return NextResponse.json({ error: result.reason }, { status: 400 });
     }
