@@ -40,6 +40,14 @@ export function CryptogramGame({
     [dateKey, difficulty],
   );
   const hintLine = useMemo(() => cryptogramHintDisplay(puzzle), [puzzle]);
+  const revealedMappings = useMemo(
+    () =>
+      puzzle.revealed.map((plain) => ({
+        plain: plain.toUpperCase(),
+        cipher: puzzle.mapping[plain]!.toUpperCase(),
+      })),
+    [puzzle],
+  );
 
   const [guess, setGuess] = useState("");
   const [attempts, setAttempts] = useState(0);
@@ -210,22 +218,33 @@ export function CryptogramGame({
         </div>
       </div>
 
-      <p className="mb-4 text-sm text-fog">{puzzle.hint}</p>
+      <div className="mb-4 space-y-2 rounded-xl border border-[var(--line)] bg-panel/50 px-4 py-3 text-sm">
+        <p className="font-semibold text-paper">What are you decoding?</p>
+        <p className="text-fog">{puzzle.hint}</p>
+        <p className="text-fog">
+          Spaces stay in place. Type the complete normal English phrase in the
+          box below.
+        </p>
+      </div>
 
       <div className="rounded-xl border border-[var(--line)] bg-panel/60 px-5 py-6">
-        <p className="text-xs uppercase tracking-wider text-fog">Ciphertext</p>
+        <p className="text-xs uppercase tracking-wider text-fog">
+          Encrypted phrase — decode this
+        </p>
         <p className="mt-2 font-mono text-xl tracking-wide">{puzzle.ciphertext}</p>
         {puzzle.revealed.length > 0 && (
           <>
             <p className="mt-5 text-xs uppercase tracking-wider text-fog">
-              With letter hints
+              Known answer pattern
             </p>
             <p className="mt-2 font-mono text-lg tracking-wide text-ember">
               {hintLine}
             </p>
             <p className="mt-2 text-xs text-fog">
-              Revealed plaintext letters:{" "}
-              {puzzle.revealed.map((l) => l.toUpperCase()).join(", ")}
+              Given substitutions:{" "}
+              {revealedMappings
+                .map(({ cipher, plain }) => `${cipher} → ${plain}`)
+                .join(" · ")}
             </p>
           </>
         )}
@@ -238,7 +257,7 @@ export function CryptogramGame({
             onChange={(e) => setGuess(e.target.value)}
             rows={3}
             className="w-full rounded-lg border border-[var(--line)] bg-ink-2 px-3 py-3 outline-none ring-ember/40 focus:ring-2"
-            placeholder="Type the decoded phrase…"
+            placeholder="Type the normal English phrase…"
             disabled={submitting}
           />
           <button

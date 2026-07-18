@@ -7,6 +7,7 @@ import {
   checkWordLadder,
   getWordLadderPuzzle,
   isKnownLadderWord,
+  nextWordLadderStep,
   todayKey,
 } from "@daily-puzzle/puzzle-core";
 import Link from "next/link";
@@ -67,11 +68,22 @@ export function WordLadderGame({
   });
 
   const stepsUsed = Math.max(0, chain.length - 1);
+  const nextStep = nextWordLadderStep(puzzle, chain.length);
 
   async function finish(finalChain: string[], won: boolean) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "wordladder", difficulty);
     const timeLabel = formatDuration(elapsedMs);
+
+    if (won) {
+      // Give immediate feedback; persistence can finish in the background.
+      setDone(true);
+      setStatus(
+        signedIn
+          ? "Correct! Saving your score…"
+          : `Ladder complete in ${timeLabel}!`,
+      );
+    }
 
     if (monthly) {
       if (!won) {
@@ -81,7 +93,6 @@ export function WordLadderGame({
         return;
       }
       if (!signedIn) {
-        setDone(true);
         setResults({ won: true, elapsedMs });
         setStatus("Ladder complete! Sign in to save Case File progress.");
         return;
@@ -113,7 +124,6 @@ export function WordLadderGame({
     }
 
     if (!signedIn) {
-      setDone(true);
       setResults({
         won,
         elapsedMs,
@@ -142,10 +152,13 @@ export function WordLadderGame({
       });
       const data = await res.json();
       if (!res.ok) {
-        setStatus(data.error ?? "Could not save");
+        setStatus(
+          won
+            ? `Correct — ${data.error ?? "score could not be saved"}.`
+            : (data.error ?? "Could not save"),
+        );
         return;
       }
-      setDone(true);
       setResults({
         won,
         elapsedMs: data.elapsedMs ?? elapsedMs,
@@ -188,6 +201,21 @@ export function WordLadderGame({
       return;
     }
 
+    if (!isKnownLadderWord(word)) {
+      setStatus("Not in the dictionary.");
+      return;
+    }
+
+    if (!nextStep) {
+      setStatus("The ladder is already complete.");
+      return;
+    }
+
+    if (word !== nextStep.word) {
+      setStatus(`Not the intended next word. Hint: ${nextStep.hint}`);
+      return;
+    }
+
     const next = [...chain, word];
     const nextSteps = next.length - 1;
 
@@ -200,16 +228,6 @@ export function WordLadderGame({
       setChain(next);
       setCurrent("");
       void finish(next, true);
-      return;
-    }
-
-    if (nextSteps > puzzle.maxSteps) {
-      setStatus(`Max ${puzzle.maxSteps} steps.`);
-      return;
-    }
-
-    if (!isKnownLadderWord(word)) {
-      setStatus("Not in the dictionary.");
       return;
     }
 
@@ -255,11 +273,28 @@ export function WordLadderGame({
         Steps used {stepsUsed} / {puzzle.maxSteps}
       </p>
 
+      {!done && nextStep && (
+        <div className="mb-4 rounded-xl border border-ember/35 bg-ember/10 px-4 py-3">
+          <p className="text-xs uppercase tracking-[0.18em] text-ember">
+            Hint for step {nextStep.step}
+          </p>
+          <p className="mt-1 text-sm text-paper">{nextStep.hint}</p>
+        </div>
+      )}
+
       <ol className="space-y-2">
         {chain.map((word, i) => (
           <li
             key={`${word}-${i}`}
-            className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-panel/60 px-4 py-2 font-mono text-lg uppercase tracking-widest"
+            className={[
+              "flex items-center gap-3 rounded-lg border bg-panel/60 px-4 py-2 font-mono text-lg uppercase tracking-widest transition",
+              i === chain.length - 1
+                ? "animate-rise border-ember/50"
+                : "border-[var(--line)]",
+              done && i === chain.length - 1 && "border-mint/50 bg-mint/10",
+            ]
+              .filter(Boolean)
+              .join(" ")}
           >
             <span className="w-6 text-xs text-fog">{i + 1}</span>
             {word}
@@ -311,7 +346,7 @@ export function WordLadderGame({
       )}
 
       {results && (
-        <div className="mt-4">
+        <div className="mt-4 animate-rise">
           <PlayResultsCard {...results} />
         </div>
       )}

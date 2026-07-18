@@ -156,10 +156,10 @@ export function getCryptogramPuzzle(
     maxAttempts: ATTEMPTS[difficulty],
     hint:
       difficulty === "easy"
-        ? "Substitution cipher. A few letters are given; decode the phrase."
+        ? "Turn the encrypted text into a normal English phrase. The same encrypted letter always decodes to the same real letter."
         : difficulty === "medium"
-          ? "Each letter stands for another. Pattern-spot short words."
-          : "Sparse reveals. Frequency and word shapes matter.",
+          ? "Decode the encrypted text into English. Each encrypted letter always represents one real letter."
+          : "Decode the encrypted phrase. Repeated letters, word lengths, and frequency reveal the substitutions.",
   };
 }
 
@@ -177,7 +177,7 @@ export function checkCryptogramAnswer(
   return { correct: got === target };
 }
 
-/** Apply known plaintext letters onto ciphertext for UI hints */
+/** Show known plaintext letters and blanks in their answer positions. */
 export function cryptogramHintDisplay(puzzle: CryptogramPuzzle): string {
   const reverse: Record<string, string> = {};
   for (const [plain, cipher] of Object.entries(puzzle.mapping)) {
@@ -193,7 +193,7 @@ export function cryptogramHintDisplay(puzzle: CryptogramPuzzle): string {
       if (plain && revealedSet.has(plain)) {
         return ch === lower ? plain : plain.toUpperCase();
       }
-      return ch;
+      return "_";
     })
     .join("");
 }
