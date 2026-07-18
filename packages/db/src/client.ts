@@ -4,6 +4,9 @@ import { createClient, type Client } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { schema } from "./schema";
 
+let libsqlClient: Client | null = null;
+let singleton: ReturnType<typeof drizzle<typeof schema>> | null = null;
+
 function createLibsqlClient(): Client {
   const url = process.env.DATABASE_URL ?? "file:./data/inkday.db";
   const authToken = process.env.DATABASE_AUTH_TOKEN;
@@ -23,11 +26,14 @@ function createLibsqlClient(): Client {
   return createClient({ url: `file:${resolved}` });
 }
 
-let singleton: ReturnType<typeof drizzle<typeof schema>> | null = null;
+export function getLibsqlClient(): Client {
+  if (!libsqlClient) libsqlClient = createLibsqlClient();
+  return libsqlClient;
+}
 
 export function getDb() {
   if (singleton) return singleton;
-  singleton = drizzle(createLibsqlClient(), { schema });
+  singleton = drizzle(getLibsqlClient(), { schema });
   return singleton;
 }
 
