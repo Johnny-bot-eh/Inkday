@@ -133,24 +133,20 @@ export function GardenHabitat({ night, season }: Props) {
           </>
         ) : (
           <>
-            <path
-              d="M28 84 C18 66 26 44 44 38 C38 26 48 12 64 14 C74 4 94 10 100 26 C112 20 124 36 118 52 C128 62 122 80 106 84 C108 98 94 108 76 102 C64 112 44 108 34 96 C24 100 20 92 28 84 Z"
-              fill={p.leafDark}
-            />
-            <path
-              d="M36 78 C28 62 38 44 54 42 C48 30 60 20 76 24 C88 16 104 28 100 44 C110 50 108 66 96 72 C98 84 84 92 70 86 C58 94 42 90 38 80 Z"
-              fill={p.leafMid}
-            />
-            <path
-              d="M50 60 C46 50 56 40 68 42 C66 34 76 30 86 38 C94 34 100 44 96 52 C102 56 100 66 90 66 C84 74 66 72 56 64 Z"
-              fill={p.leafLit}
-              opacity="0.9"
-            />
+            {/* Tiered canopy — wider lower shelf, smaller crown */}
+            <ellipse cx="60" cy="78" rx="42" ry="22" fill={p.leafDark} />
+            <ellipse cx="48" cy="70" rx="24" ry="16" fill={p.leafDark} opacity="0.95" />
+            <ellipse cx="74" cy="68" rx="26" ry="17" fill={p.leafDark} opacity="0.95" />
+            <ellipse cx="60" cy="56" rx="30" ry="18" fill={p.leafMid} />
+            <ellipse cx="44" cy="58" rx="16" ry="12" fill={p.leafMid} opacity="0.9" />
+            <ellipse cx="78" cy="54" rx="17" ry="13" fill={p.leafMid} opacity="0.9" />
+            <ellipse cx="60" cy="40" rx="20" ry="14" fill={p.leafLit} opacity="0.95" />
+            <ellipse cx="52" cy="44" rx="10" ry="8" fill={p.leafLit} opacity="0.75" />
             {blossom !== "transparent" ? (
               <>
-                <circle cx="48" cy="44" r="3" fill={blossom} />
-                <circle cx="82" cy="40" r="2.5" fill={blossom} />
-                <circle cx="64" cy="30" r="2.2" fill={blossom} opacity="0.85" />
+                <circle cx="42" cy="66" r="2.6" fill={blossom} />
+                <circle cx="78" cy="50" r="2.4" fill={blossom} />
+                <circle cx="60" cy="34" r="2.1" fill={blossom} opacity="0.85" />
               </>
             ) : null}
           </>
@@ -212,43 +208,24 @@ export function GardenHabitat({ night, season }: Props) {
         )}
       </svg>
 
-      {/* Mid-ground shrub belt — sits in front of tree trunks */}
+      {/* Small background bushes near tree bases — clearing stays open */}
       <svg
-        viewBox="0 0 400 90"
+        viewBox="0 0 400 100"
         preserveAspectRatio="none"
-        className="absolute inset-x-0 bottom-[14%] h-[26%] w-full"
+        className="absolute inset-x-0 bottom-[34%] h-[18%] w-full"
       >
-        <path
-          d="M0 90 L0 48 Q18 28 40 42 Q58 22 82 40 Q108 18 136 38 Q162 24 188 42 Q214 20 242 40 Q270 22 298 44 Q326 26 352 46 Q378 30 400 48 L400 90 Z"
-          fill={p.leafDark}
-        />
-        <path
-          d="M0 90 L0 58 Q24 40 52 54 Q78 36 108 52 Q140 34 172 54 Q204 38 236 56 Q268 40 300 58 Q332 44 364 58 Q386 48 400 56 L400 90 Z"
-          fill={p.leafMid}
-          opacity="0.92"
-        />
-        <path
-          d="M20 70 Q36 52 52 68 Q70 50 88 70 Q108 54 126 72"
-          fill="none"
-          stroke={p.leafLit}
-          strokeWidth="3"
-          strokeLinecap="round"
-          opacity="0.45"
-        />
-        <path
-          d="M250 72 Q270 54 290 70 Q310 52 330 72 Q350 56 372 74"
-          fill="none"
-          stroke={p.leafLit}
-          strokeWidth="3"
-          strokeLinecap="round"
-          opacity="0.4"
-        />
+        <ellipse cx="54" cy="72" rx="28" ry="16" fill={p.leafDark} opacity="0.9" />
+        <ellipse cx="72" cy="68" rx="18" ry="12" fill={p.leafMid} opacity="0.95" />
+        <ellipse cx="40" cy="70" rx="14" ry="10" fill={p.leafMid} opacity="0.85" />
+        <ellipse cx="330" cy="74" rx="30" ry="15" fill={p.leafDark} opacity="0.9" />
+        <ellipse cx="348" cy="70" rx="16" ry="11" fill={p.leafMid} opacity="0.95" />
+        <ellipse cx="312" cy="72" rx="14" ry="10" fill={p.leafMid} opacity="0.85" />
+        <ellipse cx="200" cy="78" rx="22" ry="10" fill={p.leafDark} opacity="0.55" />
+        <ellipse cx="214" cy="76" rx="12" ry="8" fill={p.leafMid} opacity="0.6" />
         {blossom !== "transparent" ? (
           <>
-            <circle cx="64" cy="56" r="2.2" fill={blossom} />
-            <circle cx="118" cy="50" r="1.8" fill={blossom} />
-            <circle cx="280" cy="54" r="2" fill={blossom} />
-            <circle cx="340" cy="58" r="1.6" fill={blossom} />
+            <circle cx="48" cy="64" r="1.8" fill={blossom} />
+            <circle cx="338" cy="66" r="1.6" fill={blossom} />
           </>
         ) : null}
       </svg>
@@ -331,49 +308,6 @@ export function GardenHabitat({ night, season }: Props) {
         <ellipse cx="90" cy="106" rx="10" ry="5" fill={stone} opacity="0.55" />
       </svg>
 
-      {/* Foreground fern fronds */}
-      {season !== "winter" ? (
-        <>
-          <svg
-            viewBox="0 0 80 100"
-            className="absolute bottom-0 left-0 h-[36%] w-[18%]"
-          >
-            <path
-              d="M8 98 C10 70 4 50 18 34 C10 48 14 68 16 90 Z"
-              fill={p.leafMid}
-            />
-            <path
-              d="M20 98 C18 72 28 48 40 36 C28 52 26 74 28 96 Z"
-              fill={p.leafLit}
-              opacity="0.9"
-            />
-            <path
-              d="M32 98 C34 78 44 58 58 48 C44 62 40 80 42 98 Z"
-              fill={p.leafMid}
-              opacity="0.85"
-            />
-          </svg>
-          <svg
-            viewBox="0 0 80 100"
-            className="absolute bottom-0 right-0 h-[38%] w-[20%]"
-          >
-            <path
-              d="M72 98 C70 70 76 50 62 34 C70 48 66 68 64 90 Z"
-              fill={p.leafMid}
-            />
-            <path
-              d="M60 98 C62 72 52 48 40 36 C52 52 54 74 52 96 Z"
-              fill={p.leafLit}
-              opacity="0.9"
-            />
-            <path
-              d="M48 98 C46 78 36 58 22 48 C36 62 40 80 38 98 Z"
-              fill={p.leafMid}
-              opacity="0.85"
-            />
-          </svg>
-        </>
-      ) : null}
     </div>
   );
 }

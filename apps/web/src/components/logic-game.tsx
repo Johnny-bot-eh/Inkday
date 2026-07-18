@@ -48,6 +48,9 @@ export function LogicGame({
   );
 
   const [grid, setGrid] = useState(() => emptyLogicGrid(puzzle));
+  const [gridHistory, setGridHistory] = useState<
+    Array<Record<string, GridMark>>
+  >([]);
   const [answer, setAnswer] = useState("");
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
@@ -86,6 +89,7 @@ export function LogicGame({
     const current = grid[key] ?? "unknown";
     const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length]!;
 
+    setGridHistory((hist) => [...hist.slice(-79), grid]);
     setGrid((prev) => {
       const updated = { ...prev, [key]: next };
       if (next === "yes") {
@@ -102,6 +106,13 @@ export function LogicGame({
       }
       return updated;
     });
+  }
+
+  function undoGrid() {
+    if (done || gridHistory.length === 0) return;
+    const prev = gridHistory[gridHistory.length - 1]!;
+    setGridHistory((hist) => hist.slice(0, -1));
+    setGrid(prev);
   }
 
   function markLabel(mark: GridMark): string {
@@ -260,9 +271,21 @@ export function LogicGame({
       </p>
 
       <section>
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
-          Clues
-        </h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
+            Clues
+          </h2>
+          {!done ? (
+            <button
+              type="button"
+              onClick={undoGrid}
+              disabled={gridHistory.length === 0}
+              className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm text-fog hover:text-paper disabled:opacity-40"
+            >
+              Undo
+            </button>
+          ) : null}
+        </div>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-paper/95">
           {puzzle.clues.map((clue) => (
             <li key={clue}>{clue}</li>
@@ -272,9 +295,21 @@ export function LogicGame({
 
       {puzzle.traits.map((trait) => (
         <section key={trait.id} className="overflow-x-auto">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-fog">
-            {puzzle.subjects.label} × {trait.label}
-          </h3>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-fog">
+              {puzzle.subjects.label} × {trait.label}
+            </h3>
+            {!done && trait.id === puzzle.traits[0]?.id ? (
+              <button
+                type="button"
+                onClick={undoGrid}
+                disabled={gridHistory.length === 0}
+                className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm text-fog hover:text-paper disabled:opacity-40"
+              >
+                Undo
+              </button>
+            ) : null}
+          </div>
           <table className="w-full min-w-[320px] border-collapse text-center text-sm">
             <thead>
               <tr>

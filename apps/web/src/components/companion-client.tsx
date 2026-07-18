@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import { GardenDiorama } from "@/components/garden-diorama";
@@ -12,6 +12,35 @@ type Props = {
   initial: CompanionSnapshot | null;
 };
 
+type GardenUndo =
+  | {
+      type: "move";
+      placementId: string;
+      from: { x: number; y: number };
+      to: { x: number; y: number };
+    }
+  | {
+      type: "move_nest";
+      from: { x: number; y: number };
+      to: { x: number; y: number };
+    }
+  | {
+      type: "place";
+      placementId: string;
+      itemId: string;
+      x: number;
+      y: number;
+    }
+  | {
+      type: "remove";
+      itemId: string;
+      x: number;
+      y: number;
+      layer: "background" | "middle" | "foreground";
+    };
+
+const MAX_UNDO = 40;
+
 export function CompanionClient({ signedIn, initial }: Props) {
   const [snapshot, setSnapshot] = useState<CompanionSnapshot | null>(initial);
   const [message, setMessage] = useState<string | null>(null);
@@ -20,6 +49,9 @@ export function CompanionClient({ signedIn, initial }: Props) {
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(
     null,
   );
+  const [undoStack, setUndoStack] = useState<GardenUndo[]>([]);
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
 
   useEffect(() => {
     if (!signedIn || snapshot) return;
@@ -35,8 +67,15 @@ export function CompanionClient({ signedIn, initial }: Props) {
     };
   }, [signedIn, snapshot]);
 
-  async function post(body: Record<string, unknown>) {
-    setBusy(String(body.action ?? "action"));
+  function pushUndo(entry: GardenUndo) {
+    setUndoStack((prev) => [...prev.slice(-(MAX_UNDO - 1)), entry]);
+  }
+
+  async function post(
+    body: Record<string, unknown>,
+    opts?: { silent?: boolean },
+  ) {
+    if (!opts?.silent) setBusy(String(body.action ?? "action"));
     setMessage(null);
     try {
       const res = await fetch("/api/companion", {
@@ -69,8 +108,133 @@ export function CompanionClient({ signedIn, initial }: Props) {
       }
       return data;
     } finally {
-      setBusy(null);
+      if (!opts?.silent) setBusy(null);
     }
+  }
+
+  async function undoGarden() {
+    const entry = undoStack[undoStack.length - 1];
+    if (!entry || busy) return;
+    setUndoStack((prev) => prev.slice(0, -1));
+    setSelectedPlacement(null);
+    setSelectedDecor(null);
+
+    if (entry.type === "move") {
+      setSnapshot((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          garden: {
+            ...prev.garden,
+            placements: prev.garden.placements.map((p) =>
+              p.id === entry.placementId
+                ? { ...p, x: entry.from.x, y: entry.from.y }
+                : p,
+            ),
+          },
+        };
+      });
+      const ok = await post(
+        {
+          action: "move",
+          placementId: entry.placementId,
+          x: entry.from.x,
+          y: entry.from.y,
+        },
+        { silent: true },
+      );
+      if (!ok) {
+        setSnapshot((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            garden: {
+              ...prev.garden,
+              placements: prev.garden.placements.map((p) =>
+                p.id === entry.placementId
+                  ? { ...p, x: entry.to.x, y: entry.to.y }
+                  : p,
+              ),
+            },
+          };
+        });
+        pushUndo(entry);
+      }
+      return;
+    }
+
+    if (entry.type === "move_nest") {
+      setSnapshot((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          garden: {
+            ...prev.garden,
+            pet: {
+              ...prev.garden.pet,
+              x: entry.from.x,
+              y: entry.from.y,
+            },
+          },
+        };
+      });
+      const ok = await post(
+        { action: "move_nest", x: entry.from.x, y: entry.from.y },
+        { silent: true },
+      );
+      if (!ok) {
+        setSnapshot((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            garden: {
+              ...prev.garden,
+              pet: {
+                ...prev.garden.pet,
+                x: entry.to.x,
+                y: entry.to.y,
+              },
+            },
+          };
+        });
+        pushUndo(entry);
+      }
+      return;
+    }
+
+    if (entry.type === "place") {
+      setSnapshot((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          garden: {
+            ...prev.garden,
+            placements: prev.garden.placements.filter(
+              (p) => p.id !== entry.placementId,
+            ),
+          },
+        };
+      });
+      const ok = await post(
+        { action: "remove", placementId: entry.placementId },
+        { silent: true },
+      );
+      if (!ok) pushUndo(entry);
+      return;
+    }
+
+    // remove → re-place
+    const ok = await post(
+      {
+        action: "place",
+        itemId: entry.itemId,
+        x: entry.x,
+        y: entry.y,
+        layer: entry.layer,
+      },
+      { silent: true },
+    );
+    if (!ok) pushUndo(entry);
   }
 
   if (!signedIn) {
@@ -210,10 +374,25 @@ export function CompanionClient({ signedIn, initial }: Props) {
           busy={busy}
           onSelectPlacement={setSelectedPlacement}
           onPlace={(itemId, x, y) => {
+            const beforeIds = new Set(
+              snapshotRef.current?.garden.placements.map((p) => p.id) ?? [],
+            );
             void post({ action: "place", itemId, x, y }).then((data) => {
-              if (!data?.ok) return;
-              // Keep selection if more copies remain to place.
-              const remaining = data.snapshot?.garden?.inventoryDecor?.find(
+              if (!data?.ok || !data.snapshot) return;
+              const placed = data.snapshot.garden.placements.find(
+                (p: { id: string; itemId: string }) =>
+                  !beforeIds.has(p.id) && p.itemId === itemId,
+              );
+              if (placed) {
+                pushUndo({
+                  type: "place",
+                  placementId: placed.id,
+                  itemId,
+                  x: placed.x,
+                  y: placed.y,
+                });
+              }
+              const remaining = data.snapshot.garden.inventoryDecor?.find(
                 (d: { itemId: string; qty: number }) => d.itemId === itemId,
               );
               if (!remaining || remaining.qty < 1) {
@@ -221,8 +400,20 @@ export function CompanionClient({ signedIn, initial }: Props) {
               }
             });
           }}
-          onMove={(placementId, x, y) => {
+          onMove={(placementId, x, y, from) => {
             setSelectedPlacement(null);
+            if (
+              Math.abs(from.x - x) < 0.35 &&
+              Math.abs(from.y - y) < 0.35
+            ) {
+              return;
+            }
+            pushUndo({
+              type: "move",
+              placementId,
+              from,
+              to: { x, y },
+            });
             setSnapshot((prev) => {
               if (!prev) return prev;
               return {
@@ -235,10 +426,37 @@ export function CompanionClient({ signedIn, initial }: Props) {
                 },
               };
             });
-            void post({ action: "move", placementId, x, y });
+            void post(
+              { action: "move", placementId, x, y },
+              { silent: true },
+            ).then((data) => {
+              if (data?.ok) return;
+              setSnapshot((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  garden: {
+                    ...prev.garden,
+                    placements: prev.garden.placements.map((p) =>
+                      p.id === placementId
+                        ? { ...p, x: from.x, y: from.y }
+                        : p,
+                    ),
+                  },
+                };
+              });
+              setUndoStack((prev) => prev.slice(0, -1));
+            });
           }}
-          onMoveNest={(x, y) => {
+          onMoveNest={(x, y, from) => {
             setSelectedPlacement(null);
+            if (
+              Math.abs(from.x - x) < 0.35 &&
+              Math.abs(from.y - y) < 0.35
+            ) {
+              return;
+            }
+            pushUndo({ type: "move_nest", from, to: { x, y } });
             setSnapshot((prev) => {
               if (!prev) return prev;
               return {
@@ -249,10 +467,42 @@ export function CompanionClient({ signedIn, initial }: Props) {
                 },
               };
             });
-            void post({ action: "move_nest", x, y });
+            void post(
+              { action: "move_nest", x, y },
+              { silent: true },
+            ).then((data) => {
+              if (data?.ok) return;
+              setSnapshot((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  garden: {
+                    ...prev.garden,
+                    pet: {
+                      ...prev.garden.pet,
+                      x: from.x,
+                      y: from.y,
+                    },
+                  },
+                };
+              });
+              setUndoStack((prev) => prev.slice(0, -1));
+            });
           }}
           onRemove={(placementId) => {
+            const removed = snapshotRef.current?.garden.placements.find(
+              (p) => p.id === placementId,
+            );
             setSelectedPlacement(null);
+            if (removed) {
+              pushUndo({
+                type: "remove",
+                itemId: removed.itemId,
+                x: removed.x,
+                y: removed.y,
+                layer: removed.layer,
+              });
+            }
             setSnapshot((prev) => {
               if (!prev) return prev;
               return {
@@ -265,11 +515,29 @@ export function CompanionClient({ signedIn, initial }: Props) {
                 },
               };
             });
-            void post({ action: "remove", placementId });
+            void post(
+              { action: "remove", placementId },
+              { silent: true },
+            ).then((data) => {
+              if (data?.ok) return;
+              if (removed) setUndoStack((prev) => prev.slice(0, -1));
+              void fetch("/api/companion")
+                .then((r) => r.json())
+                .then((s: CompanionSnapshot) => setSnapshot(s))
+                .catch(() => undefined);
+            });
           }}
         />
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void undoGarden()}
+            disabled={undoStack.length === 0 || Boolean(busy)}
+            className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-fog hover:text-paper disabled:opacity-40"
+          >
+            Undo
+          </button>
           {snapshot.garden.inventoryDecor.map((item) => (
             <button
               key={item.itemId}
