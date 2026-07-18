@@ -9,8 +9,8 @@ import {
   monthlyAnswerLabel,
   type MonthlyOnlyType,
 } from "@daily-puzzle/puzzle-core";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CaseFileBackLink } from "@/components/case-file-back-link";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { PlayResultsCard } from "@/components/play-results-card";
 
@@ -121,9 +121,7 @@ export function MonthlyOnlyGame({
           </h1>
           <p className="mt-1 text-sm text-fog">+{points} pts on clear</p>
         </div>
-        <Link href="/monthly" className="text-sm text-fog hover:text-paper">
-          ← Case File
-        </Link>
+        <CaseFileBackLink collectionId={collectionId} />
       </div>
 
       <MonthlyOnlyBody
