@@ -238,16 +238,23 @@ export function GardenDiorama({
             left: `${garden.pet.x}%`,
             top: `${garden.pet.y}%`,
             zIndex: layerZ(garden.pet.layer) + Math.round(garden.pet.y) + 1,
-            width: "min(30%, 170px)",
-            transform: "translate(-50%, -88%)",
+            width: "min(32%, 180px)",
+            transform: "translate(-50%, -78%)",
           }}
         >
-          <div className="relative mx-auto w-full">
+          <div className="relative mx-auto aspect-[140/110] w-full">
+            {/* Back of nest */}
             <GardenNest
               night={night}
-              className="absolute inset-x-[-6%] bottom-0 z-[1] w-[112%] drop-shadow-md"
+              className="absolute inset-x-0 bottom-0 z-[1] h-auto w-full drop-shadow-md"
             />
-            <div className="relative z-[2] mx-auto flex w-[72%] justify-center pb-[18%] [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full">
+            {/* Egg sunk into the hollow — bottom third hidden by front rim */}
+            <div
+              className="absolute left-1/2 z-[2] w-[58%] -translate-x-1/2 [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full"
+              style={{
+                bottom: pet.stage === "egg" ? "8%" : "16%",
+              }}
+            >
               <PetMark
                 speciesId={pet.speciesId as PetSpeciesId}
                 stage={pet.stage}
@@ -256,15 +263,16 @@ export function GardenDiorama({
                 size={120}
               />
             </div>
+            {/* Solid front wall overlapping the egg */}
             <GardenNestRim
               night={night}
-              className="absolute inset-x-[-2%] bottom-[2%] z-[3] w-[104%]"
+              className="absolute inset-x-0 bottom-0 z-[3] h-auto w-full"
             />
           </div>
           <div
             className={[
-              "absolute top-[8%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-              bubbleLeft ? "right-[88%]" : "left-[88%]",
+              "absolute top-[2%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+              bubbleLeft ? "right-[90%]" : "left-[90%]",
             ].join(" ")}
             style={{
               background: "rgba(255,255,255,0.92)",
