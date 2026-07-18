@@ -354,3 +354,64 @@ select {
     22vw 4vh 0 #fffc;
   animation: garden-sparkle 4s ease-in-out infinite;
 }
+
+@keyframes garden-rain {
+  0% {
+    background-position: 0 0, 40px 20px, 20px 40px;
+  }
+  100% {
+    background-position: 0 120px, 40px 140px, 20px 160px;
+  }
+}
+
+.garden-weather-rain {
+  background-image:
+    repeating-linear-gradient(
+      185deg,
+      transparent 0 14px,
+      #a8c4e866 14px 16px,
+      transparent 16px 28px
+    ),
+    repeating-linear-gradient(
+      190deg,
+      transparent 0 18px,
+      #90b0d055 18px 19px,
+      transparent 19px 34px
+    ),
+    repeating-linear-gradient(
+      182deg,
+      transparent 0 22px,
+      #b8d0e844 22px 23px,
+      transparent 23px 40px
+    );
+  background-size: 48px 120px, 56px 140px, 40px 160px;
+  animation: garden-rain 0.55s linear infinite;
+  opacity: 0.75;
+}
+
+@keyframes garden-snow {
+  0% {
+    background-position: 0 0, 30px -20px, 60px 10px;
+  }
+  100% {
+    background-position: 0 160px, 30px 140px, 60px 170px;
+  }
+}
+
+.garden-weather-snow {
+  background-image:
+    radial-gradient(circle, #ffffffcc 0 1.2px, transparent 1.6px),
+    radial-gradient(circle, #ffffffaa 0 1px, transparent 1.4px),
+    radial-gradient(circle, #ffffff88 0 0.8px, transparent 1.2px);
+  background-size: 36px 48px, 52px 64px, 28px 40px;
+  animation: garden-snow 4.5s linear infinite;
+  opacity: 0.9;
+}
+
+.garden-weather-fog {
+  background:
+    radial-gradient(ellipse at 30% 70%, #ffffff66 0 28%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, #e8f0f466 0 32%, transparent 55%),
+    linear-gradient(180deg, transparent 20%, #d8e4ec55 70%, #c8d8e066 100%);
+  animation: garden-bob 6s ease-in-out infinite;
+}

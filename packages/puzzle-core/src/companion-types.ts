@@ -1,5 +1,11 @@
 import type { PetSpeciesId, ShopCategoryId } from "./pets";
-import type { GardenAmbientId, GardenLayer, GardenSceneTone } from "./garden";
+import type {
+  GardenAmbientId,
+  GardenLayer,
+  GardenSceneTone,
+  GardenSeason,
+  GardenWeather,
+} from "./garden";
 
 export type CompanionPetView = {
   id: string;
@@ -67,7 +73,13 @@ export type CompanionSnapshot = {
     /** Wallpaper-ready scene metadata */
     sceneVersion: number;
     aspectRatio: number;
+    /**
+     * Server fallback only — the client overrides tone/season/weather
+     * from the player's local clock and calendar.
+     */
     tone: GardenSceneTone;
+    season?: GardenSeason;
+    weather?: GardenWeather;
     ambience: GardenAmbientId[];
     pet: { x: number; y: number; layer: GardenLayer };
     placements: CompanionGardenPlacement[];

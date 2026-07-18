@@ -10,7 +10,9 @@ import {
 import { GardenDecorSprite } from "@/components/garden-decor-sprite";
 import { GardenHabitat } from "@/components/garden-habitat";
 import { GardenNest, GardenNestRim } from "@/components/garden-nest";
+import { GardenWeatherLayer } from "@/components/garden-weather";
 import { PetMark } from "@/components/pet-mark";
+import { useLocalGardenClimate } from "@/lib/garden-climate";
 import type {
   CompanionGardenPlacement,
   CompanionSnapshot,
@@ -20,6 +22,7 @@ import type {
 type Props = {
   garden: CompanionSnapshot["garden"];
   pet: NonNullable<CompanionSnapshot["pet"]>;
+  accountLevel: number;
   selectedDecor: string | null;
   busy: string | null;
   onPlace: (itemId: string, x: number, y: number) => void;
@@ -34,6 +37,24 @@ const TONE_SKY: Record<CompanionSnapshot["garden"]["tone"], string> = {
   day: "linear-gradient(180deg, #8ec0e8 0%, #c5ddb0 42%, #7eab58 78%, #5e8c42 100%)",
   dusk: "linear-gradient(180deg, #c45c6a 0%, #d4a060 34%, #6d8f45 78%, #3d5c2e 100%)",
   night: "linear-gradient(180deg, #141c2e 0%, #243848 38%, #1a2e20 78%, #101810 100%)",
+};
+
+const SEASON_SKY_TINT: Record<string, Partial<Record<CompanionSnapshot["garden"]["tone"], string>>> = {
+  autumn: {
+    dawn: "linear-gradient(180deg, #f0b888 0%, #e0c898 36%, #b88858 72%, #8a6038 100%)",
+    day: "linear-gradient(180deg, #88b0d0 0%, #e0c888 42%, #c07840 78%, #8a5028 100%)",
+    dusk: "linear-gradient(180deg, #c04848 0%, #e08840 34%, #8a5030 78%, #4a2818 100%)",
+  },
+  winter: {
+    dawn: "linear-gradient(180deg, #d8c8c0 0%, #c8d8e0 36%, #a0b0b8 72%, #788890 100%)",
+    day: "linear-gradient(180deg, #b0c8e0 0%, #d0dce8 42%, #a8b8c0 78%, #889098 100%)",
+    dusk: "linear-gradient(180deg, #687898 0%, #8890a8 34%, #586870 78%, #303840 100%)",
+    night: "linear-gradient(180deg, #101820 0%, #1a2430 38%, #182028 78%, #0c1014 100%)",
+  },
+  spring: {
+    dawn: "linear-gradient(180deg, #f8d0c0 0%, #e0f0d0 36%, #a8d088 72%, #78b060 100%)",
+    day: "linear-gradient(180deg, #98d0f0 0%, #d0ecc0 42%, #88c868 78%, #68a850 100%)",
+  },
 };
 
 function layerZ(layer: string): number {
@@ -54,6 +75,7 @@ function motionClass(motion: string): string {
 export function GardenDiorama({
   garden,
   pet,
+  accountLevel,
   selectedDecor,
   busy,
   onPlace,
@@ -65,6 +87,17 @@ export function GardenDiorama({
   const stageRef = useRef<HTMLDivElement>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
+
+  const climate = useLocalGardenClimate({
+    accountLevel,
+    petLevel: pet.level,
+    placedCount: garden.placements.length,
+  });
+
+  const tone = climate.tone;
+  const ambience = climate.ambience;
+  const sky =
+    SEASON_SKY_TINT[climate.season]?.[tone] ?? TONE_SKY[tone];
 
   const sorted = useMemo(() => {
     return [...garden.placements].sort((a, b) => {
@@ -126,7 +159,7 @@ export function GardenDiorama({
     onMove(id, x, y);
   }
 
-  const night = garden.tone === "night" || garden.tone === "dusk";
+  const night = tone === "night" || tone === "dusk";
   const bubbleLeft = garden.pet.x >= 55;
 
   return (
@@ -147,7 +180,7 @@ export function GardenDiorama({
           "absolute inset-0 touch-none",
           selectedDecor ? "cursor-crosshair" : "cursor-default",
         ].join(" ")}
-        style={{ background: TONE_SKY[garden.tone] }}
+        style={{ background: sky }}
       >
         {/* Ground plane — forest clearing floor */}
         <div
@@ -155,7 +188,11 @@ export function GardenDiorama({
           style={{
             background: night
               ? "linear-gradient(180deg, transparent 0%, #1a2a18 28%, #10180f 100%)"
-              : "linear-gradient(180deg, transparent 0%, #7eaa5e88 16%, #5f8c42 100%)",
+              : climate.season === "winter"
+                ? "linear-gradient(180deg, transparent 0%, #c8d4dc88 16%, #a8b4bc 100%)"
+                : climate.season === "autumn"
+                  ? "linear-gradient(180deg, transparent 0%, #b8885888 16%, #8a6038 100%)"
+                  : "linear-gradient(180deg, transparent 0%, #7eaa5e88 16%, #5f8c42 100%)",
           }}
         />
         {/* Soft canopy light */}
@@ -163,27 +200,30 @@ export function GardenDiorama({
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 12%, #ffffff66 0 14%, transparent 40%)",
+              tone === "night"
+                ? "radial-gradient(ellipse at 50% 12%, #8aa0ff33 0 12%, transparent 40%)"
+                : "radial-gradient(ellipse at 50% 12%, #ffffff66 0 14%, transparent 40%)",
           }}
         />
 
-        {/* Innate forest-clearing wallpaper */}
-        <GardenHabitat night={night} />
+        <GardenHabitat night={night} season={climate.season} />
+
+        <GardenWeatherLayer weather={climate.weather} night={night} />
 
         {/* Ambient life */}
-        {garden.ambience.includes("pollen") ? (
+        {ambience.includes("pollen") ? (
           <div className="garden-ambience-pollen pointer-events-none absolute inset-0" />
         ) : null}
-        {garden.ambience.includes("soft_mist") ? (
+        {ambience.includes("soft_mist") ? (
           <div className="garden-ambience-mist pointer-events-none absolute inset-0" />
         ) : null}
-        {garden.ambience.includes("fireflies") ? (
+        {ambience.includes("fireflies") ? (
           <div className="garden-ambience-fireflies pointer-events-none absolute inset-0" />
         ) : null}
-        {garden.ambience.includes("spark_dust") ? (
+        {ambience.includes("spark_dust") ? (
           <div className="garden-ambience-spark pointer-events-none absolute inset-0" />
         ) : null}
-        {garden.ambience.includes("star_glints") ? (
+        {ambience.includes("star_glints") && tone === "night" ? (
           <div className="garden-ambience-stars pointer-events-none absolute inset-0" />
         ) : null}
 

@@ -204,6 +204,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
         <GardenDiorama
           garden={snapshot.garden}
           pet={pet}
+          accountLevel={snapshot.accountLevel}
           selectedDecor={selectedDecor}
           selectedPlacement={selectedPlacement}
           busy={busy}
