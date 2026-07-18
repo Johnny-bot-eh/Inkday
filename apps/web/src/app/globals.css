@@ -199,20 +199,20 @@ select {
 @keyframes garden-sway {
   0%,
   100% {
-    transform: translate(-50%, -50%) rotate(-2deg);
+    transform: translate(-50%, -100%) rotate(-2deg);
   }
   50% {
-    transform: translate(-50%, -50%) rotate(2.5deg);
+    transform: translate(-50%, -100%) rotate(2.5deg);
   }
 }
 
 @keyframes garden-bob {
   0%,
   100% {
-    transform: translate(-50%, -50%) translateY(0);
+    transform: translate(-50%, -100%) translateY(0);
   }
   50% {
-    transform: translate(-50%, -50%) translateY(-6%);
+    transform: translate(-50%, -100%) translateY(-6%);
   }
 }
 
@@ -220,22 +220,22 @@ select {
   0%,
   100% {
     filter: brightness(1);
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -100%) scale(1);
   }
   50% {
     filter: brightness(1.25);
-    transform: translate(-50%, -50%) scale(1.04);
+    transform: translate(-50%, -100%) scale(1.04);
   }
 }
 
 @keyframes garden-ripple {
   0%,
   100% {
-    transform: translate(-50%, -50%) scaleX(1);
+    transform: translate(-50%, -100%) scaleX(1);
     opacity: 0.95;
   }
   50% {
-    transform: translate(-50%, -50%) scaleX(1.06);
+    transform: translate(-50%, -100%) scaleX(1.06);
     opacity: 1;
   }
 }
@@ -463,6 +463,8 @@ select {
   z-index: 40 !important;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
   transition: none !important;
+  transform: translate(-50%, -100%) !important;
+  transform-origin: 50% 100%;
 }
 
 .garden-bob {

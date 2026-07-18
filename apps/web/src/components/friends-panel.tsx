@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { todayKey, type Difficulty, type PuzzleType } from "@daily-puzzle/puzzle-core";
 import { AvatarMark } from "@/components/avatar-mark";
+import { absoluteAppUrl } from "@/lib/app-url";
 
 type Friendship = {
   id: string;
@@ -71,12 +72,12 @@ export function FriendsPanel({
 
   useEffect(() => {
     if (!userId) return;
-    setInviteUrl(`${window.location.origin}/invite/${userId}`);
+    setInviteUrl(absoluteAppUrl(`/invite/${userId}`));
   }, [userId]);
 
   async function copyInviteLink() {
     if (!userId) return;
-    const url = `${window.location.origin}/invite/${userId}`;
+    const url = absoluteAppUrl(`/invite/${userId}`);
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

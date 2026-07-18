@@ -374,10 +374,15 @@ export function CompanionClient({ signedIn, initial }: Props) {
           busy={busy}
           onSelectPlacement={setSelectedPlacement}
           onPlace={(itemId, x, y) => {
+            const px = Math.round(x);
+            const py = Math.round(y);
             const beforeIds = new Set(
               snapshotRef.current?.garden.placements.map((p) => p.id) ?? [],
             );
-            void post({ action: "place", itemId, x, y }).then((data) => {
+            void post(
+              { action: "place", itemId, x: px, y: py },
+              { silent: true },
+            ).then((data) => {
               if (!data?.ok || !data.snapshot) return;
               const placed = data.snapshot.garden.placements.find(
                 (p: { id: string; itemId: string }) =>

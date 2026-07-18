@@ -134,29 +134,20 @@ export function GardenDiorama({
     });
   }, [garden.placements]);
 
-  const toNorm = useCallback((clientX: number, clientY: number) => {
-    const el = stageRef.current;
-    if (!el) return { x: 50, y: 50 };
-    const rect = el.getBoundingClientRect();
-    if (rect.width < 1 || rect.height < 1) return { x: 50, y: 50 };
-    const x = ((clientX - rect.left) / rect.width) * 100;
-    const y = ((clientY - rect.top) / rect.height) * 100;
-    return {
-      x: Math.min(92, Math.max(8, x)),
-      y: Math.min(92, Math.max(8, y)),
-    };
-  }, []);
-
-  /** Keep new placements on the clearing / grass, not the sky or distant wall. */
-  const toPlaceNorm = useCallback(
-    (clientX: number, clientY: number) => {
-      const pos = toNorm(clientX, clientY);
+  const toNorm = useCallback(
+    (clientX: number, clientY: number, el?: HTMLElement | null) => {
+      const target = el ?? stageRef.current;
+      if (!target) return { x: 50, y: 70 };
+      const rect = target.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return { x: 50, y: 70 };
+      const x = ((clientX - rect.left) / rect.width) * 100;
+      const y = ((clientY - rect.top) / rect.height) * 100;
       return {
-        x: pos.x,
-        y: Math.min(90, Math.max(52, pos.y)),
+        x: Math.min(94, Math.max(6, x)),
+        y: Math.min(94, Math.max(8, y)),
       };
     },
-    [toNorm],
+    [],
   );
 
   const flushLive = useCallback(() => {
@@ -190,13 +181,13 @@ export function GardenDiorama({
     }
     if (busy) return;
     e.stopPropagation();
-    const { x, y } = toPlaceNorm(e.clientX, e.clientY);
+    const { x, y } = toNorm(e.clientX, e.clientY);
     onPlace(selectedDecor, x, y);
   }
 
   function onStagePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
     if (selectedDecor && !dragRef.current) {
-      setPlaceGhost(toPlaceNorm(e.clientX, e.clientY));
+      setPlaceGhost(toNorm(e.clientX, e.clientY));
     } else if (!dragRef.current) {
       setPlaceGhost(null);
     }
@@ -367,7 +358,7 @@ export function GardenDiorama({
                 onRemove(p.id);
               }}
               className={[
-                "absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border-0 bg-transparent p-0 cursor-grab",
+                "absolute border-0 bg-transparent p-0 cursor-grab",
                 isDragging ? "garden-dragging" : motionClass(p.motion),
                 selected
                   ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent"
@@ -377,6 +368,12 @@ export function GardenDiorama({
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
                 width: `${p.widthPct}%`,
+                transform: isDragging
+                  ? "translate(-50%, -100%)"
+                  : motionClass(p.motion)
+                    ? undefined
+                    : "translate(-50%, -100%)",
+                transformOrigin: "50% 100%",
                 zIndex: isDragging
                   ? 40
                   : layerZ(p.layer) + Math.round(pos.y),
@@ -468,22 +465,26 @@ export function GardenDiorama({
             onPointerDown={(e) => {
               if (busy) return;
               e.stopPropagation();
-              const { x, y } = toPlaceNorm(e.clientX, e.clientY);
+              const layer = e.currentTarget;
+              const { x, y } = toNorm(e.clientX, e.clientY, layer);
               onPlace(selectedDecor, x, y);
             }}
             onPointerMove={(e) => {
-              setPlaceGhost(toPlaceNorm(e.clientX, e.clientY));
+              setPlaceGhost(
+                toNorm(e.clientX, e.clientY, e.currentTarget),
+              );
             }}
           />
         ) : null}
 
         {selectedDecor && placeGhost ? (
           <div
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 opacity-60"
+            className="pointer-events-none absolute opacity-60"
             style={{
               left: `${placeGhost.x}%`,
               top: `${placeGhost.y}%`,
-              zIndex: 50,
+              zIndex: 110,
+              transform: "translate(-50%, -100%)",
             }}
           >
             <div className="h-10 w-10 rounded-full border-2 border-dashed border-ember bg-ember/20" />
