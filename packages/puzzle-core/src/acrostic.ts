@@ -150,7 +150,7 @@ const HARD: Pack[] = [
     title: "Signal Book",
     message: "harmony",
     items: [
-      { clue: "Pleasing blend of musical tones", answer: "harmony" },
+      { clue: "Where earth appears to meet the sky", answer: "horizon" },
       { clue: "Trembling white-barked tree", answer: "aspen" },
       { clue: "Freshwater course to the sea", answer: "river" },
       { clue: "Iron, copper, gold — not wood", answer: "metal" },

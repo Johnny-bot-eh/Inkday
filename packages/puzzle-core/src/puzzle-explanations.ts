@@ -14,14 +14,14 @@ const ESCAPE_EXPLANATIONS: Record<string, string[]> = {
     "The plaque rule is building number × founder count → 14 × 3 = 42.",
   ],
   "train-locker": [
-    "The ticket stub gives carriage 7, seat 3A, and departure 19:45.",
-    "Chalk orders the dial: ride → berth digits → clock hour.",
-    "Digits only: 7, then 3 from 3A, then hour 19 from 19:45 → 7319.",
+    "The ticket stub lists departure 19:45, seat 3A, and carriage 7 — not yet in dial order.",
+    "Chalk reorders the dial: ride → berth digits → clock hour.",
+    "Digits only: carriage 7, then 3 from 3A, then hour 19 from 19:45 → 7319.",
   ],
   "lab-centrifuge": [
     "Notes order elements by role: life (C), breath (O), buzzing gas (Ne).",
-    "The chart gives their atomic numbers: C·6, O·8, Ne·10.",
-    "Concatenate the counts left to right → 6810.",
+    "The chart shows their atomic numbers in a scrambled patch (Ne·10, C·6, O·8).",
+    "Reorder by the notes, then concatenate the counts → 6, 8, 10 → 6810.",
   ],
   "library-cipher": [
     "The borrow slip shows call MYST-B-27 and a year ending in 19.",
@@ -61,8 +61,8 @@ const LOGIC_EXPLANATIONS: Record<string, string[]> = {
     "Quinn is therefore at east with chocolate — the spiked pastry.",
   ],
   "cipher-club": [
-    "Eva is at the window, and the window seat holds the ledger → Eva has the ledger.",
-    "The remaining seats and props (door/fan, fire/mask, corner/coin) fill in around that link.",
+    "Finn is door/fan; Hugo is fire/mask; Gia is corner — so Eva is at the window.",
+    "The ledger is not at the door, fire, or corner, so it sits with Eva at the window.",
   ],
   "garden-gnome": [
     "Ivy is maple with the rake; Jon is pond with the hose; Leo is rose with the spade.",
@@ -73,8 +73,8 @@ const LOGIC_EXPLANATIONS: Record<string, string[]> = {
     "The parcel is in C, so the only traveler left — Mira — has the parcel.",
   ],
   "studio-paint": [
-    "Ash is at easel 4, and easel 4 has the stolen palette → Ash took the palette.",
-    "Cam (easel 1, crimson) and Di (easel 3, ochre) confirm the other colors; Bea fills easel 2.",
+    "Cam is easel 1/crimson; Di is easel 3/ochre; Bea is easel 2 — Ash is left at easel 4.",
+    "Easel 4 holds the stolen palette, so Ash took it; Bea is left with indigo.",
   ],
   "harbor-lantern": [
     "Rae is red with oilskin; Sid is blue with wool.",

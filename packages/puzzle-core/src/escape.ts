@@ -26,8 +26,10 @@ export type EscapeRoom = {
  * Clue reveal tiers:
  * - essential: always shown — facts you must synthesize (never the raw answer)
  * - helpful: easy only — format / confirmations
- * - spoiler: easy only — near-giveaways
+ * - spoiler: easy only — worked examples with DIFFERENT numbers (never this room’s answer)
  * - decoy: medium + hard — convincing false trails (never label themselves as junk)
+ *
+ * Hard rule: no clue text may state, spell, or concatenate this room’s answer.
  */
 type Tier = "essential" | "helpful" | "spoiler" | "decoy";
 
@@ -139,7 +141,7 @@ const ESCAPES: EscapeTemplate[] = [
         id: "spoiler",
         tier: "spoiler",
         label: "Maintenance sticker",
-        text: "Test unlock last year used fourteen × three.",
+        text: "Drill note from another wing: building 9 × two founders → 18.",
       },
       {
         id: "junk",
@@ -168,8 +170,8 @@ const ESCAPES: EscapeTemplate[] = [
         id: "ticket",
         tier: "essential",
         label: "Ticket stub",
-        text: "Carriage 7 · Seat 3A · Depart 19:45",
-        cryptic: "Stub: 7 / 3A / 19:45",
+        text: "Depart 19:45 · Seat 3A · Carriage 7",
+        cryptic: "Stub fields: 19:45 / 3A / 7",
       },
       {
         id: "chalk",
@@ -225,8 +227,8 @@ const ESCAPES: EscapeTemplate[] = [
         id: "poster",
         tier: "essential",
         label: "Periodic chart",
-        text: "Ice-scraped corner still shows: C·6 · O·8 · Ne·10.",
-        cryptic: "Frost-cleared patch: C 6 · O 8 · Ne 10 among other scratched cells.",
+        text: "Ice-scraped corner still shows: Ne·10 · C·6 · O·8 among other cells.",
+        cryptic: "Frost-cleared patch: Ne 10 · C 6 · O 8 among scratched neighbors.",
       },
       {
         id: "magnet",
@@ -238,7 +240,7 @@ const ESCAPES: EscapeTemplate[] = [
         id: "spoiler",
         tier: "spoiler",
         label: "Intern sticky",
-        text: "C 6, O 8, Ne 10 — mash them left to right.",
+        text: "Practice pad (different run): H 1, He 2, Li 3 → typed 123.",
       },
       {
         id: "spill",
@@ -317,8 +319,7 @@ const ESCAPES: EscapeTemplate[] = [
         tier: "essential",
         label: "Telegram",
         text: "MEET AT HALF PAST THE HOUR THE CLOCK FEARS.",
-        cryptic:
-          "MEET · HALF PAST · THE DEAD HOUR (midnight, not the hour on the frozen dial).",
+        cryptic: "MEET · HALF PAST · THE DEAD HOUR — ignore the frozen dial.",
       },
       {
         id: "clock",
@@ -326,21 +327,20 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Clock face",
         text: "Short hand fixed at the crown. Long hand pinned straight down.",
         cryptic:
-          "Hands locked at noon on the dial — ignore the frozen face; trust the telegram.",
+          "Hands locked at the top and bottom of the dial — a red herring if you trust the face alone.",
       },
       {
         id: "watch",
         tier: "essential",
         label: "Pocket watch note",
         text: "Drawer latch speaks only four digits — two for the hour, two for the minutes — from midnight's side of the day.",
-        cryptic:
-          "Latch wants HHMM counted from midnight (00–23), not from noon.",
+        cryptic: "Latch wants HHMM on a 24-hour clock, not a 1–12 parlor face.",
       },
       {
         id: "spoiler",
         tier: "spoiler",
         label: "Butler memo",
-        text: "\"Fears\" means the dead hour, not noon. Half past that is when the latch yields.",
+        text: "House rule: the “dead hour” is neither noon nor the hour shown on a stuck mantel clock.",
       },
       {
         id: "ash",
@@ -389,7 +389,7 @@ const ESCAPES: EscapeTemplate[] = [
         id: "spoiler",
         tier: "spoiler",
         label: "Foreman scrap",
-        text: "Bay first always — so three, then fifty-eight, then two.",
+        text: "Worked example from Pier 2 (not this crate): bay 4, lot 17, shift 9 → typed 4179.",
       },
       {
         id: "siren",
