@@ -140,7 +140,7 @@ export function ShopClient({
 
   const avatars = catalog.filter((i) => i.slot === "avatar");
   const food = catalog.filter((i) => i.kind === "food");
-  const decorations = catalog.filter((i) => i.kind === "decoration");
+  const decorations = catalog.filter((i) => i.kind === "decoration" && !i.free);
   const other = catalog.filter(
     (i) => i.slot !== "avatar" && i.kind !== "food" && i.kind !== "decoration",
   );

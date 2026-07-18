@@ -30,6 +30,7 @@ export type CompanionGiftView = {
   itemId: string | null;
   claimed: boolean;
   message: string;
+  rewardLabel: string;
 } | null;
 
 export type CompanionSnapshot = {
@@ -52,6 +53,7 @@ export type CompanionSnapshot = {
     cols: number;
     rows: number;
     cells: number;
+    petCellIndex: number;
     placements: Array<{
       id: string;
       itemId: string;

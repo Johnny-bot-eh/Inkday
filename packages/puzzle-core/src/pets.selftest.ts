@@ -6,6 +6,7 @@ import {
   clampHappiness,
   decayedHappiness,
   gardenGridSize,
+  gardenPetCellIndex,
   levelFromXp,
   shopCategoryUnlocked,
   stageFromLevel,
@@ -48,5 +49,7 @@ assert(shopCategoryUnlocked(100, "legendary"), "legendary at 100");
 assert(gardenGridSize(0).cells === 9, "base garden 3x3");
 assert(gardenGridSize(5).cols === 4 && gardenGridSize(5).rows === 4, "expand at 5");
 assert(xpForDailyWin("hard") > xpForDailyWin("easy"), "harder wins grant more XP");
+assert(gardenPetCellIndex(3, 3) === 4, "pet nest is center of 3x3");
+assert(gardenPetCellIndex(4, 3) === 6, "pet nest on 4x3");
 
 console.log("pets.selftest: ok");

@@ -462,6 +462,9 @@ export function xpForStreak7(): number {
 }
 
 export const DECORATION_ITEM_IDS = [
+  "deco_starter_moss",
+  "deco_starter_pebble",
+  "deco_starter_fern",
   "deco_flower_daisy",
   "deco_flower_tulip",
   "deco_flower_lantern",
@@ -474,6 +477,20 @@ export const DECORATION_ITEM_IDS = [
 
 export type DecorationItemId = (typeof DECORATION_ITEM_IDS)[number];
 
+/** Free starter plot pieces granted with the first egg. */
+export const STARTER_DECORATION_IDS = [
+  "deco_starter_moss",
+  "deco_starter_pebble",
+  "deco_starter_fern",
+] as const;
+
 export function isDecorationItemId(id: string): id is DecorationItemId {
   return (DECORATION_ITEM_IDS as readonly string[]).includes(id);
+}
+
+/** Center nest cell for the companion on a garden grid. */
+export function gardenPetCellIndex(cols: number, rows: number): number {
+  const c = Math.max(1, cols);
+  const r = Math.max(1, rows);
+  return Math.floor(r / 2) * c + Math.floor(c / 2);
 }

@@ -260,7 +260,7 @@ const statements = [
   personality_id TEXT NOT NULL,
   name TEXT,
   pet_xp INTEGER NOT NULL DEFAULT 0,
-  happiness_base INTEGER NOT NULL DEFAULT 100,
+  happiness_base INTEGER NOT NULL DEFAULT 0,
   happiness_updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
   last_pet_date TEXT,
   last_feed_date TEXT,

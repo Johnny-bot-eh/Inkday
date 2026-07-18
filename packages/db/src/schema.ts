@@ -748,7 +748,7 @@ export const userPet = sqliteTable(
     personalityId: text("personality_id").notNull(),
     name: text("name"),
     petXp: integer("pet_xp").notNull().default(0),
-    happinessBase: integer("happiness_base").notNull().default(100),
+    happinessBase: integer("happiness_base").notNull().default(0),
     happinessUpdatedAt: integer("happiness_updated_at", {
       mode: "timestamp_ms",
     })

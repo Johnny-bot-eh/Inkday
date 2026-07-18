@@ -2,12 +2,14 @@ import {
   DECORATION_SHOP_ITEMS,
   HAPPINESS,
   PET_SPECIES,
+  STARTER_DECORATION_IDS,
   STARTER_SPECIES,
   clampHappiness,
   daysAway,
   decayedHappiness,
   dialogueFor,
   gardenGridSize,
+  gardenPetCellIndex,
   getShopItem,
   happinessState,
   isDecorationItemId,
@@ -109,7 +111,8 @@ async function recordEvent(opts: {
 }
 
 /**
- * Backfill account + active pet XP from historical wins once per user.
+ * Backfill account XP from historical wins once per user.
+ * Pets grow from hatch — historical wins do not inflate pet XP.
  */
 export async function backfillProgressionIfNeeded(userId: string) {
   const db = getDb();
@@ -149,16 +152,6 @@ export async function backfillProgressionIfNeeded(userId: string) {
       updatedAt: new Date(),
     })
     .where(eq(userProgression.userId, userId));
-
-  if (prog.activePetId) {
-    await db
-      .update(userPet)
-      .set({
-        petXp: sql`max(${userPet.petXp}, ${totalXp})`,
-        updatedAt: new Date(),
-      })
-      .where(eq(userPet.id, prog.activePetId));
-  }
 
   return ensureProgression(userId);
 }
@@ -206,6 +199,10 @@ async function maybeRollGift(opts: {
   happiness: number;
   dateKey: string;
 }): Promise<CompanionGiftView> {
+  const stage = stageFromLevel(levelFromXp(opts.pet.petXp).level);
+  // Eggs / brand-new companions do not gift yet.
+  if (stage === "egg") return null;
+
   const db = getDb();
   const existing = await db.query.petGift.findFirst({
     where: and(
@@ -226,6 +223,7 @@ async function maybeRollGift(opts: {
         "gift",
         opts.dateKey.length,
       ),
+      rewardLabel: describeGiftReward(existing.coins, existing.itemId),
     };
   }
   if (opts.happiness < HAPPINESS.giftThreshold) return null;
@@ -262,6 +260,7 @@ async function maybeRollGift(opts: {
         "gift",
         opts.dateKey.length,
       ),
+      rewardLabel: describeGiftReward(again.coins, again.itemId),
     };
   }
 
@@ -276,7 +275,126 @@ async function maybeRollGift(opts: {
       "gift",
       opts.dateKey.length,
     ),
+    rewardLabel: describeGiftReward(rolled.coins ?? 0, rolled.itemId ?? null),
   };
+}
+
+/** One-time fix for pets created under the old starter defaults. */
+async function repairMisinitializedStarterPet(
+  userId: string,
+  pet: typeof userPet.$inferSelect,
+): Promise<typeof userPet.$inferSelect> {
+  const stage = stageFromLevel(levelFromXp(pet.petXp).level);
+  if (stage !== "egg") return pet;
+
+  const event = await recordEvent({
+    userId,
+    petId: pet.id,
+    kind: "starter_repair",
+    amount: 0,
+    sourceType: "pet_init",
+    sourceId: pet.id,
+  });
+  if (event.duplicate) return pet;
+
+  const db = getDb();
+  const happinessBase = pet.lastPetDate ? HAPPINESS.petBonus : 0;
+  await db
+    .update(userPet)
+    .set({
+      petXp: 0,
+      happinessBase,
+      happinessUpdatedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(userPet.id, pet.id));
+
+  // Drop unclaimed egg-day gifts created under the old rules.
+  await db
+    .delete(petGift)
+    .where(
+      and(
+        eq(petGift.petId, pet.id),
+        eq(petGift.claimed, false),
+      ),
+    );
+
+  await ensureStarterGarden(userId);
+
+  return (
+    (await db.query.userPet.findFirst({
+      where: eq(userPet.id, pet.id),
+    })) ?? { ...pet, petXp: 0, happinessBase }
+  );
+}
+
+async function ensureStarterGarden(userId: string) {
+  const db = getDb();
+  const inventory = await listCoinInventory(userId);
+  const ownedDecor = inventory.filter(
+    (r) => isDecorationItemId(r.itemId) && r.qty > 0,
+  );
+  const grid = gardenGridSize(
+    Math.max(ownedDecor.length, STARTER_DECORATION_IDS.length),
+  );
+  const petCell = gardenPetCellIndex(grid.cols, grid.rows);
+  const starterCells = [0, grid.cols - 1, grid.cells - grid.cols].filter(
+    (cell, i, arr) => cell !== petCell && arr.indexOf(cell) === i,
+  );
+
+  for (let i = 0; i < STARTER_DECORATION_IDS.length; i++) {
+    const itemId = STARTER_DECORATION_IDS[i]!;
+    const existingInv = await db.query.coinInventory.findFirst({
+      where: and(
+        eq(coinInventory.userId, userId),
+        eq(coinInventory.itemId, itemId),
+      ),
+    });
+    if (!existingInv) {
+      await db.insert(coinInventory).values({
+        id: randomUUID(),
+        userId,
+        itemId,
+        qty: 1,
+      });
+    }
+
+    const existingPlace = await db.query.gardenPlacement.findFirst({
+      where: and(
+        eq(gardenPlacement.userId, userId),
+        eq(gardenPlacement.itemId, itemId),
+      ),
+    });
+    if (existingPlace) continue;
+
+    const cellIndex = starterCells[i] ?? i;
+    if (cellIndex === petCell) continue;
+    const taken = await db.query.gardenPlacement.findFirst({
+      where: and(
+        eq(gardenPlacement.userId, userId),
+        eq(gardenPlacement.cellIndex, cellIndex),
+      ),
+    });
+    if (taken) continue;
+
+    try {
+      await db.insert(gardenPlacement).values({
+        id: randomUUID(),
+        userId,
+        itemId,
+        cellIndex,
+      });
+    } catch {
+      // Unique conflict — already seeded.
+    }
+  }
+}
+
+export function describeGiftReward(coins: number, itemId: string | null): string {
+  const parts: string[] = [];
+  if (coins > 0) parts.push(`+${coins} coins`);
+  if (itemId) parts.push(getShopItem(itemId)?.title ?? itemId);
+  return parts.join(" · ") || "a surprise";
 }
 
 export async function getCompanionSnapshot(
@@ -287,12 +405,13 @@ export async function getCompanionSnapshot(
   const prog = await ensureProgression(userId);
   const account = levelFromXp(prog.accountXp);
   const dateKey = todayKey();
-  const petRow = await getActivePet(userId);
+  let petRow = await getActivePet(userId);
 
   let petView: CompanionPetView | null = null;
   let gift: CompanionGiftView = null;
 
   if (petRow) {
+    petRow = await repairMisinitializedStarterPet(userId, petRow);
     const happiness = decayedHappiness(
       petRow.happinessBase,
       petRow.happinessUpdatedAt,
@@ -379,6 +498,7 @@ export async function getCompanionSnapshot(
   });
   const placedIds = new Set(placements.map((p) => p.itemId));
   const grid = gardenGridSize(ownedDecorIds.length);
+  const petCellIndex = gardenPetCellIndex(grid.cols, grid.rows);
 
   return {
     needsStarter: !prog.starterClaimed || !petView,
@@ -403,6 +523,7 @@ export async function getCompanionSnapshot(
       cols: grid.cols,
       rows: grid.rows,
       cells: grid.cells,
+      petCellIndex,
       placements: placements.map((p) => ({
         id: p.id,
         itemId: p.itemId,
@@ -459,8 +580,8 @@ export async function claimStarterEgg(
     speciesId,
     personalityId: personality,
     name: species.title,
-    petXp: prog.accountXp,
-    happinessBase: 100,
+    petXp: 0,
+    happinessBase: 0,
     happinessUpdatedAt: new Date(),
   });
 
@@ -474,6 +595,7 @@ export async function claimStarterEgg(
     .where(eq(userProgression.userId, userId));
 
   await backfillProgressionIfNeeded(userId);
+  await ensureStarterGarden(userId);
 
   return { ok: true, snapshot: await getCompanionSnapshot(userId) };
 }
@@ -605,6 +727,7 @@ export async function claimPetGift(
       snapshot: CompanionSnapshot;
       coins: number;
       itemId: string | null;
+      rewardLabel: string;
     }
   | { ok: false; reason: string }
 > {
@@ -670,10 +793,13 @@ export async function claimPetGift(
     .set({ claimed: true, claimedAt: new Date() })
     .where(eq(petGift.id, gift.id));
 
+  const rewardLabel = describeGiftReward(coins || gift.coins, gift.itemId);
+
   return {
     ok: true,
     coins,
     itemId: gift.itemId,
+    rewardLabel,
     snapshot: await getCompanionSnapshot(userId),
   };
 }
@@ -700,6 +826,9 @@ export async function placeGardenItem(
   const grid = gardenGridSize(ownedDecorCount);
   if (cellIndex < 0 || cellIndex >= grid.cells) {
     return { ok: false, reason: "out_of_bounds" };
+  }
+  if (cellIndex === gardenPetCellIndex(grid.cols, grid.rows)) {
+    return { ok: false, reason: "pet_cell" };
   }
 
   const alreadyPlaced = await db.query.gardenPlacement.findFirst({
@@ -756,6 +885,9 @@ export async function moveGardenItem(
   const grid = gardenGridSize(ownedDecorCount);
   if (cellIndex < 0 || cellIndex >= grid.cells) {
     return { ok: false, reason: "out_of_bounds" };
+  }
+  if (cellIndex === gardenPetCellIndex(grid.cols, grid.rows)) {
+    return { ok: false, reason: "pet_cell" };
   }
 
   const cellTaken = await db.query.gardenPlacement.findFirst({
