@@ -346,9 +346,27 @@ function MonthlyOnlyBody({
         {puzzle.kind === "pattern" && (
           <div className="rounded-xl border border-[var(--line)] bg-panel/60 px-4 py-4">
             <p className="text-xs uppercase tracking-wider text-fog">Sequence</p>
-            <p className="mt-2 font-mono text-2xl tracking-widest">
-              {puzzle.shown.join("  ")} → ?
-            </p>
+            {/*
+              Render each step in its own cell. Never use "→" as a separator —
+              arrow patterns would look like an extra term (↑ → ↓ → ? reads as
+              four arrows, so “90° clockwise → ←” looks like a 180° turn).
+            */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-2xl">
+              {puzzle.shown.map((step, i) => (
+                <span
+                  key={`${step}-${i}`}
+                  className="inline-flex min-w-11 items-center justify-center rounded-md border border-[var(--line)] bg-ink-2/80 px-3 py-2"
+                >
+                  {step}
+                </span>
+              ))}
+              <span
+                className="inline-flex min-w-11 items-center justify-center rounded-md border border-dashed border-ember/50 bg-ember/10 px-3 py-2 text-ember"
+                aria-label="missing term"
+              >
+                ?
+              </span>
+            </div>
           </div>
         )}
         {puzzle.kind === "deduction" && (
