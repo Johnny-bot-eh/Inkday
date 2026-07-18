@@ -21,7 +21,7 @@ const body = Figtree({
 export const metadata: Metadata = {
   title: "Inkday — Daily puzzles",
   description:
-    "Play today’s Word Daily, Escape Room, Logic Grid, and Path puzzles. Track streaks and challenge friends.",
+    "Play today’s Word Daily, Escape Room, Logic Grid, and word puzzles. Track streaks and challenge friends.",
 };
 
 export default async function RootLayout({

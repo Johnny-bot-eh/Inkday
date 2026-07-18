@@ -3,7 +3,6 @@ import { getAnagramPuzzle } from "./anagram";
 import { getCryptogramPuzzle } from "./cryptogram";
 import { getEscapeRoom } from "./escape";
 import { getLogicPuzzle } from "./logic";
-import { getPathPuzzle } from "./path";
 import { getWordLadderPuzzle } from "./wordladder";
 import { wordleTitle, type DailyChallenge } from "./types";
 
@@ -17,8 +16,6 @@ export function dailyChallengeHeadline(
       return getEscapeRoom(dateKey, challenge.difficulty).title;
     case "logic":
       return getLogicPuzzle(dateKey, challenge.difficulty).title;
-    case "path":
-      return getPathPuzzle(dateKey, challenge.difficulty).title;
     case "wordle":
       return wordleTitle(challenge.difficulty);
     case "anagram":

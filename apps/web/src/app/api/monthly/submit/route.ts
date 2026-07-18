@@ -6,7 +6,6 @@ import {
   checkEscapeAnswer,
   checkLogicAnswer,
   checkMonthlyOnlyAnswer,
-  checkPath,
   checkWordLadder,
   evaluateGuess,
   getAcrosticPuzzle,
@@ -17,14 +16,12 @@ import {
   getMonthlyCollection,
   getMonthlyOnlyPuzzle,
   getMonthlySlot,
-  getPathPuzzle,
   getWordLadderPuzzle,
   getWordleConfig,
   isMonthlyOnlyType,
   isValidWordleGuess,
   type Difficulty,
   type MonthlyPuzzleType,
-  type PathCoord,
 } from "@daily-puzzle/puzzle-core";
 import {
   getMonthlyCompletion,
@@ -41,7 +38,6 @@ type Body = {
   guesses?: string[];
   code?: string;
   answer?: string;
-  path?: PathCoord[];
   choiceIndex?: number;
   sequence?: string[];
   elapsedMs?: number;
@@ -79,12 +75,6 @@ function verifyExisting(
       const puzzle = getLogicPuzzle(seedKey, difficulty, null);
       if (!body.answer) return { won: false, reason: "Missing answer" };
       return { won: checkLogicAnswer(puzzle, body.answer).correct };
-    }
-    case "path": {
-      const puzzle = getPathPuzzle(seedKey, difficulty, null);
-      if (!body.path) return { won: false, reason: "Missing path" };
-      const verdict = checkPath(puzzle, body.path);
-      return { won: verdict.ok, reason: verdict.ok ? undefined : verdict.reason };
     }
     case "anagram": {
       const puzzle = getAnagramPuzzle(seedKey, difficulty);

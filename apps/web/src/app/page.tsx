@@ -319,7 +319,7 @@ export default async function HomePage() {
                   <div className="mt-1 text-xs text-fog">{u.description}</div>
                   {u.unlocked && u.id === "impossible_mode" && (
                     <Link
-                      href="/play/path/impossible"
+                      href="/play/logic/impossible"
                       className="mt-2 inline-block text-ember hover:underline"
                     >
                       Try Impossible →
@@ -465,39 +465,6 @@ export default async function HomePage() {
                     }
                     doneSubtitle={doneCopy(play)}
                     puzzleType="logic"
-                    difficulty={difficulty}
-                    dateKey={dateKey}
-                    serverDone={Boolean(play)}
-                  />
-                );
-              })}
-            </div>
-          </article>
-
-          <article
-            id="path-puzzle"
-            className="scroll-mt-24 rounded-2xl border border-[var(--line)] bg-ink-2/70 p-6"
-          >
-            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold">
-              Path Puzzle
-            </h3>
-            <div className="mt-4 grid gap-3">
-              {DIFFICULTIES.map((difficulty) => {
-                const play = boardPlay("path", difficulty);
-                return (
-                  <ChallengePlayRow
-                    key={difficulty}
-                    href={`/play/path/${difficulty}`}
-                    title={DIFFICULTY_LABELS[difficulty]}
-                    openSubtitle={
-                      difficulty === "hard"
-                        ? "Featured above as Daily Mystery"
-                        : difficulty === "easy"
-                          ? "Small board"
-                          : "Checkpoints"
-                    }
-                    doneSubtitle={doneCopy(play)}
-                    puzzleType="path"
                     difficulty={difficulty}
                     dateKey={dateKey}
                     serverDone={Boolean(play)}

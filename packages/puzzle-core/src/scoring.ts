@@ -115,28 +115,6 @@ export function isPerfectLogic(correct: boolean): boolean {
   return correct;
 }
 
-export function scorePath(opts: {
-  difficulty: Difficulty;
-  correct: boolean;
-  pathLength: number;
-  optimalHint?: number;
-}): number {
-  if (!opts.correct) return 0;
-  const efficiency =
-    opts.optimalHint && opts.pathLength > 0
-      ? Math.max(0, 20 - Math.max(0, opts.pathLength - opts.optimalHint) * 2)
-      : 15;
-  return BASE_POINTS[opts.difficulty] + efficiency;
-}
-
-export function isPerfectPath(opts: {
-  pathLength: number;
-  optimalHint?: number;
-}): boolean {
-  if (opts.optimalHint == null) return opts.pathLength > 0;
-  return opts.pathLength > 0 && opts.pathLength <= opts.optimalHint;
-}
-
 export function scoreAnagram(opts: {
   difficulty: Difficulty;
   correct: boolean;

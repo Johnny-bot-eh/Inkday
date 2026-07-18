@@ -40,7 +40,6 @@ const CHALLENGE_OPTIONS: Array<{
   { puzzleType: "wordle", difficulty: "medium", label: "Word Daily" },
   { puzzleType: "escape", difficulty: "hard", label: "Detective Hard" },
   { puzzleType: "logic", difficulty: "medium", label: "Logic Medium" },
-  { puzzleType: "path", difficulty: "medium", label: "Path Medium" },
   { puzzleType: "anagram", difficulty: "medium", label: "Anagram Medium" },
   { puzzleType: "cryptogram", difficulty: "medium", label: "Cryptogram Medium" },
   { puzzleType: "acrostic", difficulty: "medium", label: "Acrostic Medium" },

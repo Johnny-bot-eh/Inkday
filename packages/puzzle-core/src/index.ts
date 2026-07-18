@@ -9,7 +9,6 @@ export * from "./wordle";
 export * from "./wordle-lexicon";
 export * from "./escape";
 export * from "./logic";
-export * from "./path";
 export * from "./words";
 export * from "./anagram";
 export * from "./cryptogram";

@@ -6,7 +6,6 @@ import { MonthlyOnlyGame } from "@/components/monthly-only-game";
 import { WordleGame } from "@/components/wordle-game";
 import { EscapeGame } from "@/components/escape-game";
 import { LogicGame } from "@/components/logic-game";
-import { PathGame } from "@/components/path-game";
 import { AnagramGame } from "@/components/anagram-game";
 import { CryptogramGame } from "@/components/cryptogram-game";
 import { AcrosticGame } from "@/components/acrostic-game";
@@ -77,7 +76,6 @@ export function MonthlySlotPlayer(props: Props) {
       {props.puzzleType === "wordle" && <WordleGame {...common} />}
       {props.puzzleType === "escape" && <EscapeGame {...common} />}
       {props.puzzleType === "logic" && <LogicGame {...common} />}
-      {props.puzzleType === "path" && <PathGame {...common} />}
       {props.puzzleType === "anagram" && <AnagramGame {...common} />}
       {props.puzzleType === "cryptogram" && <CryptogramGame {...common} />}
       {props.puzzleType === "acrostic" && <AcrosticGame {...common} />}
