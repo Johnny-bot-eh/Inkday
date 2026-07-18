@@ -18,6 +18,7 @@ import {
   shopCategoryUnlocked,
   stageFromLevel,
   xpForDailyWin,
+  xpForGardenPlace,
   xpToNextLevel,
 } from "./pets";
 
@@ -55,6 +56,9 @@ assert(shopCategoryUnlocked(20, "flowers"), "flowers at 20");
 assert(shopCategoryUnlocked(100, "legendary"), "legendary at 100");
 
 assert(xpForDailyWin("hard") > xpForDailyWin("easy"), "harder wins grant more XP");
+assert(xpForGardenPlace(1) === 7, "garden place lv1 XP");
+assert(xpForGardenPlace(50) === 56, "garden place lv50 XP");
+assert(xpForGardenPlace(50) > xpForGardenPlace(1), "higher unlock more place XP");
 assert(GARDEN_SCENE.aspectRatio > 1, "diorama is wider than tall");
 assert(clampGardenCoord(200) === 92, "garden coord clamps high");
 assert(clampGardenCoord(-4) === 8, "garden coord clamps low");

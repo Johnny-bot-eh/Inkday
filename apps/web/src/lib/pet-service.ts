@@ -27,6 +27,7 @@ import {
   todayKey,
   welcomeBackLine,
   xpForDailyWin,
+  xpForGardenPlace,
   xpForMonthlySlot,
   xpForStreak7,
   type CompanionGiftView,
@@ -814,7 +815,7 @@ export async function placeGardenItem(
   y: number,
   layer?: GardenLayer,
 ): Promise<
-  | { ok: true; snapshot: CompanionSnapshot }
+  | { ok: true; snapshot: CompanionSnapshot; xpEarned: number }
   | { ok: false; reason: string }
 > {
   if (!isDecorationItemId(itemId) || isHabitatDecorItemId(itemId)) {
@@ -849,7 +850,47 @@ export async function placeGardenItem(
     return { ok: false, reason: "conflict" };
   }
 
-  return { ok: true, snapshot: await getCompanionSnapshot(userId) };
+  // First-time placement of each decoration grants account + pet XP.
+  const shopItem = getShopItem(itemId);
+  const xp = xpForGardenPlace(shopItem?.requiredLevel ?? 1);
+  let xpEarned = 0;
+  if (xp > 0) {
+    await ensureProgression(userId);
+    const event = await recordEvent({
+      userId,
+      kind: "xp",
+      amount: xp,
+      sourceType: "garden_place",
+      sourceId: itemId,
+    });
+    if (!event.duplicate) {
+      await db
+        .update(userProgression)
+        .set({
+          accountXp: sql`${userProgression.accountXp} + ${xp}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(userProgression.userId, userId));
+
+      const pet = await getActivePet(userId);
+      if (pet) {
+        await db
+          .update(userPet)
+          .set({
+            petXp: sql`${userPet.petXp} + ${xp}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(userPet.id, pet.id));
+      }
+      xpEarned = xp;
+    }
+  }
+
+  return {
+    ok: true,
+    xpEarned,
+    snapshot: await getCompanionSnapshot(userId),
+  };
 }
 
 export async function moveGardenItem(
