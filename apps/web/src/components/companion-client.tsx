@@ -222,12 +222,12 @@ export function CompanionClient({ signedIn, initial }: Props) {
             });
           }}
           onMove={(placementId, x, y) => {
+            setSelectedPlacement(null);
             void post({ action: "move", placementId, x, y });
           }}
           onRemove={(placementId) => {
-            void post({ action: "remove", placementId }).then((data) => {
-              if (data?.ok) setSelectedPlacement(null);
-            });
+            setSelectedPlacement(null);
+            void post({ action: "remove", placementId });
           }}
         />
 

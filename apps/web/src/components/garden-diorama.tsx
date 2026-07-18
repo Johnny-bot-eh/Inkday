@@ -122,7 +122,12 @@ export function GardenDiorama({
   function onStagePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget && !(e.target as HTMLElement).dataset?.stage)
       return;
-    if (!selectedDecor || busy) return;
+    // Empty stage tap: place if buying, otherwise clear the selection ring.
+    if (!selectedDecor) {
+      if (selectedPlacement) onSelectPlacement(null);
+      return;
+    }
+    if (busy) return;
     const { x, y } = toNorm(e.clientX, e.clientY);
     onPlace(selectedDecor, x, y);
   }
@@ -156,7 +161,15 @@ export function GardenDiorama({
     const id = dragId;
     setDragId(null);
     setGhost(null);
+    onSelectPlacement(null);
     onMove(id, x, y);
+  }
+
+  function cancelDrag() {
+    if (!dragId) return;
+    setDragId(null);
+    setGhost(null);
+    onSelectPlacement(null);
   }
 
   const night = tone === "night" || tone === "dusk";
@@ -241,10 +254,7 @@ export function GardenDiorama({
               onPointerDown={(e) => beginDrag(p, e)}
               onPointerMove={onDecorPointerMove}
               onPointerUp={endDrag}
-              onPointerCancel={() => {
-                setDragId(null);
-                setGhost(null);
-              }}
+              onPointerCancel={cancelDrag}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 onRemove(p.id);
