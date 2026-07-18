@@ -600,7 +600,7 @@ const MATHS_MEDIUM: Array<{ prompt: string; answer: string; explanation: string 
     explanation: "25% of 40 is 10; 40 − 10 = 30.",
   },
   {
-    prompt: "Find the next number: 1, 2, 4, 7, 11, ?",
+    prompt: "Continue the sequence whose gaps grow by 1 each time: 1, 2, 4, 7, 11, ?",
     answer: "16",
     explanation: "Gaps increase by 1 each time (+1, +2, +3, +4, then +5): 11 + 5 = 16.",
   },
@@ -638,7 +638,7 @@ const MATHS_MEDIUM: Array<{ prompt: string; answer: string; explanation: string 
 
 const MATHS_HARD: Array<{ prompt: string; answer: string; explanation: string }> = [
   {
-    prompt: "Find the next number: 2, 3, 5, 8, 12, ?",
+    prompt: "Continue the sequence whose gaps grow by 1 each time: 2, 3, 5, 8, 12, ?",
     answer: "17",
     explanation: "Gaps grow by +1 each time (+1, +2, +3, +4, +5): 12 + 5 = 17.",
   },
@@ -653,7 +653,7 @@ const MATHS_HARD: Array<{ prompt: string; answer: string; explanation: string }>
     explanation: "2⁶ = 64, so x = 6.",
   },
   {
-    prompt: "A bag has 3 red and 5 blue marbles. Odds of red then blue without replacement?",
+    prompt: "Probability of drawing red then blue without replacement from 3 red and 5 blue?",
     answer: "15/56",
     explanation: "P(red)=3/8; then P(blue)=5/7. Multiply: (3/8)×(5/7)=15/56.",
   },
@@ -668,9 +668,9 @@ const MATHS_HARD: Array<{ prompt: string; answer: string; explanation: string }>
     explanation: "20% of 500 = 100; 20% of 100 = 20.",
   },
   {
-    prompt: "Find the next number: 2, 6, 12, 20, 30, ?",
+    prompt: "Continue the sequence formed by n(n+1): 2, 6, 12, 20, 30, ?",
     answer: "42",
-    explanation: "Add consecutive even numbers (+4, +6, +8, +10, then +12): 30 + 12 = 42. (Or n(n+1): 6×7=42.)",
+    explanation: "Terms are 1×2, 2×3, 3×4, 4×5, 5×6, then 6×7 = 42.",
   },
   {
     prompt: "A number is doubled, then 9 is added, giving 45. What was the number?",
@@ -835,14 +835,14 @@ const DEDUCTIONS: Array<{
   {
     briefing: "Three suspects: Ava, Ben, and Cara. Who stole the ledger?",
     clues: [
-      "Ava was in the garden at the time.",
+      "Ava stayed in the garden and never entered the house during the theft.",
       "The thief left muddy boots indoors.",
       "Ben never wears boots.",
     ],
     options: ["Ava", "Ben", "Cara", "No one"],
     answerIndex: 2,
     explanation:
-      "The thief left muddy boots indoors, but Ben never wears boots, so Ben is ruled out. Ava was in the garden, so she is unlikely to have left indoor mud. Cara is the only remaining suspect.",
+      "The thief left muddy boots indoors, but Ben never wears boots, so Ben is out. Ava never entered the house, so she cannot have left indoor mud. Cara is the only remaining suspect.",
   },
   {
     briefing: "Three labeled boxes — A, B, and C. Exactly one holds the key.",
@@ -911,13 +911,13 @@ const DEDUCTIONS: Array<{
     briefing: "Four desks — north, south, east, west. Whose desk holds the missing stamp?",
     clues: [
       "The stamp is not on the north desk.",
-      "South’s desk was cleared yesterday.",
+      "South’s desk has stayed empty since it was cleared yesterday.",
       "East’s desk has only pencils.",
     ],
     options: ["North", "South", "East", "West"],
     answerIndex: 3,
     explanation:
-      "North is ruled out. South was cleared. East has only pencils. West is the only desk left that can hold the stamp.",
+      "North is ruled out. South is still empty. East has only pencils. West is the only desk left that can hold the stamp.",
   },
   {
     briefing: "Three keys on a ring. Which opens the archive?",
@@ -961,7 +961,7 @@ const DEDUCTIONS: Array<{
     clues: [
       "The passport is not in the red suitcase.",
       "The blue suitcase holds only clothes.",
-      "Black was packed after the passport was found missing.",
+      "The black suitcase was empty when the passport went missing, and was packed only afterward.",
     ],
     options: ["Red", "Blue", "Black", "None of them"],
     answerIndex: 3,
@@ -1023,7 +1023,7 @@ const DEDUCTIONS: Array<{
     clues: [
       "A’s locker is empty.",
       "B keeps gym clothes only.",
-      "D lost their badge last week and hasn’t replaced it.",
+      "D’s locker has no badge of any kind; D still hasn’t replaced the lost one.",
     ],
     options: ["A", "B", "C", "D"],
     answerIndex: 2,
