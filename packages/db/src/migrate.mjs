@@ -245,6 +245,69 @@ const statements = [
 )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS coin_streak_claim_unique_idx ON coin_streak_claim(user_id, streak_length, anchor_date)`,
   `CREATE INDEX IF NOT EXISTS coin_streak_claim_user_idx ON coin_streak_claim(user_id)`,
+  `CREATE TABLE IF NOT EXISTS user_progression (
+  user_id TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  account_xp INTEGER NOT NULL DEFAULT 0,
+  active_pet_id TEXT,
+  starter_claimed INTEGER NOT NULL DEFAULT 0,
+  backfilled INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE TABLE IF NOT EXISTS user_pet (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  species_id TEXT NOT NULL,
+  personality_id TEXT NOT NULL,
+  name TEXT,
+  pet_xp INTEGER NOT NULL DEFAULT 0,
+  happiness_base INTEGER NOT NULL DEFAULT 100,
+  happiness_updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  last_pet_date TEXT,
+  last_feed_date TEXT,
+  last_puzzle_happy_date TEXT,
+  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE INDEX IF NOT EXISTS user_pet_user_idx ON user_pet(user_id)`,
+  `CREATE INDEX IF NOT EXISTS user_pet_species_idx ON user_pet(user_id, species_id)`,
+  `CREATE TABLE IF NOT EXISTS progression_event (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  pet_id TEXT,
+  kind TEXT NOT NULL,
+  amount INTEGER NOT NULL DEFAULT 0,
+  source_type TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  meta_json TEXT,
+  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS progression_event_unique_idx ON progression_event(user_id, kind, source_type, source_id)`,
+  `CREATE INDEX IF NOT EXISTS progression_event_user_idx ON progression_event(user_id)`,
+  `CREATE INDEX IF NOT EXISTS progression_event_pet_idx ON progression_event(pet_id)`,
+  `CREATE TABLE IF NOT EXISTS pet_gift (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  pet_id TEXT NOT NULL,
+  date_key TEXT NOT NULL,
+  gift_kind TEXT NOT NULL,
+  coins INTEGER NOT NULL DEFAULT 0,
+  item_id TEXT,
+  claimed INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  claimed_at INTEGER
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS pet_gift_daily_idx ON pet_gift(pet_id, date_key)`,
+  `CREATE INDEX IF NOT EXISTS pet_gift_user_idx ON pet_gift(user_id)`,
+  `CREATE TABLE IF NOT EXISTS garden_placement (
+  id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  item_id TEXT NOT NULL,
+  cell_index INTEGER NOT NULL,
+  placed_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS garden_placement_cell_idx ON garden_placement(user_id, cell_index)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS garden_placement_item_idx ON garden_placement(user_id, item_id)`,
+  `CREATE INDEX IF NOT EXISTS garden_placement_user_idx ON garden_placement(user_id)`,
 ];
 
 /** Additive column migrations — safe to re-run (ignore duplicate-column errors). */

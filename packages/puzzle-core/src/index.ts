@@ -17,6 +17,8 @@ export * from "./acrostic";
 export * from "./wordladder";
 export * from "./monthly-puzzles";
 export * from "./monthly";
+export * from "./pets";
+export * from "./companion-types";
 export * from "./coins";
 export * from "./puzzle-design";
 export * from "./puzzle-explanations";

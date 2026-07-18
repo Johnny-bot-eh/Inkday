@@ -40,7 +40,12 @@ export default async function InventoryPage() {
 
   const consumables = items.filter((row) => {
     const def = getShopItem(row.itemId);
-    return def?.kind === "consumable";
+    return def?.kind === "consumable" || def?.kind === "food";
+  });
+
+  const decorations = items.filter((row) => {
+    const def = getShopItem(row.itemId);
+    return def?.kind === "decoration";
   });
 
   const ownedAvatars = AVATAR_ITEMS.filter(
@@ -55,11 +60,16 @@ export default async function InventoryPage() {
           Inventory
         </h1>
         <p className="mt-2 text-fog">
-          Consumables for puzzles and portraits you’ve unlocked.
+          Consumables, food, portraits, and garden decorations you’ve unlocked.
         </p>
-        <Link href="/shop" className="mt-3 inline-block text-sm text-ember hover:underline">
-          ← Shop
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          <Link href="/shop" className="text-ember hover:underline">
+            ← Shop
+          </Link>
+          <Link href="/companion" className="text-ember hover:underline">
+            Garden →
+          </Link>
+        </div>
       </div>
 
       <section className="space-y-3">
@@ -119,13 +129,38 @@ export default async function InventoryPage() {
         )}
       </section>
 
-      <div className="rounded-2xl border border-dashed border-[var(--line)] px-4 py-6 text-sm text-fog">
-        <p className="font-semibold text-paper">Coming soon</p>
-        <p className="mt-1">
-          Profile frames, themes, pets, plants, and decorations will appear as
-          inventory slots without changing the coin system.
-        </p>
-      </div>
+      <section className="space-y-3">
+        <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
+          Garden decorations
+        </h2>
+        {decorations.length === 0 ? (
+          <p className="text-sm text-fog">
+            None yet — unlock flower plots at account level 20.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {decorations.map((row) => {
+              const def = getShopItem(row.itemId);
+              return (
+                <li
+                  key={row.id}
+                  className="flex justify-between rounded-xl border border-[var(--line)] bg-panel/60 px-4 py-3"
+                >
+                  <span className="font-medium">
+                    {def?.title ?? row.itemId}
+                  </span>
+                  <Link
+                    href="/companion"
+                    className="text-sm text-ember hover:underline"
+                  >
+                    Place in garden
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

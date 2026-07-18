@@ -64,7 +64,12 @@ export function AnagramGame({
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
-  } | null>(null);
+    xpEarned?: number | null;
+    accountLevel?: number | null;
+    petLevel?: number | null;
+    petStage?: string | null;
+    happinessGain?: number | null;
+      } | null>(null);
 
   const maxAttempts = puzzle.maxAttempts + bonusAttempts;
 
@@ -113,6 +118,11 @@ export function AnagramGame({
           answer: puzzle.answer,
           coinsEarned: mres.data.coinsEarned,
           coinBalance: mres.data.coinBalance,
+          xpEarned: mres.data.xpEarned,
+          accountLevel: mres.data.accountLevel,
+          petLevel: mres.data.petLevel,
+          petStage: mres.data.petStage,
+          happinessGain: mres.data.happinessGain,
         });
         if (typeof mres.data.coinBalance === "number") {
           emitCoinBalance(mres.data.coinBalance);
@@ -174,6 +184,11 @@ export function AnagramGame({
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,
+        xpEarned: data.xpEarned,
+        accountLevel: data.accountLevel,
+        petLevel: data.petLevel,
+        petStage: data.petStage,
+        happinessGain: data.happinessGain,
       });
       if (typeof data.coinBalance === "number") emitCoinBalance(data.coinBalance);
       setStatus(null);

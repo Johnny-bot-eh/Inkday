@@ -15,21 +15,43 @@ import {
   restoreStreakWithCoins,
   useConsumable,
 } from "@/lib/coin-service";
+import { getAccountLevel } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
 import { NextResponse } from "next/server";
 
-function catalogEntry(item: (typeof SHOP_ITEMS)[number]) {
+function catalogEntry(
+  item: (typeof SHOP_ITEMS)[number],
+  accountLevel: number | null,
+) {
   const isPlusClaim = Boolean(item.plusOnly && item.price === 0 && !item.comingSoon);
+  const levelLocked =
+    typeof item.requiredLevel === "number" &&
+    accountLevel != null &&
+    accountLevel < item.requiredLevel;
   const available =
     !item.comingSoon &&
     !item.free &&
+    !levelLocked &&
     (item.price > 0 || isPlusClaim);
-  return { ...item, available };
+  return {
+    ...item,
+    available,
+    levelLocked,
+    requiredLevel: item.requiredLevel ?? 1,
+  };
 }
 
 export async function GET() {
   const session = await getSession();
-  const catalog = SHOP_ITEMS.map(catalogEntry);
+  let accountLevel: number | null = null;
+  if (session?.user) {
+    try {
+      accountLevel = await getAccountLevel(session.user.id);
+    } catch {
+      accountLevel = 1;
+    }
+  }
+  const catalog = SHOP_ITEMS.map((item) => catalogEntry(item, accountLevel));
 
   if (!session?.user) {
     return NextResponse.json({
@@ -39,6 +61,7 @@ export async function GET() {
       inventory: [],
       equippedAvatarId: null,
       ownedAvatarIds: [],
+      accountLevel: null,
     });
   }
 
@@ -57,6 +80,7 @@ export async function GET() {
     inventory,
     equippedAvatarId,
     ownedAvatarIds,
+    accountLevel,
   });
 }
 

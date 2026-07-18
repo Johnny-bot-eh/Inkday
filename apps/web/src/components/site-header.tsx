@@ -9,6 +9,7 @@ import { HeaderAvatarChip } from "@/components/header-avatar-chip";
 const links = [
   { href: "/", label: "Today" },
   { href: "/monthly", label: "Monthly Case File" },
+  { href: "/companion", label: "Garden" },
   { href: "/shop", label: "Shop" },
   { href: "/leaderboard", label: "Ranks" },
   { href: "/friends", label: "Friends" },

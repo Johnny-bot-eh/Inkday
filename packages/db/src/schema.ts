@@ -718,6 +718,181 @@ export const coinStreakClaimRelations = relations(coinStreakClaim, ({ one }) => 
   }),
 }));
 
+/** Permanent account XP / active companion pointer. */
+export const userProgression = sqliteTable("user_progression", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accountXp: integer("account_xp").notNull().default(0),
+  activePetId: text("active_pet_id"),
+  starterClaimed: integer("starter_claimed", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  backfilled: integer("backfilled", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+});
+
+/** Owned companion instances (future-ready for multiple pets). */
+export const userPet = sqliteTable(
+  "user_pet",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    speciesId: text("species_id").notNull(),
+    personalityId: text("personality_id").notNull(),
+    name: text("name"),
+    petXp: integer("pet_xp").notNull().default(0),
+    happinessBase: integer("happiness_base").notNull().default(100),
+    happinessUpdatedAt: integer("happiness_updated_at", {
+      mode: "timestamp_ms",
+    })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    lastPetDate: text("last_pet_date"),
+    lastFeedDate: text("last_feed_date"),
+    lastPuzzleHappyDate: text("last_puzzle_happy_date"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    index("user_pet_user_idx").on(t.userId),
+    index("user_pet_species_idx").on(t.userId, t.speciesId),
+  ],
+);
+
+/**
+ * Exactly-once progression ledger for XP / happiness / gift actions.
+ * Unique on (userId, kind, sourceType, sourceId).
+ */
+export const progressionEvent = sqliteTable(
+  "progression_event",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    petId: text("pet_id"),
+    kind: text("kind").notNull(),
+    amount: integer("amount").notNull().default(0),
+    sourceType: text("source_type").notNull(),
+    sourceId: text("source_id").notNull(),
+    metaJson: text("meta_json"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("progression_event_unique_idx").on(
+      t.userId,
+      t.kind,
+      t.sourceType,
+      t.sourceId,
+    ),
+    index("progression_event_user_idx").on(t.userId),
+    index("progression_event_pet_idx").on(t.petId),
+  ],
+);
+
+/** One daily gift roll per pet (server-stored, claimable). */
+export const petGift = sqliteTable(
+  "pet_gift",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    petId: text("pet_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    giftKind: text("gift_kind").notNull(),
+    coins: integer("coins").notNull().default(0),
+    itemId: text("item_id"),
+    claimed: integer("claimed", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    claimedAt: integer("claimed_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [
+    uniqueIndex("pet_gift_daily_idx").on(t.petId, t.dateKey),
+    index("pet_gift_user_idx").on(t.userId),
+  ],
+);
+
+/** Placed garden decorations on an expanding grid. */
+export const gardenPlacement = sqliteTable(
+  "garden_placement",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
+    cellIndex: integer("cell_index").notNull(),
+    placedAt: integer("placed_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (t) => [
+    uniqueIndex("garden_placement_cell_idx").on(t.userId, t.cellIndex),
+    uniqueIndex("garden_placement_item_idx").on(t.userId, t.itemId),
+    index("garden_placement_user_idx").on(t.userId),
+  ],
+);
+
+export const userProgressionRelations = relations(
+  userProgression,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [userProgression.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const userPetRelations = relations(userPet, ({ one }) => ({
+  user: one(user, {
+    fields: [userPet.userId],
+    references: [user.id],
+  }),
+}));
+
+export const progressionEventRelations = relations(
+  progressionEvent,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [progressionEvent.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const petGiftRelations = relations(petGift, ({ one }) => ({
+  user: one(user, {
+    fields: [petGift.userId],
+    references: [user.id],
+  }),
+}));
+
+export const gardenPlacementRelations = relations(
+  gardenPlacement,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [gardenPlacement.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
 export const schema = {
   user,
   session,
@@ -741,6 +916,11 @@ export const schema = {
   coinInventory,
   coinDailyLogin,
   coinStreakClaim,
+  userProgression,
+  userPet,
+  progressionEvent,
+  petGift,
+  gardenPlacement,
   userRelations,
   userStatsRelations,
   playResultRelations,
@@ -760,4 +940,9 @@ export const schema = {
   coinInventoryRelations,
   coinDailyLoginRelations,
   coinStreakClaimRelations,
+  userProgressionRelations,
+  userPetRelations,
+  progressionEventRelations,
+  petGiftRelations,
+  gardenPlacementRelations,
 };

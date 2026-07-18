@@ -283,6 +283,19 @@ export async function buyShopItem(userId: string, itemId: string) {
     return { ok: false as const, reason: "plus_required" as const };
   }
 
+  if (item.requiredLevel && item.requiredLevel > 1) {
+    const { getAccountLevel } = await import("@/lib/pet-service");
+    const level = await getAccountLevel(userId);
+    if (level < item.requiredLevel) {
+      return {
+        ok: false as const,
+        reason: "level_locked" as const,
+        requiredLevel: item.requiredLevel,
+        accountLevel: level,
+      };
+    }
+  }
+
   // Plus claim (price 0) or paid purchase.
   const isPlusClaim = item.plusOnly && item.price === 0;
   if (!isPlusClaim && item.price <= 0) {
@@ -294,9 +307,9 @@ export async function buyShopItem(userId: string, itemId: string) {
   }
 
   // Cosmetics / avatars: idempotent — already owned.
-  if (item.slot === "avatar" || item.kind === "cosmetic") {
+  if (item.slot === "avatar" || item.kind === "cosmetic" || item.kind === "decoration") {
     const owned = await getInventoryQty(userId, itemId);
-    if (owned > 0) {
+    if (owned > 0 && item.kind !== "food") {
       return {
         ok: true as const,
         itemId,
@@ -331,8 +344,13 @@ export async function buyShopItem(userId: string, itemId: string) {
   }
 
   const qty = await addInventory(userId, itemId, 1);
-  // Cap cosmetics at 1
-  if ((item.slot === "avatar" || item.kind === "cosmetic") && qty > 1) {
+  // Cap cosmetics / decorations at 1
+  if (
+    (item.slot === "avatar" ||
+      item.kind === "cosmetic" ||
+      item.kind === "decoration") &&
+    qty > 1
+  ) {
     const db = getDb();
     const row = await db.query.coinInventory.findFirst({
       where: and(

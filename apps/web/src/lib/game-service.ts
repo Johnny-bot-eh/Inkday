@@ -260,6 +260,16 @@ export async function submitPlay(opts: {
     achievementIds: finalAchievements.map((a) => a.id),
   });
 
+  const { grantWinProgressionRewards } = await import("@/lib/pet-service");
+  const progression = await grantWinProgressionRewards({
+    userId: opts.userId,
+    playId,
+    difficulty: opts.difficulty,
+    won: opts.won,
+    streak,
+    dateKey: opts.dateKey,
+  });
+
   return {
     ok: true as const,
     play,
@@ -273,6 +283,13 @@ export async function submitPlay(opts: {
     challenge: challengeUpdate,
     coinsEarned: coins.coinsEarned,
     coinBalance: coins.coinBalance,
+    xpEarned: progression.xpEarned,
+    accountXp: progression.accountXp,
+    accountLevel: progression.accountLevel,
+    petXp: progression.petXp,
+    petLevel: progression.petLevel,
+    petStage: progression.petStage,
+    happinessGain: progression.happinessGain,
   };
 }
 
@@ -1568,6 +1585,13 @@ export async function submitMonthlyClear(opts: {
   totalBonus: number;
   coinsEarned?: number;
   coinBalance?: number;
+  xpEarned?: number;
+  accountXp?: number;
+  accountLevel?: number;
+  petXp?: number | null;
+  petLevel?: number | null;
+  petStage?: string | null;
+  happinessGain?: number;
 } | { ok: false; reason: string }> {
   const db = getDb();
   const existing = await getMonthlyCompletion(
@@ -1589,6 +1613,8 @@ export async function submitMonthlyClear(opts: {
       newBadges: [],
       totalBonus: 0,
       coinsEarned: 0,
+      xpEarned: 0,
+      happinessGain: 0,
     };
   }
 
@@ -1700,6 +1726,14 @@ export async function submitMonthlyClear(opts: {
     cleared,
   });
 
+  const { grantMonthlyProgressionRewards } = await import("@/lib/pet-service");
+  const progression = await grantMonthlyProgressionRewards({
+    userId: opts.userId,
+    collectionId: opts.collectionId,
+    slotIndex: opts.slotIndex,
+    alreadyCleared: false,
+  });
+
   return {
     ok: true,
     alreadyCleared: false,
@@ -1710,6 +1744,13 @@ export async function submitMonthlyClear(opts: {
     totalBonus,
     coinsEarned: coins.coinsEarned,
     coinBalance: coins.coinBalance,
+    xpEarned: progression.xpEarned,
+    accountXp: progression.accountXp,
+    accountLevel: progression.accountLevel,
+    petXp: progression.petXp,
+    petLevel: progression.petLevel,
+    petStage: progression.petStage,
+    happinessGain: progression.happinessGain,
   };
 }
 

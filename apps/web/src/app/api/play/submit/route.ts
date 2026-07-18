@@ -158,6 +158,14 @@ export async function POST(req: Request) {
       ? wordleCategorySeasonId(categoryId)
       : (seasonId ?? "");
 
+  // Standard dailies must use today's UTC key — blocks forged historical farming.
+  if (!premiumBoard && !categoryId && !seasonId && dateKey !== todayKey()) {
+    return NextResponse.json(
+      { error: "Invalid date for today’s board" },
+      { status: 400 },
+    );
+  }
+
   if (!premiumBoard && !categoryId && body.seasonId && !seasonId) {
     return NextResponse.json({ error: "Unknown season" }, { status: 400 });
   }

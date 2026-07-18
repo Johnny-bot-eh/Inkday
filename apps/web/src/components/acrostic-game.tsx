@@ -62,6 +62,13 @@ export function AcrosticGame({
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
     newUnlocks?: Array<{ title: string; description: string }>;
+    coinsEarned?: number | null;
+    coinBalance?: number | null;
+    xpEarned?: number | null;
+    accountLevel?: number | null;
+    petLevel?: number | null;
+    petStage?: string | null;
+    happinessGain?: number | null;
   } | null>(null);
 
   const timer = usePlayTimer({
@@ -165,6 +172,13 @@ export function AcrosticGame({
         answer: data.answer,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
+        coinsEarned: data.coinsEarned,
+        coinBalance: data.coinBalance,
+        xpEarned: data.xpEarned,
+        accountLevel: data.accountLevel,
+        petLevel: data.petLevel,
+        petStage: data.petStage,
+        happinessGain: data.happinessGain,
       });
       setStatus(null);
       router.refresh();
