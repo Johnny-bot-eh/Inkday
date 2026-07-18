@@ -302,7 +302,7 @@ export function AnagramGame({
       <p className="mb-4 text-sm text-fog">{puzzle.hint}</p>
 
       <div className="rounded-xl border border-[var(--line)] bg-panel/60 px-6 py-8 text-center">
-        <div className="font-[family-name:var(--font-display)] text-4xl font-bold tracking-[0.3em] uppercase pr-[0.3em]">
+        <div className="overflow-visible pb-2 font-[family-name:var(--font-display)] text-4xl font-bold uppercase leading-[1.35] tracking-[0.3em] pr-[0.3em]">
           {puzzle.scrambled}
         </div>
         <p className="mt-3 text-xs text-fog">
