@@ -735,7 +735,7 @@ const PATTERNS_EASY: PatternPack[] = [
     options: ["←", "↑", "→", "↓"],
     answerIndex: 0,
     explanation:
-      "The arrows turn 90° clockwise each step (up → right → down → left).",
+      "Each arrow turns 90° clockwise from the one before it: ↑ then → then ↓ then ←.",
   },
 ];
 
