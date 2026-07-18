@@ -22,6 +22,7 @@ import {
   levelFromXp,
   pickPersonality,
   rollPetGift,
+  shopCategoryUnlocked,
   stageFromLevel,
   todayKey,
   welcomeBackLine,
@@ -177,27 +178,14 @@ async function getActivePet(userId: string) {
 function unlockedCategories(accountLevel: number): ShopCategoryId[] {
   const all: ShopCategoryId[] = [
     "food",
+    "garden",
     "flowers",
     "ponds",
     "trees",
     "seasonal",
     "legendary",
   ];
-  return all.filter((c) => {
-    const need =
-      c === "food"
-        ? 1
-        : c === "flowers"
-          ? 20
-          : c === "ponds"
-            ? 40
-            : c === "trees"
-              ? 60
-              : c === "seasonal"
-                ? 80
-                : 100;
-    return accountLevel >= need;
-  });
+  return all.filter((c) => shopCategoryUnlocked(accountLevel, c));
 }
 
 async function maybeRollGift(opts: {

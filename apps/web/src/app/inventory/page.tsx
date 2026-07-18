@@ -135,7 +135,7 @@ export default async function InventoryPage() {
         </h2>
         {decorations.length === 0 ? (
           <p className="text-sm text-fog">
-            None yet — unlock more scene decorations at account level 20.
+            None yet — buy starter decorations in the Shop from level 1.
           </p>
         ) : (
           <ul className="space-y-2">
