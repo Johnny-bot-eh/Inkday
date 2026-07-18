@@ -206,6 +206,7 @@ export async function POST(req: Request) {
     coinsEarned: result.coinsEarned,
     coinBalance: result.coinBalance,
     xpEarned: "xpEarned" in result ? result.xpEarned : 0,
+    accountXp: "accountXp" in result ? result.accountXp : 0,
     accountLevel: "accountLevel" in result ? result.accountLevel : 1,
     petLevel: "petLevel" in result ? result.petLevel : null,
     petStage: "petStage" in result ? result.petStage : null,

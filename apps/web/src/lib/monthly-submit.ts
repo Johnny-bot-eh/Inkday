@@ -22,6 +22,7 @@ export async function submitMonthlyFromGame(
     coinsEarned?: number;
     coinBalance?: number;
     xpEarned?: number;
+    accountXp?: number;
     accountLevel?: number;
     petLevel?: number | null;
     petStage?: string | null;
