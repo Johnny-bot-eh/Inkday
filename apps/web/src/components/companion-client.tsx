@@ -76,13 +76,11 @@ export function CompanionClient({ signedIn, initial }: Props) {
   if (!signedIn) {
     return (
       <div className="mx-auto max-w-lg animate-rise space-y-6 text-center">
-        <p className="text-xs uppercase tracking-[0.22em] text-ember">Garden</p>
         <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">
-          Companions & garden
+          Garden
         </h1>
         <p className="text-fog">
-          Sign in to choose a starter egg and watch your living garden scene
-          grow richer over time.
+          Sign in to choose a starter egg and grow your companion.
         </p>
         <Link
           href="/auth"
@@ -106,16 +104,9 @@ export function CompanionClient({ signedIn, initial }: Props) {
     return (
       <div className="mx-auto max-w-2xl animate-rise space-y-6">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-ember">
-            Starter egg
-          </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold">
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">
             Choose your companion
           </h1>
-          <p className="mt-2 text-fog">
-            Pick one free starter egg. Pet XP grows this companion from hatch.
-            Account XP is your total progression — it unlocks more for your pets.
-          </p>
         </div>
         {message ? (
           <p className="rounded-lg border border-[var(--line)] bg-panel/70 px-4 py-3 text-sm">
@@ -149,7 +140,6 @@ export function CompanionClient({ signedIn, initial }: Props) {
                 {egg.eggTitle}
               </div>
               <div className="text-sm text-fog">{egg.title}</div>
-              <p className="mt-2 text-xs text-fog">{egg.tagline}</p>
             </button>
           ))}
         </div>
@@ -163,15 +153,12 @@ export function CompanionClient({ signedIn, initial }: Props) {
     <div className="mx-auto max-w-3xl animate-rise space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-ember">
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">
             Garden
-          </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold">
-            {pet.name ?? pet.speciesTitle}
           </h1>
           <p className="mt-1 text-sm text-fog">
-            Account lv {snapshot.accountLevel} · Pet lv {pet.level} ·{" "}
-            {pet.stage} · {pet.happinessState}
+            {pet.name ?? pet.speciesTitle} · lv {pet.level} · {pet.stage} ·{" "}
+            {pet.happinessState}
           </p>
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
@@ -192,12 +179,9 @@ export function CompanionClient({ signedIn, initial }: Props) {
 
       {snapshot.gift ? (
         <div className="rounded-2xl border border-ember/40 bg-ember/10 px-5 py-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-ember">
-            Companion gift
-          </p>
-          <p className="mt-2 font-semibold">{snapshot.gift.message}</p>
+          <p className="font-semibold">{snapshot.gift.message}</p>
           <p className="mt-1 text-sm text-fog">
-            Inside: {snapshot.gift.rewardLabel}
+            {snapshot.gift.rewardLabel}
           </p>
           <button
             type="button"
@@ -221,17 +205,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
         </div>
       ) : null}
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-            Living garden
-          </h2>
-          <p className="text-sm text-fog">
-            A fixed diorama — select a decoration, then click to place. Drag to
-            rearrange. Double-click to put one back.
-          </p>
-        </div>
-
+      <section className="space-y-3">
         <GardenDiorama
           garden={snapshot.garden}
           pet={pet}
@@ -243,37 +217,22 @@ export function CompanionClient({ signedIn, initial }: Props) {
             void post({ action: "place", itemId, x, y }).then((data) => {
               if (data?.ok) {
                 setSelectedDecor(null);
-                setMessage("Placed in the garden.");
               }
             });
           }}
           onMove={(placementId, x, y) => {
-            void post({ action: "move", placementId, x, y }).then((data) => {
-              if (data?.ok) setMessage("Moved.");
-            });
+            void post({ action: "move", placementId, x, y });
           }}
           onRemove={(placementId) => {
             void post({ action: "remove", placementId }).then((data) => {
-              if (data?.ok) {
-                setSelectedPlacement(null);
-                setMessage("Returned to your collection.");
-              }
+              if (data?.ok) setSelectedPlacement(null);
             });
           }}
         />
 
-        <div className="flex flex-wrap gap-2">
-          {snapshot.garden.inventoryDecor.length === 0 ? (
-            <p className="text-sm text-fog">
-              Everything you own is in the scene. More decorations unlock in the{" "}
-              <Link href="/shop" className="text-ember hover:underline">
-                Shop
-              </Link>{" "}
-              as account XP rises — the garden stays the same size and grows
-              richer.
-            </p>
-          ) : (
-            snapshot.garden.inventoryDecor.map((item) => (
+        {snapshot.garden.inventoryDecor.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {snapshot.garden.inventoryDecor.map((item) => (
               <button
                 key={item.itemId}
                 type="button"
@@ -292,48 +251,26 @@ export function CompanionClient({ signedIn, initial }: Props) {
               >
                 {item.title}
               </button>
-            ))
-          )}
-        </div>
-        <p className="text-xs text-fog">
-          Scene tone: {snapshot.garden.tone} · Ambience:{" "}
-          {snapshot.garden.ambience.join(", ")}
-        </p>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl border border-[var(--line)] bg-ink-2/50 px-3 py-2">
-              <div className="text-xs uppercase tracking-wider text-fog">
-                Pet XP
-              </div>
-              <div className="font-semibold">
-                {pet.xpIntoLevel}/{pet.xpForNext}
-              </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink-2">
-                <div
-                  className="h-full rounded-full bg-ember"
-                  style={{
-                    width: `${Math.min(100, (pet.xpIntoLevel / Math.max(1, pet.xpForNext)) * 100)}%`,
-                  }}
-                />
-              </div>
+      <section className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="rounded-xl border border-[var(--line)] bg-ink-2/50 px-3 py-2">
+            <div className="text-xs uppercase tracking-wider text-fog">
+              Happiness
             </div>
-            <div className="rounded-xl border border-[var(--line)] bg-ink-2/50 px-3 py-2">
-              <div className="text-xs uppercase tracking-wider text-fog">
-                Happiness
-              </div>
-              <div className="font-semibold">{pet.happiness}%</div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink-2">
-                <div
-                  className="h-full rounded-full bg-mint"
-                  style={{ width: `${pet.happiness}%` }}
-                />
-              </div>
+            <div className="font-semibold">{pet.happiness}%</div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink-2">
+              <div
+                className="h-full rounded-full bg-mint"
+                style={{ width: `${pet.happiness}%` }}
+              />
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               disabled={!pet.canPetToday || busy === "pet"}
@@ -357,9 +294,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
                   void post({ action: "feed", itemId: food.itemId }).then(
                     (data) => {
                       if (data?.ok) {
-                        setMessage(
-                          `Fed ${food.title} · +${data.happinessGain} happiness`,
-                        );
+                        setMessage(`+${data.happinessGain} happiness`);
                       }
                     },
                   )
@@ -374,23 +309,41 @@ export function CompanionClient({ signedIn, initial }: Props) {
                 href="/shop"
                 className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-fog hover:text-paper"
               >
-                Buy food in Shop
+                Buy food
               </Link>
             ) : null}
           </div>
-          <p className="mt-3 text-xs text-fog">
-            Personality: {pet.personalityId.replace("_", " ")} · Away days:{" "}
-            {pet.awayDays}
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
+          <div className="text-xs uppercase tracking-wider text-fog">Pet XP</div>
+          <div className="mt-1 font-[family-name:var(--font-display)] text-xl font-bold">
+            Level {pet.level}
+          </div>
+          <p className="mt-1 text-sm text-fog">
+            {pet.xpIntoLevel}/{pet.xpForNext}
           </p>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-2">
+            <div
+              className="h-full rounded-full bg-ember"
+              style={{
+                width: `${Math.min(100, (pet.xpIntoLevel / Math.max(1, pet.xpForNext)) * 100)}%`,
+              }}
+            />
+          </div>
         </div>
 
         <div className="rounded-2xl border border-[var(--line)] bg-panel/60 p-5">
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-bold">
+          <div className="text-xs uppercase tracking-wider text-fog">
             Account XP
-          </h2>
+          </div>
+          <div className="mt-1 font-[family-name:var(--font-display)] text-xl font-bold">
+            Level {snapshot.accountLevel}
+          </div>
           <p className="mt-1 text-sm text-fog">
-            Level {snapshot.accountLevel} · {snapshot.accountXpIntoLevel}/
-            {snapshot.accountXpForNext} XP to next
+            {snapshot.accountXpIntoLevel}/{snapshot.accountXpForNext}
           </p>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-2">
             <div
@@ -405,23 +358,6 @@ export function CompanionClient({ signedIn, initial }: Props) {
               }}
             />
           </div>
-          <p className="mt-3 text-xs text-fog">
-            Total from every pet’s XP plus puzzle history, monthly clears, and
-            streak bonuses. Higher account XP unlocks more for your pets.
-          </p>
-          <p className="mt-4 text-xs uppercase tracking-wider text-fog">
-            Unlocked shops
-          </p>
-          <ul className="mt-2 flex flex-wrap gap-2 text-xs">
-            {snapshot.unlockedCategories.map((c) => (
-              <li
-                key={c}
-                className="rounded-full border border-mint/30 bg-mint/10 px-2.5 py-1 text-mint"
-              >
-                {c}
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
     </div>

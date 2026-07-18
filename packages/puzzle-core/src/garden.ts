@@ -5,6 +5,9 @@ import type { DecorationItemId } from "./pets";
  * Not a grid, not a navigable world — a collectible scene (Insaniquarium-style).
  * Coordinates are normalized 0–100 so the same layout can drive web or
  * future dynamic-wallpaper surfaces.
+ *
+ * Habitat scenery (trees, vines, moss) is baked into the wallpaper —
+ * only shop decorations are placeable.
  */
 
 export type GardenLayer = "background" | "middle" | "foreground";
@@ -23,7 +26,7 @@ export const GARDEN_SCENE = {
   height: 100,
   /** Preferred display aspect (width / height). */
   aspectRatio: 1.55,
-  sceneVersion: 1,
+  sceneVersion: 2,
   pet: {
     x: 52,
     y: 60,
@@ -37,41 +40,14 @@ export type GardenDecorVisual = {
   /** Width as % of canvas width */
   widthPct: number;
   motion: GardenMotion;
-  /** Anchor used for starter auto-place */
+  /** Anchor used for default auto-place */
   defaultPose: { x: number; y: number };
-  /** Short glyph label drawn in the diorama (no emoji). */
+  /** Accessible short name (not drawn on the sprite). */
   mark: string;
   tone: string;
 };
 
 export const GARDEN_DECOR_VISUALS: Record<string, GardenDecorVisual> = {
-  deco_starter_moss: {
-    itemId: "deco_starter_moss",
-    layer: "background",
-    widthPct: 16,
-    motion: "still",
-    defaultPose: { x: 16, y: 78 },
-    mark: "Moss",
-    tone: "#4f7a3a",
-  },
-  deco_starter_pebble: {
-    itemId: "deco_starter_pebble",
-    layer: "middle",
-    widthPct: 12,
-    motion: "still",
-    defaultPose: { x: 78, y: 74 },
-    mark: "Stone",
-    tone: "#6d6a63",
-  },
-  deco_starter_fern: {
-    itemId: "deco_starter_fern",
-    layer: "middle",
-    widthPct: 11,
-    motion: "sway",
-    defaultPose: { x: 26, y: 58 },
-    mark: "Fern",
-    tone: "#3f6b48",
-  },
   deco_flower_daisy: {
     itemId: "deco_flower_daisy",
     layer: "middle",
@@ -203,29 +179,10 @@ export function isValidGardenLayer(v: unknown): v is GardenLayer {
   return v === "background" || v === "middle" || v === "foreground";
 }
 
-/** Starter diorama pieces with fixed wallpaper-friendly poses. */
+/** @deprecated Habitat is wallpaper-baked; kept for type compatibility. */
 export const STARTER_GARDEN_POSES: Array<{
   itemId: DecorationItemId;
   x: number;
   y: number;
   layer: GardenLayer;
-}> = [
-  {
-    itemId: "deco_starter_moss",
-    x: 16,
-    y: 78,
-    layer: "background",
-  },
-  {
-    itemId: "deco_starter_pebble",
-    x: 78,
-    y: 74,
-    layer: "middle",
-  },
-  {
-    itemId: "deco_starter_fern",
-    x: 26,
-    y: 58,
-    layer: "middle",
-  },
-];
+}> = [];

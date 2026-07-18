@@ -7,6 +7,8 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { GardenDecorSprite } from "@/components/garden-decor-sprite";
+import { GardenHabitat } from "@/components/garden-habitat";
 import { PetMark } from "@/components/pet-mark";
 import type {
   CompanionGardenPlacement,
@@ -109,9 +111,7 @@ export function GardenDiorama({
     onSelectPlacement(placement.id);
   }
 
-  function onDecorPointerMove(
-    e: ReactPointerEvent<HTMLButtonElement>,
-  ) {
+  function onDecorPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
     if (!dragId) return;
     setGhost(toNorm(e.clientX, e.clientY));
   }
@@ -126,6 +126,7 @@ export function GardenDiorama({
   }
 
   const night = garden.tone === "night" || garden.tone === "dusk";
+  const bubbleLeft = garden.pet.x >= 55;
 
   return (
     <div
@@ -147,14 +148,6 @@ export function GardenDiorama({
         ].join(" ")}
         style={{ background: TONE_SKY[garden.tone] }}
       >
-        {/* Far backdrop silhouettes */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-[28%] h-[42%] opacity-40"
-          style={{
-            background:
-              "radial-gradient(ellipse at 20% 80%, #2d4a28 0 28%, transparent 29%), radial-gradient(ellipse at 78% 70%, #355530 0 34%, transparent 35%)",
-          }}
-        />
         {/* Ground plane */}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%]"
@@ -173,6 +166,9 @@ export function GardenDiorama({
           }}
         />
 
+        {/* Innate habitat wallpaper (trees, vines, moss — not movable) */}
+        <GardenHabitat night={night} />
+
         {/* Ambient life */}
         {garden.ambience.includes("pollen") ? (
           <div className="garden-ambience-pollen pointer-events-none absolute inset-0" />
@@ -190,7 +186,7 @@ export function GardenDiorama({
           <div className="garden-ambience-stars pointer-events-none absolute inset-0" />
         ) : null}
 
-        {/* Decorations */}
+        {/* Placeable decorations */}
         {sorted.map((p) => {
           const dragging = dragId === p.id;
           const selected = selectedPlacement === p.id;
@@ -212,9 +208,11 @@ export function GardenDiorama({
                 onRemove(p.id);
               }}
               className={[
-                "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-0 bg-transparent p-0",
+                "absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border-0 bg-transparent p-0",
                 motionClass(p.motion),
-                selected ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent" : "",
+                selected
+                  ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent"
+                  : "",
               ].join(" ")}
               style={{
                 left: `${pos.x}%`,
@@ -223,22 +221,16 @@ export function GardenDiorama({
                 zIndex: layerZ(p.layer) + Math.round(pos.y),
               }}
             >
-              <span
-                className="mx-auto flex aspect-square w-full items-center justify-center rounded-[40%] text-[clamp(0.55rem,1.6vw,0.75rem)] font-bold text-white shadow-md"
-                style={{
-                  background: `radial-gradient(circle at 35% 30%, #ffffff55, transparent 42%), ${p.tone}`,
-                }}
-              >
-                {p.mark.slice(0, 1)}
-              </span>
-              <span className="mt-0.5 block truncate text-center text-[10px] font-medium text-[#1f2a14]/90 drop-shadow-[0_1px_0_#fff8]">
-                {p.title}
-              </span>
+              <GardenDecorSprite
+                itemId={p.itemId}
+                tone={p.tone}
+                className="mx-auto h-auto w-full drop-shadow-md"
+              />
             </button>
           );
         })}
 
-        {/* Companion nest */}
+        {/* Companion + dialogue beside pet */}
         <div
           className="garden-pet-idle pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
           style={{
@@ -258,6 +250,24 @@ export function GardenDiorama({
               size={120}
             />
           </div>
+          <div
+            className={[
+              "absolute top-[8%] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+              bubbleLeft ? "right-[78%]" : "left-[78%]",
+            ].join(" ")}
+            style={{
+              background: "rgba(255,255,255,0.92)",
+              zIndex: 5,
+            }}
+          >
+            {pet.dialogue}
+            <span
+              className={[
+                "absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/92",
+                bubbleLeft ? "-right-1" : "-left-1",
+              ].join(" ")}
+            />
+          </div>
         </div>
 
         {/* Placement ghost */}
@@ -270,7 +280,7 @@ export function GardenDiorama({
           </div>
         ) : null}
 
-        {/* Foreground vignette / grass fringe */}
+        {/* Foreground vignette */}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[14%]"
           style={{
@@ -281,10 +291,6 @@ export function GardenDiorama({
           }}
         />
       </div>
-
-      <p className="pointer-events-none absolute bottom-3 left-0 right-0 z-[70] px-4 text-center text-sm italic text-white/95 drop-shadow">
-        “{pet.dialogue}”
-      </p>
     </div>
   );
 }
