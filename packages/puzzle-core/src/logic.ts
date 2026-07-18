@@ -486,7 +486,7 @@ export function getLogicPuzzle(
     answer: template.answer,
     solution: template.solution,
   };
-  puzzle.explanation = buildLogicExplanation(puzzle);
+  puzzle.explanation = buildLogicExplanation(template.slug, puzzle);
   return puzzle;
 }
 

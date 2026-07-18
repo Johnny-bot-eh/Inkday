@@ -17,6 +17,7 @@ export type MonthlyRiddle = {
   prompt: string;
   answer: string;
   hint: string;
+  explanation: string;
 };
 
 export type MonthlyTrivia = {
@@ -24,12 +25,14 @@ export type MonthlyTrivia = {
   question: string;
   options: string[];
   answerIndex: number;
+  explanation: string;
 };
 
 export type MonthlyMathLogic = {
   kind: "mathlogic";
   prompt: string;
   answer: string;
+  explanation: string;
 };
 
 export type MonthlyMemory = {
@@ -65,46 +68,67 @@ export type MonthlyOnlyPuzzle =
   | MonthlyPattern
   | MonthlyDeduction;
 
-const RIDDLES: Array<{ prompt: string; answer: string; hint: string }> = [
+const RIDDLES: Array<{
+  prompt: string;
+  answer: string;
+  hint: string;
+  explanation: string;
+}> = [
   {
     prompt: "I speak without a mouth and hear without ears. What am I?",
     answer: "echo",
     hint: "Mountains and canyons keep me.",
+    explanation:
+      "Something that “speaks” and “hears” with no mouth or ears is a returned sound — an echo bouncing back from walls or cliffs.",
   },
   {
     prompt: "The more you take, the more you leave behind. What are they?",
     answer: "footsteps",
     hint: "Walking leaves a trail.",
+    explanation:
+      "Each step you “take” leaves another print behind you, so taking more creates more footsteps.",
   },
   {
     prompt: "What has keys but can’t open locks?",
     answer: "piano",
     hint: "It makes music.",
+    explanation:
+      "“Keys” here are piano keys, not lock keys — they make notes, not open doors.",
   },
   {
     prompt: "What gets wetter the more it dries?",
     answer: "towel",
     hint: "Bathroom helper.",
+    explanation:
+      "A towel dries you by soaking up water, so as it does its job it becomes wetter.",
   },
   {
     prompt: "I have cities but no houses, forests but no trees, water but no fish. What am I?",
     answer: "map",
     hint: "Folded paper of the world.",
+    explanation:
+      "A map shows cities, forests, and water as drawings, not as real houses, trees, or fish.",
   },
   {
     prompt: "What can travel around the world while staying in a corner?",
     answer: "stamp",
     hint: "On an envelope.",
+    explanation:
+      "A postage stamp stays stuck in the corner of an envelope while the mail travels the world.",
   },
   {
     prompt: "What has a head and a tail but no body?",
     answer: "coin",
     hint: "Pocket change.",
+    explanation:
+      "Coins have a “heads” side and a “tails” side, with no body between them.",
   },
   {
     prompt: "I’m tall when I’m young and short when I’m old. What am I?",
     answer: "candle",
     hint: "Wax and wick.",
+    explanation:
+      "A new candle is tall; as it burns, the wax melts away and it gets shorter.",
   },
 ];
 
@@ -112,58 +136,107 @@ const TRIVIA: Array<{
   question: string;
   options: [string, string, string, string];
   answerIndex: number;
+  explanation: string;
 }> = [
   {
     question: "Which planet is known as the Red Planet?",
     options: ["Venus", "Mars", "Jupiter", "Mercury"],
     answerIndex: 1,
+    explanation:
+      "Mars looks reddish from Earth because its surface is rich in iron oxide (rust).",
   },
   {
     question: "How many sides does a hexagon have?",
     options: ["5", "6", "7", "8"],
     answerIndex: 1,
+    explanation:
+      "The prefix “hexa-” means six, so a hexagon is a six-sided polygon.",
   },
   {
     question: "What is the chemical symbol for gold?",
     options: ["Ag", "Fe", "Au", "Pb"],
     answerIndex: 2,
+    explanation:
+      "Gold’s symbol Au comes from the Latin name aurum; Ag is silver, Fe iron, Pb lead.",
   },
   {
     question: "Which ocean is the largest?",
     options: ["Atlantic", "Indian", "Arctic", "Pacific"],
     answerIndex: 3,
+    explanation:
+      "The Pacific covers more of Earth’s surface than any other ocean — larger than the Atlantic, Indian, or Arctic.",
   },
   {
     question: "Who painted the Mona Lisa?",
     options: ["Michelangelo", "Leonardo da Vinci", "Raphael", "Donatello"],
     answerIndex: 1,
+    explanation:
+      "Leonardo da Vinci painted the Mona Lisa in the early 1500s; the others were Renaissance artists known for different works.",
   },
   {
     question: "What gas do plants absorb from the air?",
     options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Helium"],
     answerIndex: 2,
+    explanation:
+      "In photosynthesis, plants take in carbon dioxide and release oxygen.",
   },
   {
     question: "How many minutes are in two hours?",
     options: ["60", "90", "120", "180"],
     answerIndex: 2,
+    explanation:
+      "One hour is 60 minutes, so two hours are 60 × 2 = 120 minutes.",
   },
   {
     question: "Which continent is the Sahara Desert mostly in?",
     options: ["Asia", "Africa", "Australia", "South America"],
     answerIndex: 1,
+    explanation:
+      "The Sahara spans northern Africa, from the Atlantic across to the Red Sea.",
   },
 ];
 
-const MATHS: Array<{ prompt: string; answer: string }> = [
-  { prompt: "What is 17 + 28?", answer: "45" },
-  { prompt: "What is 9 × 7?", answer: "63" },
-  { prompt: "What is 144 ÷ 12?", answer: "12" },
-  { prompt: "Find the next number: 2, 4, 8, 16, ?", answer: "32" },
-  { prompt: "Find the next number: 3, 6, 9, 12, ?", answer: "15" },
-  { prompt: "What is 100 − 37?", answer: "63" },
-  { prompt: "If a train leaves at 3 and arrives 2 hours later, what time is it?", answer: "5" },
-  { prompt: "Half of 86 is?", answer: "43" },
+const MATHS: Array<{ prompt: string; answer: string; explanation: string }> = [
+  {
+    prompt: "What is 17 + 28?",
+    answer: "45",
+    explanation: "Add the ones: 7 + 8 = 15 (write 5, carry 1). Add the tens: 1 + 2 + 1 = 4 → 45.",
+  },
+  {
+    prompt: "What is 9 × 7?",
+    answer: "63",
+    explanation: "Nine sevens: 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7 = 63 (or 9 × 7 from the times table).",
+  },
+  {
+    prompt: "What is 144 ÷ 12?",
+    answer: "12",
+    explanation: "12 × 12 = 144, so 144 ÷ 12 = 12.",
+  },
+  {
+    prompt: "Find the next number: 2, 4, 8, 16, ?",
+    answer: "32",
+    explanation: "Each term doubles the one before it (×2): 2→4→8→16→32.",
+  },
+  {
+    prompt: "Find the next number: 3, 6, 9, 12, ?",
+    answer: "15",
+    explanation: "Each term increases by 3 (multiples of 3): 3, 6, 9, 12, 15.",
+  },
+  {
+    prompt: "What is 100 − 37?",
+    answer: "63",
+    explanation: "100 − 30 = 70, then 70 − 7 = 63.",
+  },
+  {
+    prompt: "If a train leaves at 3 and arrives 2 hours later, what time is it?",
+    answer: "5",
+    explanation: "Start at 3 o’clock and add 2 hours: 3 + 2 = 5.",
+  },
+  {
+    prompt: "Half of 86 is?",
+    answer: "43",
+    explanation: "Half means ÷ 2: 86 ÷ 2 = 43.",
+  },
 ];
 
 const MEMORY_SYMBOLS = ["●", "■", "▲", "◆", "★", "○", "□", "△"];
@@ -299,6 +372,7 @@ export function getMonthlyOnlyPuzzle(
         prompt: pack.prompt,
         answer: pack.answer,
         hint: difficulty === "easy" ? pack.hint : "No further hints.",
+        explanation: pack.explanation,
       };
     }
     case "trivia": {
@@ -308,11 +382,17 @@ export function getMonthlyOnlyPuzzle(
         question: pack.question,
         options: [...pack.options],
         answerIndex: pack.answerIndex,
+        explanation: pack.explanation,
       };
     }
     case "mathlogic": {
       const pack = MATHS[pickIndex(seed, MATHS.length)]!;
-      return { kind: "mathlogic", prompt: pack.prompt, answer: pack.answer };
+      return {
+        kind: "mathlogic",
+        prompt: pack.prompt,
+        answer: pack.answer,
+        explanation: pack.explanation,
+      };
     }
     case "memory": {
       const length =
