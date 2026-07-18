@@ -543,10 +543,10 @@ function wordGameBlurb(
           : "Longer scramble · fewer tries";
     case "cryptogram":
       return difficulty === "easy"
-        ? "Short phrase · letter hints"
+        ? "Theme + clue · fill the blanks"
         : difficulty === "medium"
-          ? "Decode the cipher"
-          : "Sparse reveals";
+          ? "Complete the phrase"
+          : "Sparse letters given";
     case "acrostic":
       return difficulty === "easy"
         ? "Clues spell a short message"
