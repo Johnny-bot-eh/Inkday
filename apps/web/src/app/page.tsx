@@ -301,8 +301,9 @@ export default async function HomePage() {
               Unlockables
             </h3>
             <p className="mt-1 text-sm text-fog">
-              New doors appear after you clear the previous one. A few stay
-              invisible on purpose.
+              Earn bonus content as you progress: solve 50 Escape Rooms for
+              Exclusive Cases, hold a 7-day streak for Hidden Challenges, and
+              solve 100 total puzzles for Impossible Mode.
             </p>
             <div className="mt-3 grid gap-2">
               {profile.insights.unlocks.map((u) => (

@@ -191,7 +191,8 @@ export function ProfileView({
           Unlocks
         </h2>
         <p className="mt-1 text-sm text-fog">
-          Visible once you unlock the previous step in the chain.
+          Solve 50 Escape Rooms for Exclusive Cases, hold a 7-day streak for
+          Hidden Challenges, and solve 100 total puzzles for Impossible Mode.
         </p>
         <div className="mt-3 grid gap-2">
           {insights.unlocks.map((u) => (
