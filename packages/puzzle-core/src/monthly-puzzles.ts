@@ -397,7 +397,7 @@ export function getMonthlyOnlyPuzzle(
         kind: "riddle",
         prompt: pack.prompt,
         answer: pack.answer,
-        hint: difficulty === "easy" ? pack.hint : "No further hints.",
+        hint: pack.hint,
         explanation: pack.explanation,
       };
     }
