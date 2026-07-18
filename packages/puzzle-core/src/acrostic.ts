@@ -185,11 +185,11 @@ const BY_DIFFICULTY: Record<Difficulty, Pack[]> = {
 };
 
 const ATTEMPTS: Record<Difficulty, number> = {
-  easy: 8,
-  medium: 6,
-  hard: 5,
-  obscure: 5,
-  impossible: 4,
+  easy: 3,
+  medium: 3,
+  hard: 3,
+  obscure: 3,
+  impossible: 3,
 };
 
 export function getAcrosticPuzzle(

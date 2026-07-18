@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
   checkAnagramAnswer,
@@ -45,7 +45,8 @@ export function AnagramGame({
   const [guess, setGuess] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [bonusAttempts, setBonusAttempts] = useState(0);
-  const [coinHint, setCoinHint] = useState<string | null>(null);
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const hintStepRef = useRef(0);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -55,6 +56,7 @@ export function AnagramGame({
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
     won: boolean;
+    outcomeLabel?: string | null;
     elapsedMs?: number;
     score?: number;
     streak?: number;
@@ -75,6 +77,24 @@ export function AnagramGame({
 
   const maxAttempts = puzzle.maxAttempts + bonusAttempts;
 
+  const anagramHintLadder = useMemo(() => {
+    const ans = puzzle.answer;
+    return [
+      `Starts with “${ans[0]!.toUpperCase()}”.`,
+      `Has ${ans.length} letters.`,
+      `Ends with “${ans[ans.length - 1]!.toUpperCase()}”.`,
+      puzzle.hint,
+    ];
+  }, [puzzle.answer, puzzle.hint]);
+
+  function applyAnagramHint() {
+    const n = hintStepRef.current;
+    if (n >= anagramHintLadder.length) return;
+    const next = anagramHintLadder[n]!;
+    hintStepRef.current = n + 1;
+    setUnlockedHints((prev) => [...prev, next]);
+  }
+
   const timer = usePlayTimer({
     running: !done && !alreadyPlayed,
     resetKey: `${dateKey}-${difficulty}`,
@@ -92,7 +112,12 @@ export function AnagramGame({
     if (monthly) {
       if (!opts.won) {
         setDone(true);
-        setResults({ won: false, elapsedMs, answer: puzzle.answer });
+        setResults({
+          won: false,
+          outcomeLabel: "Out of attempts",
+          elapsedMs,
+          answer: puzzle.answer,
+        });
         setStatus(`Out of attempts (${timeLabel}).`);
         return;
       }
@@ -146,10 +171,15 @@ export function AnagramGame({
 
     if (!signedIn) {
       setDone(true);
-      setResults({ won: opts.won, elapsedMs, answer: puzzle.answer });
+      setResults({
+        won: opts.won,
+        outcomeLabel: opts.won ? undefined : "Out of attempts",
+        elapsedMs,
+        answer: puzzle.answer,
+      });
       setStatus(
         opts.won
-          ? `Solved in ${timeLabel}! Sign in to save.`
+          ? `Cleared in ${timeLabel}! Sign in to save.`
           : `Out of attempts (${timeLabel}).`,
       );
       return;
@@ -177,6 +207,7 @@ export function AnagramGame({
       setDone(true);
       setResults({
         won: opts.won,
+        outcomeLabel: opts.won ? undefined : "Out of attempts",
         elapsedMs: data.elapsedMs ?? elapsedMs,
         score: data.score,
         streak: data.streak,
@@ -275,7 +306,7 @@ export function AnagramGame({
           {puzzle.scrambled}
         </div>
         <p className="mt-3 text-xs text-fog">
-          {puzzle.answer.length} letters · {maxAttempts} attempts
+          {puzzle.answer.length} letters · Attempts {attempts}/{maxAttempts}
         </p>
       </div>
 
@@ -313,10 +344,8 @@ export function AnagramGame({
         <CoinConsumableBar
           signedIn={signedIn}
           disabled={submitting}
-          onHint={() => {
-            const letter = puzzle.answer[0]!;
-            setCoinHint(`Starts with “${letter.toUpperCase()}”.`);
-          }}
+          canUseHint={unlockedHints.length < anagramHintLadder.length}
+          onHint={applyAnagramHint}
           onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
           onSkip={() => {
             void finish({
@@ -328,8 +357,15 @@ export function AnagramGame({
         />
       )}
 
-      {coinHint && !done && (
-        <p className="mt-2 text-sm text-mint">{coinHint}</p>
+      {unlockedHints.length > 0 && !done && (
+        <ul className="mt-3 space-y-1.5 text-sm text-mint">
+          {unlockedHints.map((hint, i) => (
+            <li key={`anagram-hint-${i}`}>
+              <span className="text-fog">Hint {i + 1}: </span>
+              {hint}
+            </li>
+          ))}
+        </ul>
       )}
 
       {status && (

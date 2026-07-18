@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Difficulty, MonthlyOnlyPuzzle } from "@daily-puzzle/puzzle-core";
 import {
   checkMonthlyOnlyAnswer,
@@ -28,15 +28,24 @@ type Props = {
 };
 
 /** Escalating paid hints — each purchase unlocks the next rung. */
-function buildHintLadder(puzzle: MonthlyOnlyPuzzle): string[] {
+function buildHintLadder(
+  puzzle: MonthlyOnlyPuzzle,
+  opts: { includePackHint: boolean },
+): string[] {
   switch (puzzle.kind) {
     case "riddle": {
       const ans = puzzle.answer.trim();
       const steps: string[] = [];
-      if (puzzle.hint && puzzle.hint !== "No further hints.") {
+      if (
+        opts.includePackHint &&
+        puzzle.hint &&
+        puzzle.hint !== "No further hints."
+      ) {
         steps.push(puzzle.hint);
       }
-      steps.push(`The answer has ${ans.length} letter${ans.length === 1 ? "" : "s"}.`);
+      steps.push(
+        `The answer has ${ans.length} letter${ans.length === 1 ? "" : "s"}.`,
+      );
       steps.push(`Starts with “${ans[0]!.toUpperCase()}”.`);
       if (ans.length > 2) {
         steps.push(`Ends with “${ans[ans.length - 1]!.toUpperCase()}”.`);
@@ -59,9 +68,7 @@ function buildHintLadder(puzzle: MonthlyOnlyPuzzle): string[] {
       return [
         `The answer is ${ans.length} character${ans.length === 1 ? "" : "s"} long.`,
         `Starts with “${ans[0]}”.`,
-        ...(ans.length > 1
-          ? [`Ends with “${ans[ans.length - 1]}”.`]
-          : []),
+        ...(ans.length > 1 ? [`Ends with “${ans[ans.length - 1]}”.`] : []),
         puzzle.explanation,
       ];
     }
@@ -90,6 +97,8 @@ function buildHintLadder(puzzle: MonthlyOnlyPuzzle): string[] {
   }
 }
 
+const MONTHLY_BASE_ATTEMPTS = 3;
+
 export function MonthlyOnlyGame({
   collectionId,
   slotIndex,
@@ -111,34 +120,36 @@ export function MonthlyOnlyGame({
     () => getMonthlyOnlyExplanation(puzzle),
     [puzzle],
   );
-  const hintLadder = useMemo(() => buildHintLadder(puzzle), [puzzle]);
+  const showFreeHint = difficulty === "easy";
+  const hintLadder = useMemo(
+    () => buildHintLadder(puzzle, { includePackHint: !showFreeHint }),
+    [puzzle, showFreeHint],
+  );
 
   const [status, setStatus] = useState<string | null>(
     alreadyCleared ? "Already cleared this month" : null,
   );
   const [done, setDone] = useState(alreadyCleared);
   const [skipped, setSkipped] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bonusNote, setBonusNote] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [bonusAttempts, setBonusAttempts] = useState(0);
   const [hintStep, setHintStep] = useState(0);
   const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const hintStepRef = useRef(0);
+
+  const maxAttempts = MONTHLY_BASE_ATTEMPTS + bonusAttempts;
+  const canUseHint = hintStep < hintLadder.length;
 
   function applyMonthlyHint() {
-    if (hintLadder.length === 0) {
-      setUnlockedHints(["No hints available for this board."]);
-      return;
-    }
-    if (hintStep >= hintLadder.length) {
-      setUnlockedHints((prev) =>
-        prev[prev.length - 1] === "No further paid hints."
-          ? prev
-          : [...prev, "No further paid hints."],
-      );
-      return;
-    }
-    const next = hintLadder[hintStep]!;
+    const n = hintStepRef.current;
+    if (hintLadder.length === 0 || n >= hintLadder.length) return;
+    const next = hintLadder[n]!;
+    hintStepRef.current = n + 1;
+    setHintStep(n + 1);
     setUnlockedHints((prev) => [...prev, next]);
-    setHintStep((n) => n + 1);
   }
 
   async function save(payload: {
@@ -146,15 +157,28 @@ export function MonthlyOnlyGame({
     choiceIndex?: number;
     sequence?: string[];
   }) {
+    if (done || submitting) return;
     const verdict = checkMonthlyOnlyAnswer(puzzle, payload);
     if (!verdict.correct) {
-      setStatus("Not quite — try again.");
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
+      if (nextAttempts >= maxAttempts) {
+        setFailed(true);
+        setDone(true);
+        setStatus("Out of attempts — puzzle not cleared.");
+        return;
+      }
+      setStatus(
+        `Not quite — ${maxAttempts - nextAttempts} attempt${
+          maxAttempts - nextAttempts === 1 ? "" : "s"
+        } left.`,
+      );
       return;
     }
 
     if (!signedIn) {
       setDone(true);
-      setStatus(`Correct! Sign in to save Case File progress (+${points} pts).`);
+      setStatus(`Cleared! Sign in to save Case File progress (+${points} pts).`);
       return;
     }
 
@@ -205,7 +229,9 @@ export function MonthlyOnlyGame({
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold">
             {label}
           </h1>
-          <p className="mt-1 text-sm text-fog">+{points} pts on clear</p>
+          <p className="mt-1 text-sm text-fog">
+            +{points} pts on clear · Attempts {attempts}/{maxAttempts}
+          </p>
         </div>
         <CaseFileBackLink collectionId={collectionId} />
       </div>
@@ -214,7 +240,7 @@ export function MonthlyOnlyGame({
         puzzle={puzzle}
         done={done}
         submitting={submitting}
-        showFreeHint={difficulty === "easy"}
+        showFreeHint={showFreeHint}
         onSubmit={save}
       />
 
@@ -222,7 +248,9 @@ export function MonthlyOnlyGame({
         <CoinConsumableBar
           signedIn={signedIn}
           disabled={submitting}
+          canUseHint={canUseHint}
           onHint={applyMonthlyHint}
+          onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
           onSkip={() => {
             setSkipped(true);
             setDone(true);
@@ -234,7 +262,7 @@ export function MonthlyOnlyGame({
       {unlockedHints.length > 0 && !done && (
         <ul className="mt-3 space-y-1.5 text-sm text-mint">
           {unlockedHints.map((hint, i) => (
-            <li key={`${i}-${hint}`}>
+            <li key={`hint-${i}`}>
               <span className="text-fog">Hint {i + 1}: </span>
               {hint}
             </li>
@@ -254,7 +282,10 @@ export function MonthlyOnlyGame({
       {(done || alreadyCleared) && clearedAnswer ? (
         <div className="mt-4">
           <PlayResultsCard
-            won={!skipped}
+            won={!skipped && !failed}
+            outcomeLabel={
+              skipped ? "Skipped" : failed ? "Out of attempts" : undefined
+            }
             answer={clearedAnswer}
             explanation={clearedExplanation}
           />

@@ -95,10 +95,10 @@ const PACKS: Record<Difficulty, PhrasePack[]> = {
 };
 
 const ATTEMPTS: Record<Difficulty, number> = {
-  easy: 6,
-  medium: 5,
-  hard: 4,
-  obscure: 4,
+  easy: 3,
+  medium: 3,
+  hard: 3,
+  obscure: 3,
   impossible: 3,
 };
 

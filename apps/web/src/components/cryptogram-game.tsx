@@ -451,6 +451,7 @@ export function CryptogramGame({
         <CoinConsumableBar
           signedIn={signedIn}
           disabled={submitting}
+          canUseHint={slots.some((slot) => !lockedLetters.has(slot.letter))}
           onHint={revealHintLetter}
           onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
           onSkip={() => {
@@ -467,6 +468,9 @@ export function CryptogramGame({
         <p className="mt-2 text-sm text-mint">{coinHint}</p>
       )}
 
+      <p className="mt-2 text-xs text-fog">
+        Attempts {attempts}/{maxAttempts}
+      </p>
       {status && (
         <p className="mt-4 rounded-lg border border-[var(--line)] bg-panel/60 px-4 py-3 text-sm">
           {status}

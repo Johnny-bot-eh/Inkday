@@ -469,11 +469,11 @@ const ESCAPES: EscapeTemplate[] = [
 ];
 
 const ATTEMPTS: Record<Difficulty, number> = {
-  easy: 5,
+  easy: 3,
   medium: 3,
-  hard: 2,
-  obscure: 2,
-  impossible: 1,
+  hard: 3,
+  obscure: 3,
+  impossible: 3,
 };
 
 /** Easy gets hand-holds; medium/hard must deduce format and discard red herrings. */

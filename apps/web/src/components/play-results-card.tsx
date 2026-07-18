@@ -25,6 +25,8 @@ type ProgressToast = {
 
 type Props = {
   won: boolean;
+  /** Override the Cleared / Not solved heading (e.g. Out of attempts, Skipped). */
+  outcomeLabel?: string | null;
   elapsedMs?: number | null;
   score?: number;
   streak?: number;
@@ -48,6 +50,7 @@ type Props = {
 
 export function PlayResultsCard({
   won,
+  outcomeLabel,
   elapsedMs,
   score,
   streak,
@@ -78,12 +81,33 @@ export function PlayResultsCard({
     }
   }, [accountXp, accountLevel]);
 
+  const heading =
+    outcomeLabel?.trim() || (won ? "Cleared" : "Not solved");
+
   return (
-    <div className="space-y-4 rounded-2xl border border-[var(--line)] bg-panel/70 p-5">
+    <div
+      className={[
+        "space-y-4 rounded-2xl border p-5",
+        won
+          ? "border-mint/45 bg-mint/10"
+          : "border-danger/45 bg-danger/10",
+      ].join(" ")}
+    >
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-ember">
-          {won ? "Cleared" : "Finished"}
+        <p
+          className={[
+            "text-xs uppercase tracking-[0.2em]",
+            won ? "text-mint" : "text-danger",
+          ].join(" ")}
+        >
+          {heading}
         </p>
+        {!won && (
+          <p className="mt-2 text-sm text-fog">
+            You did not clear this puzzle. The solution is shown below so you
+            can learn the logic.
+          </p>
+        )}
         {typeof elapsedMs === "number" && (
           <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold">
             Your time:{" "}
@@ -124,9 +148,21 @@ export function PlayResultsCard({
       </div>
 
       {answer ? (
-        <div className="rounded-xl border border-ember/40 bg-ember/15 px-4 py-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-ember">
-            Answer
+        <div
+          className={[
+            "rounded-xl border px-4 py-4",
+            won
+              ? "border-ember/40 bg-ember/15"
+              : "border-[var(--line)] bg-ink-2/70",
+          ].join(" ")}
+        >
+          <p
+            className={[
+              "text-xs uppercase tracking-[0.2em]",
+              won ? "text-ember" : "text-fog",
+            ].join(" ")}
+          >
+            {won ? "Answer" : "Solution"}
           </p>
           <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-paper sm:text-3xl">
             {answer}
