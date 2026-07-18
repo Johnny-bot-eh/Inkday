@@ -430,6 +430,32 @@ select {
   transform-origin: center bottom;
 }
 
+/* Habitat trees are bottom-anchored — never use the placeable sway
+   keyframes (they bake in translate(-50%, -50%) and lift trunks onto the hedge). */
+@keyframes garden-habitat-sway {
+  0%,
+  100% {
+    transform: rotate(-1.4deg);
+  }
+  50% {
+    transform: rotate(1.8deg);
+  }
+}
+
+.garden-habitat-sway {
+  animation: garden-habitat-sway 5.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+.garden-dragging {
+  animation: none !important;
+  cursor: grabbing;
+  z-index: 40 !important;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
+  transition: none !important;
+}
+
 .garden-bob {
   animation: garden-bob 3.2s ease-in-out infinite;
 }

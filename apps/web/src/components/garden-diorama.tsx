@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -39,7 +40,10 @@ const TONE_SKY: Record<CompanionSnapshot["garden"]["tone"], string> = {
   night: "linear-gradient(180deg, #141c2e 0%, #243848 38%, #1a2e20 78%, #101810 100%)",
 };
 
-const SEASON_SKY_TINT: Record<string, Partial<Record<CompanionSnapshot["garden"]["tone"], string>>> = {
+const SEASON_SKY_TINT: Record<
+  string,
+  Partial<Record<CompanionSnapshot["garden"]["tone"], string>>
+> = {
   autumn: {
     dawn: "linear-gradient(180deg, #f0b888 0%, #e0c898 36%, #b88858 72%, #8a6038 100%)",
     day: "linear-gradient(180deg, #88b0d0 0%, #e0c888 42%, #c07840 78%, #8a5028 100%)",
@@ -85,8 +89,15 @@ export function GardenDiorama({
   onRemove,
 }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
+  const dragIdRef = useRef<string | null>(null);
+  const dragPosRef = useRef<{ x: number; y: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const decorElsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
+
   const [dragId, setDragId] = useState<string | null>(null);
-  const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
+  const [placeGhost, setPlaceGhost] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   const climate = useLocalGardenClimate({
     accountLevel,
@@ -96,8 +107,7 @@ export function GardenDiorama({
 
   const tone = climate.tone;
   const ambience = climate.ambience;
-  const sky =
-    SEASON_SKY_TINT[climate.season]?.[tone] ?? TONE_SKY[tone];
+  const sky = SEASON_SKY_TINT[climate.season]?.[tone] ?? TONE_SKY[tone];
 
   const sorted = useMemo(() => {
     return [...garden.placements].sort((a, b) => {
@@ -119,19 +129,51 @@ export function GardenDiorama({
     };
   }, []);
 
+  const paintDrag = useCallback((id: string, x: number, y: number) => {
+    const el = decorElsRef.current.get(id);
+    if (!el) return;
+    el.style.left = `${x}%`;
+    el.style.top = `${y}%`;
+    el.style.zIndex = String(40);
+  }, []);
+
+  const flushDragFrame = useCallback(() => {
+    rafRef.current = null;
+    const id = dragIdRef.current;
+    const pos = dragPosRef.current;
+    if (!id || !pos) return;
+    paintDrag(id, pos.x, pos.y);
+  }, [paintDrag]);
+
+  const queueDragPaint = useCallback(() => {
+    if (rafRef.current != null) return;
+    rafRef.current = window.requestAnimationFrame(flushDragFrame);
+  }, [flushDragFrame]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) window.cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   function onStagePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget && !(e.target as HTMLElement).dataset?.stage)
       return;
-    if (!selectedDecor || busy) return;
+    // Empty stage tap: place if buying, otherwise clear the selection ring.
+    if (!selectedDecor) {
+      if (selectedPlacement) onSelectPlacement(null);
+      return;
+    }
+    if (busy) return;
     const { x, y } = toNorm(e.clientX, e.clientY);
     onPlace(selectedDecor, x, y);
   }
 
   function onStagePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
     if (selectedDecor) {
-      setGhost(toNorm(e.clientX, e.clientY));
-    } else if (!dragId) {
-      setGhost(null);
+      setPlaceGhost(toNorm(e.clientX, e.clientY));
+    } else if (!dragIdRef.current) {
+      setPlaceGhost(null);
     }
   }
 
@@ -141,22 +183,48 @@ export function GardenDiorama({
   ) {
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
+    dragIdRef.current = placement.id;
+    dragPosRef.current = { x: placement.x, y: placement.y };
     setDragId(placement.id);
     onSelectPlacement(placement.id);
+    paintDrag(placement.id, placement.x, placement.y);
   }
 
   function onDecorPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
-    if (!dragId) return;
-    setGhost(toNorm(e.clientX, e.clientY));
+    if (!dragIdRef.current) return;
+    dragPosRef.current = toNorm(e.clientX, e.clientY);
+    queueDragPaint();
   }
 
   function endDrag(e: ReactPointerEvent<HTMLButtonElement>) {
-    if (!dragId) return;
-    const { x, y } = toNorm(e.clientX, e.clientY);
-    const id = dragId;
+    if (!dragIdRef.current) return;
+    const id = dragIdRef.current;
+    const pos = toNorm(e.clientX, e.clientY);
+    if (rafRef.current != null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    paintDrag(id, pos.x, pos.y);
+    dragIdRef.current = null;
+    dragPosRef.current = null;
     setDragId(null);
-    setGhost(null);
-    onMove(id, x, y);
+    onSelectPlacement(null);
+    onMove(id, pos.x, pos.y);
+  }
+
+  function cancelDrag() {
+    if (!dragIdRef.current) return;
+    const id = dragIdRef.current;
+    const placement = garden.placements.find((p) => p.id === id);
+    if (rafRef.current != null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (placement) paintDrag(id, placement.x, placement.y);
+    dragIdRef.current = null;
+    dragPosRef.current = null;
+    setDragId(null);
+    onSelectPlacement(null);
   }
 
   const night = tone === "night" || tone === "dusk";
@@ -175,7 +243,7 @@ export function GardenDiorama({
         onPointerDown={onStagePointerDown}
         onPointerMove={onStagePointerMove}
         onPointerLeave={() => {
-          if (!dragId) setGhost(null);
+          if (!dragIdRef.current) setPlaceGhost(null);
         }}
         className={[
           "absolute inset-0 touch-none",
@@ -231,36 +299,37 @@ export function GardenDiorama({
         {/* Placeable decorations */}
         {sorted.map((p) => {
           const dragging = dragId === p.id;
-          const selected = selectedPlacement === p.id;
-          const pos = dragging && ghost ? ghost : { x: p.x, y: p.y };
+          const selected = selectedPlacement === p.id && !dragging;
           return (
             <button
               key={p.id}
               type="button"
               aria-label={p.title}
+              ref={(node) => {
+                if (node) decorElsRef.current.set(p.id, node);
+                else decorElsRef.current.delete(p.id);
+              }}
               onPointerDown={(e) => beginDrag(p, e)}
               onPointerMove={onDecorPointerMove}
               onPointerUp={endDrag}
-              onPointerCancel={() => {
-                setDragId(null);
-                setGhost(null);
-              }}
+              onPointerCancel={cancelDrag}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 onRemove(p.id);
               }}
               className={[
-                "absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border-0 bg-transparent p-0",
-                motionClass(p.motion),
+                "absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border-0 bg-transparent p-0 cursor-grab",
+                dragging ? "garden-dragging" : motionClass(p.motion),
                 selected
                   ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent"
                   : "",
               ].join(" ")}
               style={{
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
+                left: `${p.x}%`,
+                top: `${p.y}%`,
                 width: `${p.widthPct}%`,
-                zIndex: layerZ(p.layer) + Math.round(pos.y),
+                zIndex: layerZ(p.layer) + Math.round(p.y),
+                willChange: dragging ? "left, top" : undefined,
               }}
             >
               <GardenDecorSprite
@@ -334,10 +403,14 @@ export function GardenDiorama({
         </div>
 
         {/* Placement ghost */}
-        {selectedDecor && ghost ? (
+        {selectedDecor && placeGhost ? (
           <div
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 opacity-60"
-            style={{ left: `${ghost.x}%`, top: `${ghost.y}%`, zIndex: 50 }}
+            style={{
+              left: `${placeGhost.x}%`,
+              top: `${placeGhost.y}%`,
+              zIndex: 50,
+            }}
           >
             <div className="h-10 w-10 rounded-full border-2 border-dashed border-ember bg-ember/20" />
           </div>
