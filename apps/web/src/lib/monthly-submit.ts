@@ -14,6 +14,7 @@ export async function submitMonthlyFromGame(
   data: {
     error?: string;
     score?: number;
+    timeBonus?: number;
     cleared?: number;
     total?: number;
     totalBonus?: number;

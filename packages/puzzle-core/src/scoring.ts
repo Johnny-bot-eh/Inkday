@@ -177,14 +177,22 @@ export function isPerfectWordLadder(opts: {
   return opts.stepsUsed > 0 && opts.stepsUsed <= opts.optimalSteps;
 }
 
-/** Speed bonus from elapsed solve time (ms). */
+/** Speed bonus from elapsed solve time (ms). Faster clears earn more. */
+export const TIME_BONUS_TIERS = [
+  { maxSec: 30, bonus: 40 },
+  { maxSec: 60, bonus: 30 },
+  { maxSec: 120, bonus: 20 },
+  { maxSec: 180, bonus: 15 },
+  { maxSec: 300, bonus: 10 },
+  { maxSec: 480, bonus: 5 },
+] as const;
+
 export function timeBonus(elapsedMs: number | undefined | null): number {
   if (elapsedMs == null || elapsedMs < 0) return 0;
   const sec = elapsedMs / 1000;
-  if (sec <= 30) return 40;
-  if (sec <= 60) return 30;
-  if (sec <= 120) return 20;
-  if (sec <= 180) return 10;
+  for (const tier of TIME_BONUS_TIERS) {
+    if (sec <= tier.maxSec) return tier.bonus;
+  }
   return 0;
 }
 

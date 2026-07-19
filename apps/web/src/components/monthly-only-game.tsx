@@ -14,6 +14,7 @@ import { CaseFileBackLink } from "@/components/case-file-back-link";
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { PlayResultsCard } from "@/components/play-results-card";
+import { PlayTimer, usePlayTimer } from "@/components/play-timer";
 
 type Props = {
   collectionId: string;
@@ -150,6 +151,14 @@ export function MonthlyOnlyGame({
   const [hintStep, setHintStep] = useState(0);
   const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
   const hintStepRef = useRef(0);
+  const [lastElapsedMs, setLastElapsedMs] = useState<number | null>(null);
+  const [lastScore, setLastScore] = useState<number | null>(null);
+  const [lastTimeBonus, setLastTimeBonus] = useState<number | null>(null);
+
+  const timer = usePlayTimer({
+    running: !done && !alreadyResolved,
+    resetKey: `${collectionId}-${slotIndex}`,
+  });
 
   const maxAttempts = MONTHLY_BASE_ATTEMPTS + bonusAttempts;
   const canUseHint = hintStep < hintLadder.length;
@@ -231,6 +240,8 @@ export function MonthlyOnlyGame({
     }
 
     if (!signedIn) {
+      const elapsedMs = timer.freeze();
+      setLastElapsedMs(elapsedMs);
       setDone(true);
       setStatus(`Cleared! Sign in to save Case File progress (+${points} pts).`);
       return;
@@ -238,12 +249,15 @@ export function MonthlyOnlyGame({
 
     setSubmitting(true);
     try {
+      const elapsedMs = timer.freeze();
+      setLastElapsedMs(elapsedMs);
       const res = await fetch("/api/monthly/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           collectionId,
           slotIndex,
+          elapsedMs,
           ...payload,
         }),
       });
@@ -253,7 +267,12 @@ export function MonthlyOnlyGame({
         return;
       }
       setDone(true);
+      if (typeof data.score === "number") setLastScore(data.score);
+      if (typeof data.timeBonus === "number") setLastTimeBonus(data.timeBonus);
       const parts = [`Cleared · ${data.score} pts · ${data.cleared}/${data.total}`];
+      if (typeof data.timeBonus === "number" && data.timeBonus > 0) {
+        parts.push(`speed +${data.timeBonus}`);
+      }
       if (data.totalBonus > 0) {
         parts.push(`Milestone bonus +${data.totalBonus}`);
       }
@@ -287,7 +306,12 @@ export function MonthlyOnlyGame({
             +{points} pts on clear · Attempts {attempts}/{maxAttempts}
           </p>
         </div>
-        <CaseFileBackLink collectionId={collectionId} />
+        <div className="flex flex-col items-end gap-2">
+          <CaseFileBackLink collectionId={collectionId} />
+          {!alreadyResolved && (
+            <PlayTimer formatted={timer.formatted} stopped={done} />
+          )}
+        </div>
       </div>
 
       <MonthlyOnlyBody
@@ -337,6 +361,23 @@ export function MonthlyOnlyGame({
             won={!skipped && !failed}
             outcomeLabel={
               skipped ? "Skipped" : failed ? "Out of attempts" : undefined
+            }
+            elapsedMs={lastElapsedMs}
+            score={lastScore ?? undefined}
+            breakdown={
+              lastScore != null
+                ? {
+                    base: points,
+                    timeBonus: lastTimeBonus ?? 0,
+                    perfectBonus: 0,
+                    noHintsBonus: 0,
+                    weeklyBonus: 0,
+                    monthlyBonus: 0,
+                    seasonBonus: 0,
+                    plusBonus: 0,
+                    total: lastScore,
+                  }
+                : null
             }
             answer={clearedAnswer}
             explanation={clearedExplanation}
