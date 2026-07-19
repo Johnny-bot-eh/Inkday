@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Difficulty, LetterMark } from "@daily-puzzle/puzzle-core";
 import {
   evaluateGuess,
@@ -68,7 +68,8 @@ export function WordleGame({
   const [submitting, setSubmitting] = useState(false);
   const [revealAnswer, setRevealAnswer] = useState<string | null>(null);
   const [bonusGuesses, setBonusGuesses] = useState(0);
-  const [hintText, setHintText] = useState<string | null>(null);
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const hintedPositionsRef = useRef<Set<number>>(new Set());
   const [results, setResults] = useState<{
     won: boolean;
     outcomeLabel?: string | null;
@@ -97,6 +98,38 @@ export function WordleGame({
     running: !done && !alreadyPlayed,
     resetKey: `${dateKey}-${difficulty}-${category ?? ""}`,
   });
+
+  function greenPositions(rows: LetterMark[][]): Set<number> {
+    const known = new Set<number>();
+    for (const row of rows) {
+      row.forEach((mark, i) => {
+        if (mark === "correct") known.add(i);
+      });
+    }
+    return known;
+  }
+
+  function nextHintablePosition(rows: LetterMark[][]): number | null {
+    const known = greenPositions(rows);
+    for (let i = 0; i < config.wordLength; i++) {
+      if (known.has(i) || hintedPositionsRef.current.has(i)) continue;
+      return i;
+    }
+    return null;
+  }
+
+  const canUseWordleHint = nextHintablePosition(marks) !== null;
+
+  function applyWordleHint() {
+    const index = nextHintablePosition(marks);
+    if (index === null) return;
+    hintedPositionsRef.current.add(index);
+    const letter = config.answer[index]!.toUpperCase();
+    setUnlockedHints((prev) => [
+      ...prev,
+      `Letter ${index + 1} is “${letter}”.`,
+    ]);
+  }
 
   function submitGuess() {
     if (done) return;
@@ -466,12 +499,8 @@ export function WordleGame({
         <CoinConsumableBar
           signedIn={signedIn}
           disabled={submitting}
-          onHint={() => {
-            const letter = config.answer[guesses.length % config.wordLength]!;
-            setHintText(
-              `Letter ${((guesses.length % config.wordLength) + 1)} is “${letter.toUpperCase()}”.`,
-            );
-          }}
+          canUseHint={canUseWordleHint}
+          onHint={applyWordleHint}
           onExtraAttempt={() => setBonusGuesses((n) => n + 1)}
           onSkip={() => {
             if (!monthly) setDone(true);
@@ -480,8 +509,15 @@ export function WordleGame({
         />
       )}
 
-      {hintText && !done && (
-        <p className="mt-2 text-sm text-mint">{hintText}</p>
+      {unlockedHints.length > 0 && !done && (
+        <ul className="mt-2 space-y-1 text-sm text-mint">
+          {unlockedHints.map((hint, i) => (
+            <li key={`wordle-hint-${i}`}>
+              <span className="text-fog">Hint {i + 1}: </span>
+              {hint}
+            </li>
+          ))}
+        </ul>
       )}
 
       {status && (
