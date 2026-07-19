@@ -37,4 +37,35 @@ export function getDb() {
   return singleton;
 }
 
+/**
+ * Additive user columns that better-auth SELECTs on every session/login.
+ * Build-time migrate is best-effort — ensure at runtime so auth never breaks
+ * when a new column ships before the remote DB is altered.
+ */
+let userColumnsReady: Promise<void> | null = null;
+
+async function addUserColumnIfMissing(columnSql: string) {
+  const client = getLibsqlClient();
+  try {
+    await client.execute(`ALTER TABLE user ADD COLUMN ${columnSql}`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // SQLite / libsql: duplicate column name
+    if (!/duplicate column|already exists/i.test(msg)) {
+      console.warn(`[db] ALTER user ${columnSql} failed:`, msg);
+    }
+  }
+}
+
+export async function ensureUserColumns() {
+  if (!userColumnsReady) {
+    userColumnsReady = (async () => {
+      await addUserColumnIfMissing("equipped_avatar_id TEXT");
+      await addUserColumnIfMissing("equipped_accessory_id TEXT");
+      await addUserColumnIfMissing("display_name TEXT");
+    })();
+  }
+  await userColumnsReady;
+}
+
 export type Db = ReturnType<typeof getDb>;
