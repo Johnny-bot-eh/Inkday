@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -52,13 +52,18 @@ export function AcrosticGame({
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
-      ? `Already logged today · ${alreadyPlayed.score} pts`
+      ? monthly
+        ? alreadyPlayed.won
+          ? `Already cleared · ${alreadyPlayed.score} pts`
+          : "This Case File slot is closed."
+        : `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
   const maxAttempts = puzzle.maxAttempts + bonusAttempts;
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
     won: boolean;
+    outcomeLabel?: string | null;
     elapsedMs?: number;
     score?: number;
     streak?: number;
@@ -91,6 +96,7 @@ export function AcrosticGame({
     attemptsUsed: number;
     answer: string;
     clueAnswers?: string[];
+    outcome?: "skipped" | "failed";
   }) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "acrostic", difficulty);
@@ -98,9 +104,51 @@ export function AcrosticGame({
 
     if (monthly) {
       if (!opts.won) {
-        setDone(true);
-        setResults({ won: false, elapsedMs, answer: puzzle.message });
-        setStatus(`Out of attempts (${timeLabel}).`);
+        const outcome = opts.outcome ?? "failed";
+        if (!signedIn) {
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.message,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped (${timeLabel}).`
+              : `Out of attempts (${timeLabel}).`,
+          );
+          return;
+        }
+        setSubmitting(true);
+        try {
+          const mres = await forfeitMonthlyFromGame(monthly, outcome, {
+            answer: opts.answer,
+            guesses: opts.clueAnswers,
+            elapsedMs,
+          });
+          if (!mres.ok) {
+            setStatus(mres.data.error ?? "Could not save");
+            return;
+          }
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.message,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped — this Case File slot is closed (${timeLabel}).`
+              : `Out of attempts — this Case File slot is closed (${timeLabel}).`,
+          );
+          router.refresh();
+        } catch {
+          setStatus("Network error saving result");
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
       if (!signedIn) {
@@ -381,6 +429,7 @@ export function AcrosticGame({
               attemptsUsed: attempts,
               answer: puzzle.message,
               clueAnswers: puzzle.answers,
+              outcome: "skipped",
             });
           }}
         />

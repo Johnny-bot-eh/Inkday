@@ -14,6 +14,7 @@ import { GardenNest, GardenNestRim } from "@/components/garden-nest";
 import { GardenWeatherLayer } from "@/components/garden-weather";
 import { PetMark, usePetStageMotion } from "@/components/pet-mark";
 import { useLocalGardenClimate } from "@/lib/garden-climate";
+import { usePetRoam } from "@/lib/pet-roam";
 import type {
   CompanionGardenPlacement,
   CompanionSnapshot,
@@ -274,9 +275,26 @@ export function GardenDiorama({
     drag?.kind === "nest" && livePos ? livePos.x : garden.pet.x;
   const nestY =
     drag?.kind === "nest" && livePos ? livePos.y : garden.pet.y;
-  const bubbleLeft = nestX >= 55;
   const petMotion = usePetStageMotion(pet.id, pet.stage);
+  const inNest = pet.stage === "egg" || petMotion === "hatch";
+  const roam = usePetRoam({
+    enabled: !inNest,
+    nest: { x: nestX, y: nestY },
+    placements: garden.placements,
+    personalityId: pet.personalityId,
+    happinessState: pet.happinessState,
+    paused: dragging,
+  });
+  const petX = inNest ? nestX : roam.x;
+  const petY = inNest ? nestY : roam.y;
+  const bubbleLeft = petX >= 55;
   const draggingNest = drag?.kind === "nest";
+  const petWidth =
+    pet.stage === "baby"
+      ? "min(16%, 96px)"
+      : pet.stage === "teen"
+        ? "min(18%, 108px)"
+        : "min(20%, 120px)";
 
   return (
     <div
@@ -344,6 +362,10 @@ export function GardenDiorama({
           const pos =
             isDragging && livePos ? livePos : { x: p.x, y: p.y };
           const selected = selectedPlacement === p.id && !isDragging;
+          const visited =
+            !inNest &&
+            roam.mode === "interact" &&
+            roam.focusPlacementId === p.id;
           return (
             <button
               key={p.id}
@@ -363,6 +385,7 @@ export function GardenDiorama({
                 selected
                   ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent"
                   : "",
+                visited ? "garden-decor-visited" : "",
               ].join(" ")}
               style={{
                 left: `${pos.x}%`,
@@ -404,7 +427,7 @@ export function GardenDiorama({
             top: `${nestY}%`,
             zIndex: draggingNest
               ? 40
-              : layerZ(garden.pet.layer) + Math.round(nestY) + 1,
+              : layerZ(garden.pet.layer) + Math.round(nestY),
             width: "min(22%, 128px)",
             transform: "translate(-50%, -72%)",
           }}
@@ -414,48 +437,102 @@ export function GardenDiorama({
               night={night}
               className="absolute inset-x-0 bottom-0 z-[1] h-auto w-full drop-shadow-md"
             />
-            <div
-              className={[
-                "pointer-events-none absolute left-1/2 z-[2] -translate-x-1/2 [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full",
-                pet.stage === "egg" || petMotion === "hatch"
-                  ? "w-[70%]"
-                  : "w-[78%]",
-              ].join(" ")}
-              style={{
-                bottom:
-                  pet.stage === "egg" || petMotion === "hatch" ? "4%" : "12%",
-              }}
-            >
-              <PetMark
-                speciesId={pet.speciesId as PetSpeciesId}
-                stage={pet.stage}
-                colors={pet.colors}
-                happinessState={pet.happinessState}
-                motion={petMotion}
-                size={120}
-              />
-            </div>
+            {inNest ? (
+              <div
+                className="pointer-events-none absolute bottom-[4%] left-1/2 z-[2] w-[70%] -translate-x-1/2 [&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full"
+              >
+                <PetMark
+                  speciesId={pet.speciesId as PetSpeciesId}
+                  stage={pet.stage}
+                  colors={pet.colors}
+                  happinessState={pet.happinessState}
+                  motion={petMotion}
+                  size={120}
+                />
+              </div>
+            ) : null}
             <GardenNestRim
               night={night}
               className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-auto w-full"
             />
           </div>
-          <div
-            className={[
-              "pointer-events-none absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-              bubbleLeft ? "right-[95%]" : "left-[95%]",
-            ].join(" ")}
-            style={{ background: "rgba(255,255,255,0.92)" }}
-          >
-            {pet.dialogue}
-            <span
+          {inNest ? (
+            <div
               className={[
-                "absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/92",
-                bubbleLeft ? "-right-1" : "-left-1",
+                "pointer-events-none absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+                bubbleLeft ? "right-[95%]" : "left-[95%]",
               ].join(" ")}
-            />
-          </div>
+              style={{ background: "rgba(255,255,255,0.92)" }}
+            >
+              {pet.dialogue}
+              <span
+                className={[
+                  "absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/92",
+                  bubbleLeft ? "-right-1" : "-left-1",
+                ].join(" ")}
+              />
+            </div>
+          ) : null}
         </button>
+
+        {!inNest ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute"
+            style={{
+              left: `${petX}%`,
+              top: `${petY}%`,
+              width: petWidth,
+              zIndex: layerZ(garden.pet.layer) + Math.round(petY) + 2,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <div
+              className="relative mx-auto w-full"
+              style={{
+                transform: `scaleX(${roam.facing})`,
+                transformOrigin: "50% 100%",
+              }}
+            >
+              <div
+                className={[
+                  "[&_>div]:!mx-0 [&_>div]:!h-auto [&_>div]:!w-full [&_svg]:!h-auto [&_svg]:!w-full",
+                  roam.mode === "walk"
+                    ? "garden-pet-walk"
+                    : roam.mode === "interact"
+                      ? "garden-pet-interact"
+                      : "",
+                ].join(" ")}
+              >
+                <PetMark
+                  speciesId={pet.speciesId as PetSpeciesId}
+                  stage={pet.stage}
+                  colors={pet.colors}
+                  happinessState={
+                    roam.mode === "nap" ? "sleepy" : pet.happinessState
+                  }
+                  motion={petMotion}
+                  size={120}
+                />
+              </div>
+            </div>
+            <div
+              className={[
+                "pointer-events-none absolute top-[-8%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
+                bubbleLeft ? "right-[90%]" : "left-[90%]",
+              ].join(" ")}
+              style={{ background: "rgba(255,255,255,0.92)" }}
+            >
+              {pet.dialogue}
+              <span
+                className={[
+                  "absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/92",
+                  bubbleLeft ? "-right-1" : "-left-1",
+                ].join(" ")}
+              />
+            </div>
+          </div>
+        ) : null}
 
         {selectedDecor ? (
           <div

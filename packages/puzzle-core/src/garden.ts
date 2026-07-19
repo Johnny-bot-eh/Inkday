@@ -29,7 +29,8 @@ export const GARDEN_SCENE = {
   sceneVersion: 4,
   /**
    * One nest for now (Ink Plus may unlock extra nests later).
-   * One egg / companion per nest. Nest + pet share this anchor.
+   * Eggs sit in the nest; after hatch the companion roams the clearing
+   * (client-side). Nest pose is persisted; roam pose is ephemeral.
    */
   nest: {
     maxNests: 1,
@@ -38,7 +39,7 @@ export const GARDEN_SCENE = {
     y: 82,
   },
   pet: {
-    /** Bottom of companion sits in the nest hollow. */
+    /** Default nest / egg anchor (also the hatch start pose). */
     x: 52,
     y: 82,
     layer: "middle" as GardenLayer,

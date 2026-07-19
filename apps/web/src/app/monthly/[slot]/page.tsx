@@ -6,6 +6,7 @@ import {
 import { MonthlySlotPlayer } from "@/components/monthly-slot-player";
 import {
   getMonthlyCompletion,
+  monthlyOutcomeFromMeta,
 } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 
@@ -29,6 +30,14 @@ export default async function MonthlySlotPage({
     ? await getMonthlyCompletion(session.user.id, collectionId, slotIndex)
     : null;
 
+  const alreadyResolved = Boolean(existing);
+  const priorWon = Boolean(existing?.won);
+  const priorOutcome = existing
+    ? existing.won
+      ? ("cleared" as const)
+      : monthlyOutcomeFromMeta(existing.metaJson)
+    : null;
+
   return (
     <MonthlySlotPlayer
       collectionId={collectionId}
@@ -38,7 +47,9 @@ export default async function MonthlySlotPage({
       seedKey={slot.seedKey}
       label={slot.label}
       points={slot.points}
-      alreadyCleared={Boolean(existing?.won)}
+      alreadyCleared={priorWon}
+      alreadyResolved={alreadyResolved}
+      priorOutcome={priorOutcome}
       priorScore={existing?.score}
       signedIn={Boolean(session?.user)}
     />

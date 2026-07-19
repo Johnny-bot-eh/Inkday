@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { submitMonthlyFromGame, forfeitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -50,7 +50,11 @@ export function AnagramGame({
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
-      ? `Already logged today · ${alreadyPlayed.score} pts`
+      ? monthly
+        ? alreadyPlayed.won
+          ? `Already cleared · ${alreadyPlayed.score} pts`
+          : "This Case File slot is closed."
+        : `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
   const [submitting, setSubmitting] = useState(false);
@@ -104,6 +108,7 @@ export function AnagramGame({
     won: boolean;
     attemptsUsed: number;
     answer: string;
+    outcome?: "skipped" | "failed";
   }) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "anagram", difficulty);
@@ -111,14 +116,50 @@ export function AnagramGame({
 
     if (monthly) {
       if (!opts.won) {
-        setDone(true);
-        setResults({
-          won: false,
-          outcomeLabel: "Out of attempts",
-          elapsedMs,
-          answer: puzzle.answer,
-        });
-        setStatus(`Out of attempts (${timeLabel}).`);
+        const outcome = opts.outcome ?? "failed";
+        if (!signedIn) {
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.answer,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped (${timeLabel}).`
+              : `Out of attempts (${timeLabel}).`,
+          );
+          return;
+        }
+        setSubmitting(true);
+        try {
+          const mres = await forfeitMonthlyFromGame(monthly, outcome, {
+            elapsedMs,
+            answer: opts.answer,
+          });
+          if (!mres.ok) {
+            setStatus(mres.data.error ?? "Could not save");
+            return;
+          }
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.answer,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped — this Case File slot is closed (${timeLabel}).`
+              : `Out of attempts — this Case File slot is closed (${timeLabel}).`,
+          );
+          router.refresh();
+        } catch {
+          setStatus("Network error saving result");
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
       if (!signedIn) {
@@ -352,6 +393,7 @@ export function AnagramGame({
               won: false,
               attemptsUsed: attempts,
               answer: puzzle.answer,
+              outcome: "skipped",
             });
           }}
         />

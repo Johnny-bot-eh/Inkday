@@ -5,7 +5,7 @@ import {
   collectionIdForDate,
   getMonthlyCollection,
 } from "@daily-puzzle/puzzle-core";
-import { getMonthlyProgress } from "@/lib/game-service";
+import { getMonthlyProgress, monthlyOutcomeFromMeta } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { DifficultyLabel } from "@/components/difficulty-label";
 
@@ -18,12 +18,23 @@ export default async function MonthlyHubPage() {
 
   let cleared = 0;
   let clearedSet = new Set<number>();
+  let resolvedMap = new Map<number, "cleared" | "skipped" | "failed">();
   let milestoneIds = new Set<string>();
 
   if (session?.user) {
     const progress = await getMonthlyProgress(session.user.id, collectionId);
     cleared = progress.cleared;
     clearedSet = new Set(progress.completions.map((c) => c.slotIndex));
+    for (const row of progress.resolutions) {
+      if (row.won) {
+        resolvedMap.set(row.slotIndex, "cleared");
+      } else {
+        resolvedMap.set(
+          row.slotIndex,
+          monthlyOutcomeFromMeta(row.metaJson) ?? "failed",
+        );
+      }
+    }
     milestoneIds = new Set(progress.milestones.map((m) => m.milestoneId));
   }
 
@@ -123,7 +134,16 @@ export default async function MonthlyHubPage() {
         </h2>
         <div className="mt-3 grid gap-2">
           {collection.puzzles.map((slot) => {
-            const done = clearedSet.has(slot.index);
+            const outcome = resolvedMap.get(slot.index);
+            const done = Boolean(outcome);
+            const won = clearedSet.has(slot.index);
+            const statusLabel = won
+              ? "Completed"
+              : outcome === "skipped"
+                ? "Skipped"
+                : outcome === "failed"
+                  ? "Not solved"
+                  : `+${slot.points} pts`;
             return (
               <Link
                 key={slot.index}
@@ -137,13 +157,11 @@ export default async function MonthlyHubPage() {
               >
                 <div>
                   <div className={done ? "font-semibold text-fog" : "font-semibold"}>
-                    {done ? "✓" : "·"} #{slot.index}{" "}
+                    {won ? "✓" : done ? "–" : "·"} #{slot.index}{" "}
                     <DifficultyLabel difficulty={slot.difficulty} /> —{" "}
                     {slot.label}
                   </div>
-                  <div className="text-xs text-fog">
-                    {done ? "Completed" : `+${slot.points} pts`}
-                  </div>
+                  <div className="text-xs text-fog">{statusLabel}</div>
                 </div>
                 <span className={done ? "text-fog" : "text-ember"}>
                   {done ? "Done" : "Play →"}

@@ -24,6 +24,8 @@ type Props = {
   label: string;
   points: number;
   alreadyCleared: boolean;
+  alreadyResolved?: boolean;
+  priorOutcome?: "cleared" | "skipped" | "failed" | null;
   signedIn: boolean;
 };
 
@@ -108,6 +110,8 @@ export function MonthlyOnlyGame({
   label,
   points,
   alreadyCleared,
+  alreadyResolved = alreadyCleared,
+  priorOutcome = alreadyCleared ? "cleared" : null,
   signedIn,
 }: Props) {
   const router = useRouter();
@@ -126,12 +130,19 @@ export function MonthlyOnlyGame({
     [puzzle, showFreeHint],
   );
 
-  const [status, setStatus] = useState<string | null>(
-    alreadyCleared ? "Already cleared this month" : null,
+  const [status, setStatus] = useState<string | null>(() => {
+    if (alreadyCleared) return "Already cleared this month";
+    if (priorOutcome === "skipped") return "Skipped — this slot is closed.";
+    if (priorOutcome === "failed" || alreadyResolved) {
+      return "Already finished — this slot is closed.";
+    }
+    return null;
+  });
+  const [done, setDone] = useState(alreadyResolved);
+  const [skipped, setSkipped] = useState(priorOutcome === "skipped");
+  const [failed, setFailed] = useState(
+    priorOutcome === "failed" || (alreadyResolved && !alreadyCleared && priorOutcome !== "skipped"),
   );
-  const [done, setDone] = useState(alreadyCleared);
-  const [skipped, setSkipped] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bonusNote, setBonusNote] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
@@ -152,6 +163,51 @@ export function MonthlyOnlyGame({
     setUnlockedHints((prev) => [...prev, next]);
   }
 
+  async function forfeitSlot(outcome: "skipped" | "failed") {
+    if (!signedIn) {
+      if (outcome === "skipped") setSkipped(true);
+      else setFailed(true);
+      setDone(true);
+      setStatus(
+        outcome === "skipped"
+          ? "Skipped — sign in next time to lock the slot."
+          : "Out of attempts — puzzle not cleared.",
+      );
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/monthly/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          collectionId,
+          slotIndex,
+          forfeit: true,
+          outcome,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus(data.error ?? "Could not save");
+        return;
+      }
+      if (outcome === "skipped") setSkipped(true);
+      else setFailed(true);
+      setDone(true);
+      setStatus(
+        outcome === "skipped"
+          ? "Skipped — this Case File slot is closed."
+          : "Out of attempts — this Case File slot is closed.",
+      );
+      router.refresh();
+    } catch {
+      setStatus("Network error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function save(payload: {
     answer?: string;
     choiceIndex?: number;
@@ -163,9 +219,7 @@ export function MonthlyOnlyGame({
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       if (nextAttempts >= maxAttempts) {
-        setFailed(true);
-        setDone(true);
-        setStatus("Out of attempts — puzzle not cleared.");
+        await forfeitSlot("failed");
         return;
       }
       setStatus(
@@ -244,7 +298,7 @@ export function MonthlyOnlyGame({
         onSubmit={save}
       />
 
-      {!done && !alreadyCleared && (
+      {!done && !alreadyResolved && (
         <CoinConsumableBar
           signedIn={signedIn}
           disabled={submitting}
@@ -252,9 +306,7 @@ export function MonthlyOnlyGame({
           onHint={applyMonthlyHint}
           onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
           onSkip={() => {
-            setSkipped(true);
-            setDone(true);
-            setStatus("Skipped — no Case File credit this slot.");
+            void forfeitSlot("skipped");
           }}
         />
       )}

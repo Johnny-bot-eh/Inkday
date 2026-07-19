@@ -18,7 +18,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -90,7 +90,11 @@ export function CryptogramGame({
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
-      ? `Already logged today · ${alreadyPlayed.score} pts`
+      ? monthly
+        ? alreadyPlayed.won
+          ? `Already cleared · ${alreadyPlayed.score} pts`
+          : "This Case File slot is closed."
+        : `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
   const maxAttempts = puzzle.maxAttempts + bonusAttempts;
@@ -106,6 +110,7 @@ export function CryptogramGame({
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
     won: boolean;
+    outcomeLabel?: string | null;
     elapsedMs?: number;
     score?: number;
     streak?: number;
@@ -210,16 +215,62 @@ export function CryptogramGame({
     }
   }
 
-  async function finish(opts: { won: boolean; attemptsUsed: number; answer: string }) {
+  async function finish(opts: {
+    won: boolean;
+    attemptsUsed: number;
+    answer: string;
+    outcome?: "skipped" | "failed";
+  }) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "cryptogram", difficulty);
     const timeLabel = formatDuration(elapsedMs);
 
     if (monthly) {
       if (!opts.won) {
-        setDone(true);
-        setResults({ won: false, elapsedMs, answer: puzzle.plaintext });
-        setStatus(`Out of attempts (${timeLabel}).`);
+        const outcome = opts.outcome ?? "failed";
+        if (!signedIn) {
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.plaintext,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped (${timeLabel}).`
+              : `Out of attempts (${timeLabel}).`,
+          );
+          return;
+        }
+        setSubmitting(true);
+        try {
+          const mres = await forfeitMonthlyFromGame(monthly, outcome, {
+            answer: opts.answer,
+            elapsedMs,
+          });
+          if (!mres.ok) {
+            setStatus(mres.data.error ?? "Could not save");
+            return;
+          }
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.plaintext,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped — this Case File slot is closed (${timeLabel}).`
+              : `Out of attempts — this Case File slot is closed (${timeLabel}).`,
+          );
+          router.refresh();
+        } catch {
+          setStatus("Network error saving result");
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
       if (!signedIn) {
@@ -477,6 +528,7 @@ export function CryptogramGame({
               won: false,
               attemptsUsed: attempts,
               answer: puzzle.plaintext,
+              outcome: "skipped",
             });
           }}
         />

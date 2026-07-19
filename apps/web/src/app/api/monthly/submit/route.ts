@@ -27,6 +27,8 @@ import {
   getMonthlyCompletion,
   listMonthlyCompletions,
   submitMonthlyClear,
+  submitMonthlyForfeit,
+  type MonthlyForfeitOutcome,
 } from "@/lib/game-service";
 import { getSession } from "@/lib/session";
 import { NextResponse } from "next/server";
@@ -41,6 +43,9 @@ type Body = {
   choiceIndex?: number;
   sequence?: string[];
   elapsedMs?: number;
+  /** Permanently close the slot without a clear (skip or out of attempts). */
+  forfeit?: boolean;
+  outcome?: MonthlyForfeitOutcome;
 };
 
 function scoreFor(difficulty: Difficulty, won: boolean): number {
@@ -129,15 +134,46 @@ export async function POST(req: Request) {
     collectionId,
     slotIndex,
   );
-  if (existing?.won) {
+  if (existing) {
     const completions = await listMonthlyCompletions(
       session.user.id,
       collectionId,
     );
     return NextResponse.json({
-      alreadyCleared: true,
+      alreadyCleared: existing.won,
+      alreadyResolved: true,
+      won: existing.won,
       score: existing.score,
       cleared: completions.length,
+      total: collection.puzzles.length,
+      newMilestones: [],
+      newBadges: [],
+      totalBonus: 0,
+    });
+  }
+
+  if (body.forfeit) {
+    const outcome: MonthlyForfeitOutcome =
+      body.outcome === "failed" ? "failed" : "skipped";
+    const result = await submitMonthlyForfeit({
+      userId: session.user.id,
+      collectionId,
+      slotIndex,
+      puzzleType: slot.puzzleType,
+      difficulty: slot.difficulty,
+      outcome,
+      meta: { elapsedMs: body.elapsedMs },
+    });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+    return NextResponse.json({
+      forfeited: true,
+      alreadyResolved: result.alreadyResolved,
+      won: false,
+      outcome: result.outcome,
+      score: 0,
+      cleared: result.cleared,
       total: collection.puzzles.length,
       newMilestones: [],
       newBadges: [],

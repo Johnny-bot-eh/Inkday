@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -50,12 +50,17 @@ export function WordLadderGame({
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
-      ? `Already logged today · ${alreadyPlayed.score} pts`
+      ? monthly
+        ? alreadyPlayed.won
+          ? `Already cleared · ${alreadyPlayed.score} pts`
+          : "This Case File slot is closed."
+        : `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<{
     won: boolean;
+    outcomeLabel?: string | null;
     elapsedMs?: number;
     score?: number;
     streak?: number;
@@ -83,7 +88,11 @@ export function WordLadderGame({
   const maxSteps = puzzle.maxSteps + bonusSteps;
   const nextStep = nextWordLadderStep(puzzle, chain.length);
 
-  async function finish(finalChain: string[], won: boolean) {
+  async function finish(
+    finalChain: string[],
+    won: boolean,
+    opts: { outcome?: "skipped" | "failed" } = {},
+  ) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "wordladder", difficulty);
     const timeLabel = formatDuration(elapsedMs);
@@ -100,9 +109,50 @@ export function WordLadderGame({
 
     if (monthly) {
       if (!won) {
-        setDone(true);
-        setResults({ won: false, elapsedMs });
-        setStatus(`Could not finish (${timeLabel}).`);
+        const outcome = opts.outcome ?? "failed";
+        if (!signedIn) {
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.solution.join(" → "),
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped (${timeLabel}).`
+              : `Out of attempts (${timeLabel}).`,
+          );
+          return;
+        }
+        setSubmitting(true);
+        try {
+          const mres = await forfeitMonthlyFromGame(monthly, outcome, {
+            guesses: finalChain,
+            elapsedMs,
+          });
+          if (!mres.ok) {
+            setStatus(mres.data.error ?? "Could not save");
+            return;
+          }
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.solution.join(" → "),
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped — this Case File slot is closed (${timeLabel}).`
+              : `Out of attempts — this Case File slot is closed (${timeLabel}).`,
+          );
+          router.refresh();
+        } catch {
+          setStatus("Network error saving result");
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
       if (!signedIn) {
@@ -404,8 +454,8 @@ export function WordLadderGame({
           }}
           onExtraAttempt={() => setBonusSteps((n) => n + 1)}
           onSkip={() => {
-            setDone(true);
-            void finish(chain, false);
+            if (!monthly) setDone(true);
+            void finish(chain, false, { outcome: "skipped" });
           }}
         />
       )}

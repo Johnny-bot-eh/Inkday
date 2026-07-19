@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -57,7 +57,11 @@ export function WordleGame({
   const [current, setCurrent] = useState("");
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
-      ? `Already logged today · ${alreadyPlayed.score} pts`
+      ? monthly
+        ? alreadyPlayed.won
+          ? `Already cleared · ${alreadyPlayed.score} pts`
+          : "This Case File slot is closed."
+        : `Already logged today · ${alreadyPlayed.score} pts`
       : null,
   );
   const [done, setDone] = useState(Boolean(alreadyPlayed));
@@ -67,6 +71,7 @@ export function WordleGame({
   const [hintText, setHintText] = useState<string | null>(null);
   const [results, setResults] = useState<{
     won: boolean;
+    outcomeLabel?: string | null;
     elapsedMs?: number;
     score?: number;
     streak?: number;
@@ -123,16 +128,65 @@ export function WordleGame({
     setStatus(null);
   }
 
-  async function finish(finalGuesses: string[], won: boolean) {
+  async function finish(
+    finalGuesses: string[],
+    won: boolean,
+    opts: { outcome?: "skipped" | "failed" } = {},
+  ) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "wordle", difficulty, seasonId);
     const timeLabel = formatDuration(elapsedMs);
 
     if (monthly) {
       if (!won) {
-        setRevealAnswer(config.answer);
-        setResults({ won: false, elapsedMs, answer: config.answer, definition: config.definition });
-        setStatus(`Out of guesses (${timeLabel}).`);
+        const outcome = opts.outcome ?? "failed";
+        if (!signedIn) {
+          setDone(true);
+          setRevealAnswer(config.answer);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: config.answer,
+            definition: config.definition,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped (${timeLabel}).`
+              : `Out of guesses (${timeLabel}).`,
+          );
+          return;
+        }
+        setSubmitting(true);
+        try {
+          const mres = await forfeitMonthlyFromGame(monthly, outcome, {
+            guesses: finalGuesses,
+            elapsedMs,
+          });
+          if (!mres.ok) {
+            setStatus(mres.data.error ?? "Could not save");
+            return;
+          }
+          setDone(true);
+          setRevealAnswer(config.answer);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: config.answer,
+            definition: config.definition,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped — this Case File slot is closed (${timeLabel}).`
+              : `Out of attempts — this Case File slot is closed (${timeLabel}).`,
+          );
+          router.refresh();
+        } catch {
+          setStatus("Network error saving result");
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
       if (!signedIn) {
@@ -423,8 +477,8 @@ export function WordleGame({
           }}
           onExtraAttempt={() => setBonusGuesses((n) => n + 1)}
           onSkip={() => {
-            setDone(true);
-            void finish(guesses, false);
+            if (!monthly) setDone(true);
+            void finish(guesses, false, { outcome: "skipped" });
           }}
         />
       )}

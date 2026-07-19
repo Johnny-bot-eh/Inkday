@@ -1514,6 +1514,106 @@ export async function listMonthlyCompletions(
   });
 }
 
+/** All Case File slot resolutions (wins, skips, and failed attempts). */
+export async function listMonthlyResolutions(
+  userId: string,
+  collectionId: string,
+) {
+  const db = getDb();
+  return db.query.monthlyCompletion.findMany({
+    where: and(
+      eq(monthlyCompletion.userId, userId),
+      eq(monthlyCompletion.collectionId, collectionId),
+    ),
+  });
+}
+
+export type MonthlyForfeitOutcome = "skipped" | "failed";
+
+export function monthlyOutcomeFromMeta(
+  metaJson: string | null | undefined,
+): MonthlyForfeitOutcome | null {
+  if (!metaJson) return null;
+  try {
+    const meta = JSON.parse(metaJson) as { outcome?: string };
+    if (meta.outcome === "skipped" || meta.outcome === "failed") {
+      return meta.outcome;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/**
+ * Permanently close a Case File slot without a clear (skip or out of attempts).
+ * Does not award points, coins, XP, or milestones — and the slot cannot be replayed.
+ */
+export async function submitMonthlyForfeit(opts: {
+  userId: string;
+  collectionId: string;
+  slotIndex: number;
+  puzzleType: string;
+  difficulty: Difficulty;
+  outcome: MonthlyForfeitOutcome;
+  meta?: Record<string, unknown>;
+}): Promise<
+  | {
+      ok: true;
+      alreadyResolved: boolean;
+      won: boolean;
+      outcome: MonthlyForfeitOutcome | "cleared" | null;
+      cleared: number;
+    }
+  | { ok: false; reason: string }
+> {
+  const db = getDb();
+  const existing = await getMonthlyCompletion(
+    opts.userId,
+    opts.collectionId,
+    opts.slotIndex,
+  );
+  const completions = await listMonthlyCompletions(
+    opts.userId,
+    opts.collectionId,
+  );
+
+  if (existing) {
+    return {
+      ok: true,
+      alreadyResolved: true,
+      won: existing.won,
+      outcome: existing.won
+        ? "cleared"
+        : monthlyOutcomeFromMeta(existing.metaJson),
+      cleared: completions.length,
+    };
+  }
+
+  await db.insert(monthlyCompletion).values({
+    id: randomUUID(),
+    userId: opts.userId,
+    collectionId: opts.collectionId,
+    slotIndex: opts.slotIndex,
+    puzzleType: opts.puzzleType,
+    difficulty: opts.difficulty,
+    score: 0,
+    won: false,
+    metaJson: JSON.stringify({
+      outcome: opts.outcome,
+      ...(opts.meta ?? {}),
+    }),
+  });
+
+  return {
+    ok: true,
+    alreadyResolved: false,
+    won: false,
+    outcome: opts.outcome,
+    cleared: completions.length,
+  };
+}
+
 export async function getMonthlyCompletion(
   userId: string,
   collectionId: string,
@@ -1532,8 +1632,9 @@ export async function getMonthlyCompletion(
 export async function getMonthlyProgress(userId: string, collectionId?: string) {
   const id = collectionId ?? collectionIdForDate();
   const collection = getMonthlyCollection(id);
-  const [completions, milestones, badges] = await Promise.all([
+  const [completions, resolutions, milestones, badges] = await Promise.all([
     listMonthlyCompletions(userId, id),
+    listMonthlyResolutions(userId, id),
     getDb().query.monthlyMilestone.findMany({
       where: and(
         eq(monthlyMilestone.userId, userId),
@@ -1552,6 +1653,7 @@ export async function getMonthlyProgress(userId: string, collectionId?: string) 
     collection,
     cleared,
     completions,
+    resolutions,
     milestones,
     badges,
     earnedMilestones: milestonesForProgress(cleared),
@@ -1616,6 +1718,11 @@ export async function submitMonthlyClear(opts: {
       xpEarned: 0,
       happinessGain: 0,
     };
+  }
+
+  // Slot was skipped or failed — permanently locked, cannot convert to a clear.
+  if (existing && !existing.won) {
+    return { ok: false, reason: "already_resolved" };
   }
 
   if (!opts.won) {
