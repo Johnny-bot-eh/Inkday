@@ -10,7 +10,7 @@ import {
   listCoinInventory,
   listOwnedAvatarIds,
 } from "@/lib/coin-service";
-import { getCompanionSnapshot } from "@/lib/pet-service";
+import { listGardenPlacedCounts } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
 import { InventoryAvatarActions } from "@/components/inventory-avatar-actions";
 import { AvatarMark } from "@/components/avatar-mark";
@@ -34,19 +34,13 @@ export default async function InventoryPage() {
     );
   }
 
-  const [items, ownedAvatarIds, equippedAvatarId, companion] =
+  const [items, ownedAvatarIds, equippedAvatarId, placedCounts] =
     await Promise.all([
       listCoinInventory(session.user.id),
       listOwnedAvatarIds(session.user.id),
       getEquippedAvatar(session.user.id),
-      getCompanionSnapshot(session.user.id).catch(() => null),
+      listGardenPlacedCounts(session.user.id),
     ]);
-
-  const placedCounts = new Map<string, number>();
-  for (const p of companion?.garden.placements ?? []) {
-    if (isHabitatDecorItemId(p.itemId)) continue;
-    placedCounts.set(p.itemId, (placedCounts.get(p.itemId) ?? 0) + 1);
-  }
 
   const consumables = items.filter((row) => {
     const def = getShopItem(row.itemId);
