@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { CompanionClient } from "@/components/companion-client";
 import { getCompanionSnapshot } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
@@ -27,10 +28,18 @@ export default async function CompanionPage() {
           {loadError}
         </p>
       ) : null}
-      <CompanionClient
-        signedIn={Boolean(session?.user)}
-        initial={snapshot}
-      />
+      <Suspense
+        fallback={
+          <div className="mx-auto max-w-3xl animate-pulse py-16 text-center text-fog">
+            Loading garden…
+          </div>
+        }
+      >
+        <CompanionClient
+          signedIn={Boolean(session?.user)}
+          initial={snapshot}
+        />
+      </Suspense>
       {session?.user ? (
         <p className="mx-auto max-w-3xl text-center text-xs text-fog">
           <Link href="/" className="text-ember hover:underline">

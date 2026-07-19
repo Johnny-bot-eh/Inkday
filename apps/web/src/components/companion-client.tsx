@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { emitAccountXp } from "@/components/account-xp-chip";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import { GardenDiorama } from "@/components/garden-diorama";
@@ -68,9 +69,52 @@ export function CompanionClient({ signedIn, initial }: Props) {
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(
     null,
   );
+  const [focusItemId, setFocusItemId] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<GardenUndo[]>([]);
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
+  const gardenSectionRef = useRef<HTMLElement | null>(null);
+  const searchParams = useSearchParams();
+  const highlightParam = searchParams.get("highlight");
+  const placeParam = searchParams.get("place");
+
+  useEffect(() => {
+    if (!snapshot) return;
+    if (highlightParam) {
+      const match = snapshot.garden.placements.find(
+        (p) => p.itemId === highlightParam,
+      );
+      if (match) {
+        setSelectedDecor(null);
+        setSelectedPlacement(match.id);
+        setFocusItemId(highlightParam);
+        setMessage(`Showing ${match.title} in your garden`);
+        gardenSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        const clear = window.setTimeout(() => setFocusItemId(null), 4500);
+        return () => window.clearTimeout(clear);
+      }
+      setMessage("That decoration isn’t in your garden yet.");
+      return;
+    }
+    if (placeParam) {
+      const remaining = snapshot.garden.inventoryDecor.find(
+        (d) => d.itemId === placeParam,
+      );
+      if (remaining && remaining.qty > 0) {
+        setFocusItemId(null);
+        setSelectedPlacement(null);
+        setSelectedDecor(placeParam);
+        setMessage(`Tap the garden to place ${remaining.title}`);
+        gardenSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }
+  }, [snapshot, highlightParam, placeParam]);
 
   /** Recover when SSR said signed-out but the browser already has a session. */
   useEffect(() => {
@@ -418,13 +462,14 @@ export function CompanionClient({ signedIn, initial }: Props) {
         </div>
       ) : null}
 
-      <section className="space-y-3">
+      <section className="space-y-3" ref={gardenSectionRef}>
         <GardenDiorama
           garden={snapshot.garden}
           pet={pet}
           accountLevel={snapshot.accountLevel}
           selectedDecor={selectedDecor}
           selectedPlacement={selectedPlacement}
+          focusItemId={focusItemId}
           busy={busy}
           onSelectPlacement={setSelectedPlacement}
           onPlace={(itemId, x, y) => {

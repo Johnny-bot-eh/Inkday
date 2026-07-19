@@ -3,12 +3,14 @@ import {
   AVATAR_ITEMS,
   getShopItem,
   isFreeAvatar,
+  isHabitatDecorItemId,
 } from "@daily-puzzle/puzzle-core";
 import {
   getEquippedAvatar,
   listCoinInventory,
   listOwnedAvatarIds,
 } from "@/lib/coin-service";
+import { getCompanionSnapshot } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
 import { InventoryAvatarActions } from "@/components/inventory-avatar-actions";
 import { AvatarMark } from "@/components/avatar-mark";
@@ -32,11 +34,19 @@ export default async function InventoryPage() {
     );
   }
 
-  const [items, ownedAvatarIds, equippedAvatarId] = await Promise.all([
-    listCoinInventory(session.user.id),
-    listOwnedAvatarIds(session.user.id),
-    getEquippedAvatar(session.user.id),
-  ]);
+  const [items, ownedAvatarIds, equippedAvatarId, companion] =
+    await Promise.all([
+      listCoinInventory(session.user.id),
+      listOwnedAvatarIds(session.user.id),
+      getEquippedAvatar(session.user.id),
+      getCompanionSnapshot(session.user.id).catch(() => null),
+    ]);
+
+  const placedCounts = new Map<string, number>();
+  for (const p of companion?.garden.placements ?? []) {
+    if (isHabitatDecorItemId(p.itemId)) continue;
+    placedCounts.set(p.itemId, (placedCounts.get(p.itemId) ?? 0) + 1);
+  }
 
   const consumables = items.filter((row) => {
     const def = getShopItem(row.itemId);
@@ -45,7 +55,9 @@ export default async function InventoryPage() {
 
   const decorations = items.filter((row) => {
     const def = getShopItem(row.itemId);
-    return def?.kind === "decoration";
+    return (
+      def?.kind === "decoration" && !isHabitatDecorItemId(row.itemId)
+    );
   });
 
   const ownedAvatars = AVATAR_ITEMS.filter(
@@ -141,20 +153,41 @@ export default async function InventoryPage() {
           <ul className="space-y-2">
             {decorations.map((row) => {
               const def = getShopItem(row.itemId);
+              const placed = placedCounts.get(row.itemId) ?? 0;
+              const remaining = Math.max(0, row.qty - placed);
+              const fullyPlaced = placed > 0 && remaining === 0;
               return (
                 <li
                   key={row.id}
-                  className="flex justify-between rounded-xl border border-[var(--line)] bg-panel/60 px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-panel/60 px-4 py-3"
                 >
                   <span className="font-medium">
                     {def?.title ?? row.itemId}
+                    {row.qty > 1 ? (
+                      <span className="ml-2 text-xs font-normal text-fog">
+                        ×{row.qty}
+                        {placed > 0 ? ` · ${placed} placed` : ""}
+                      </span>
+                    ) : null}
                   </span>
-                  <Link
-                    href="/companion"
-                    className="text-sm text-ember hover:underline"
-                  >
-                    Place in garden
-                  </Link>
+                  <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                    {fullyPlaced || placed > 0 ? (
+                      <Link
+                        href={`/companion?highlight=${encodeURIComponent(row.itemId)}`}
+                        className="max-w-[11.5rem] text-sm leading-snug text-ember hover:underline"
+                      >
+                        Placed in garden. Tap to view location.
+                      </Link>
+                    ) : null}
+                    {remaining > 0 ? (
+                      <Link
+                        href={`/companion?place=${encodeURIComponent(row.itemId)}`}
+                        className="text-sm text-ember hover:underline"
+                      >
+                        {placed > 0 ? "Place another" : "Place in garden"}
+                      </Link>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}
