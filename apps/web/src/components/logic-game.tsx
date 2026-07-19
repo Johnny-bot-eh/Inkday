@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -154,7 +154,11 @@ export function LogicGame({
     return "";
   }
 
-  async function finishLogic(opts: { won: boolean; answer: string }) {
+  async function finishLogic(opts: {
+    won: boolean;
+    answer: string;
+    outcome?: "skipped" | "failed";
+  }) {
     const elapsedMs = timer.freeze();
     if (!monthly) {
       markBoardPlayed(
@@ -169,15 +173,52 @@ export function LogicGame({
 
     if (monthly) {
       if (!correct) {
-        setDone(true);
-        setResults({
-          won: false,
-          outcomeLabel: "Out of attempts",
-          elapsedMs,
-          answer: puzzle.answer,
-          explanation: puzzle.explanation,
-        });
-        setStatus(`Out of attempts (${timeLabel}).`);
+        const outcome = opts.outcome ?? "failed";
+        if (!signedIn) {
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.answer,
+            explanation: puzzle.explanation,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped (${timeLabel}).`
+              : `Out of attempts (${timeLabel}).`,
+          );
+          return;
+        }
+        setSubmitting(true);
+        try {
+          const mres = await forfeitMonthlyFromGame(monthly, outcome, {
+            answer: opts.answer,
+            elapsedMs,
+          });
+          if (!mres.ok) {
+            setStatus(mres.data.error ?? "Could not save");
+            return;
+          }
+          setDone(true);
+          setResults({
+            won: false,
+            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            elapsedMs,
+            answer: puzzle.answer,
+            explanation: puzzle.explanation,
+          });
+          setStatus(
+            outcome === "skipped"
+              ? `Skipped — this Case File slot is closed (${timeLabel}).`
+              : `Out of attempts — this Case File slot is closed (${timeLabel}).`,
+          );
+          router.refresh();
+        } catch {
+          setStatus("Network error saving result");
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
       if (!signedIn) {
@@ -485,7 +526,7 @@ export function LogicGame({
             onHint={revealLogicHint}
             onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
             onSkip={() => {
-              void finishLogic({ won: false, answer: puzzle.answer });
+              void finishLogic({ won: false, answer: puzzle.answer, outcome: "skipped" });
             }}
           />
         )}
