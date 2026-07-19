@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { caseFileClearLabel, forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -235,12 +235,8 @@ export function WordLadderGame({
           return;
         }
         setDone(true);
-        setResults({ won: true, elapsedMs, score: mres.data.score });
-        setStatus(
-          mres.data.totalBonus
-            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
-            : `Case File · ${mres.data.score} pts`,
-        );
+        setResults({ won: true, elapsedMs, score: mres.data.score, breakdown: mres.data.breakdown });
+        setStatus(caseFileClearLabel(mres.data));
         router.refresh();
       } catch {
         setStatus("Network error saving result");

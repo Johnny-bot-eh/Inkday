@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Difficulty, MonthlyOnlyPuzzle } from "@daily-puzzle/puzzle-core";
+import type { Difficulty, MonthlyOnlyPuzzle, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
   checkMonthlyOnlyAnswer,
   getMonthlyOnlyExplanation,
@@ -153,7 +153,9 @@ export function MonthlyOnlyGame({
   const hintStepRef = useRef(0);
   const [lastElapsedMs, setLastElapsedMs] = useState<number | null>(null);
   const [lastScore, setLastScore] = useState<number | null>(null);
-  const [lastTimeBonus, setLastTimeBonus] = useState<number | null>(null);
+  const [lastBreakdown, setLastBreakdown] = useState<ScoreBreakdown | null>(
+    null,
+  );
 
   const timer = usePlayTimer({
     running: !done && !alreadyResolved,
@@ -268,7 +270,7 @@ export function MonthlyOnlyGame({
       }
       setDone(true);
       if (typeof data.score === "number") setLastScore(data.score);
-      if (typeof data.timeBonus === "number") setLastTimeBonus(data.timeBonus);
+      if (data.breakdown) setLastBreakdown(data.breakdown);
       const parts = [`Cleared · ${data.score} pts · ${data.cleared}/${data.total}`];
       if (typeof data.timeBonus === "number" && data.timeBonus > 0) {
         parts.push(`speed +${data.timeBonus}`);
@@ -364,21 +366,7 @@ export function MonthlyOnlyGame({
             }
             elapsedMs={lastElapsedMs}
             score={lastScore ?? undefined}
-            breakdown={
-              lastScore != null
-                ? {
-                    base: points,
-                    timeBonus: lastTimeBonus ?? 0,
-                    perfectBonus: 0,
-                    noHintsBonus: 0,
-                    weeklyBonus: 0,
-                    monthlyBonus: 0,
-                    seasonBonus: 0,
-                    plusBonus: 0,
-                    total: lastScore,
-                  }
-                : null
-            }
+            breakdown={lastBreakdown}
             answer={clearedAnswer}
             explanation={clearedExplanation}
           />

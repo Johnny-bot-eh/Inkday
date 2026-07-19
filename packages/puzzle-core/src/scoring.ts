@@ -196,6 +196,30 @@ export function timeBonus(elapsedMs: number | undefined | null): number {
   return 0;
 }
 
+/**
+ * Full score for a clear — always includes the shared time/speed bonus.
+ * Use for every puzzle type (daily + Case File) so speed applies uniformly.
+ */
+export function timedClearBreakdown(opts: {
+  base: number;
+  elapsedMs?: number | null;
+  isPerfect?: boolean;
+  seasonActive?: boolean;
+  /** Extra Plus points if any (currently always 0). */
+  plusBonus?: number;
+}): ScoreBreakdown {
+  return sumScore({
+    base: opts.base,
+    timeBonus: timeBonus(opts.elapsedMs),
+    perfectBonus: perfectBonus(Boolean(opts.isPerfect)),
+    noHintsBonus: noHintsBonus(true),
+    weeklyBonus: weeklyBonus(),
+    monthlyBonus: monthlyBonus(),
+    seasonBonus: seasonBonus(Boolean(opts.seasonActive)),
+    plusBonus: opts.plusBonus ?? 0,
+  });
+}
+
 export type StreakUpdate = {
   previousStreak: number;
   previousDate: string | null;
