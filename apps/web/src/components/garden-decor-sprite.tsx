@@ -83,11 +83,13 @@ export function GardenDecorSprite({ itemId, tone, className }: Props) {
     case "deco_mythic_gate":
       return <MythicGateSprite className={className} />;
     case "deco_grass_tuft":
-    case "deco_twig":
     case "deco_fern_pot":
-    case "deco_snail_shell":
     case "deco_ivy_pot":
       return <GenericPlantSprite className={className} tone={tone} />;
+    case "deco_twig":
+      return <TwigSprite className={className} />;
+    case "deco_snail_shell":
+      return <SnailShellSprite className={className} />;
     case "deco_wheelbarrow":
       return <WheelbarrowSprite className={className} />;
     case "deco_beehive":
@@ -757,6 +759,69 @@ function GenericPlantSprite({
       />
       <ellipse cx="24" cy="36" rx="10" ry="6" fill={tone || "#4a7a42"} />
       <ellipse cx="40" cy="34" rx="9" ry="5" fill={tone || "#3d6b38"} />
+    </svg>
+  );
+}
+
+/** Weathered stick on the ground — not a sprout. */
+function TwigSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 72 40" className={className} aria-hidden>
+      <ellipse cx="36" cy="34" rx="22" ry="3.5" fill="#00000022" />
+      <path
+        d="M10 28 C22 22 34 26 46 20 C54 16 62 18 66 14"
+        fill="none"
+        stroke="#5a4028"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 27 C24 21 36 25 48 19 C55 15 62 17 65 14"
+        fill="none"
+        stroke="#7a5a38"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M34 24 L28 12"
+        fill="none"
+        stroke="#6a5030"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M48 20 L56 10"
+        fill="none"
+        stroke="#5a4028"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <ellipse cx="22" cy="26" rx="2.2" ry="1.2" fill="#4a804044" />
+    </svg>
+  );
+}
+
+/** Spiral snail shell left on the soil. */
+function SnailShellSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 56 48" className={className} aria-hidden>
+      <ellipse cx="28" cy="42" rx="14" ry="3" fill="#00000022" />
+      <ellipse cx="28" cy="30" rx="16" ry="13" fill="#c9a88a" />
+      <ellipse cx="28" cy="30" rx="16" ry="13" fill="none" stroke="#8a6a50" strokeWidth="1.5" />
+      <path
+        d="M28 30 m -10 0 a 10 10 0 1 1 20 0 a 7 7 0 1 1 -14 0 a 4 4 0 1 1 8 0"
+        fill="none"
+        stroke="#8a6a50"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <ellipse cx="34" cy="26" rx="5" ry="4" fill="#e8d4bc" opacity="0.55" />
+      <path
+        d="M14 34 Q10 36 12 40 Q18 38 20 36"
+        fill="#b89070"
+        stroke="#8a6a50"
+        strokeWidth="1"
+      />
     </svg>
   );
 }

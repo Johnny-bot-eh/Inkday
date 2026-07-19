@@ -396,7 +396,7 @@ export const GARDEN_DECOR_VISUALS: Record<string, GardenDecorVisual> = {
   deco_twig: {
     itemId: "deco_twig",
     layer: "middle",
-    widthPct: 7,
+    widthPct: 10,
     motion: "still",
     defaultPose: { x: 62, y: 80 },
     mark: "Twig",
@@ -414,7 +414,7 @@ export const GARDEN_DECOR_VISUALS: Record<string, GardenDecorVisual> = {
   deco_snail_shell: {
     itemId: "deco_snail_shell",
     layer: "middle",
-    widthPct: 6,
+    widthPct: 8,
     motion: "still",
     defaultPose: { x: 68, y: 82 },
     mark: "Shell",
