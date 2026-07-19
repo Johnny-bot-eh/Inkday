@@ -12,7 +12,9 @@ import {
   dailyChallengeHeadline,
   findPlayForBoard,
   getMonthlyCollection,
+  getShopItem,
   getSurpriseWordleChallenge,
+  nextCaseFileAccessoryHint,
   todayKey,
   wordleTitle,
   type Difficulty,
@@ -27,6 +29,7 @@ import { ChallengeCountdown } from "@/components/challenge-countdown";
 import { ChallengePlayRow } from "@/components/challenge-play-row";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { LocalTodayLabel } from "@/components/local-today-label";
+import { UnlockNoticesBanner } from "@/components/unlock-notices-banner";
 
 /** Always render with the current UTC day — never serve a stale cached “yesterday”. */
 export const dynamic = "force-dynamic";
@@ -82,6 +85,17 @@ export default async function HomePage() {
 
   const monthlyPct = Math.round((monthlyCleared / MONTHLY_SLOT_COUNT) * 100);
   const surpriseWordle = getSurpriseWordleChallenge(dateKey);
+  const nextAccessory = nextCaseFileAccessoryHint(monthlyCleared);
+  const upcomingAccessory =
+    session?.user && nextAccessory
+      ? {
+          title: `Next ribbon · ${getShopItem(nextAccessory.accessoryId)?.title ?? "Case File accessory"}`,
+          detail: `${nextAccessory.remaining} more Case File clear${
+            nextAccessory.remaining === 1 ? "" : "s"
+          } unlocks the ${nextAccessory.milestone.title} ribbon — equip it anytime on your profile.`,
+          href: "/monthly",
+        }
+      : null;
 
   return (
     <div className="space-y-10">
@@ -136,6 +150,13 @@ export default async function HomePage() {
           </p>
         )}
       </section>
+
+      {session?.user ? (
+        <UnlockNoticesBanner
+          upcoming={upcomingAccessory}
+          shopTeaser
+        />
+      ) : null}
 
       <section
         className="animate-rise relative overflow-hidden rounded-[1.75rem] border px-6 py-8 sm:px-8"

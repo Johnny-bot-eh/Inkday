@@ -1,5 +1,7 @@
 import type { AchievementId } from "./progress";
-import type { MonthlyMilestoneId } from "./monthly";
+import type { MonthlyMilestoneId, MonthlyMilestoneDef } from "./monthly";
+import { MONTHLY_MILESTONES } from "./monthly";
+import { getShopItem } from "./coins";
 
 /** Achievement → badge avatar shop item (earned only, not purchasable). */
 export const ACHIEVEMENT_AVATAR_REWARDS: Partial<
@@ -36,6 +38,14 @@ const TOURNAMENT_ACCESSORY_BY_TITLE: Record<string, string> = {
   "Bronze Seal": "accessory_crown_bronze",
 };
 
+export type CosmeticUnlockNotice = {
+  id: string;
+  title: string;
+  description: string;
+  /** accessory = equip on profile; avatar = portrait badge */
+  kind: "accessory" | "avatar" | "cosmetic";
+};
+
 export function avatarRewardForAchievement(
   achievementId: string,
 ): string | null {
@@ -55,9 +65,64 @@ export function accessoryRewardForMilestone(
 export function accessoryRewardForTournament(
   badgeTitle: string,
 ): string | null {
-  return TOURNAMENT_ACCESSORY_BY_TITLE[badgeTitle] ?? null;
+  const normalized = badgeTitle.replace(/^Friends\s+/i, "").trim();
+  return (
+    TOURNAMENT_ACCESSORY_BY_TITLE[normalized] ??
+    TOURNAMENT_ACCESSORY_BY_TITLE[badgeTitle] ??
+    null
+  );
 }
 
 export function caseFileCompleteAccessoryId(): string {
   return CASE_FILE_COMPLETE_ACCESSORY_ID;
+}
+
+/** Map granted shop item ids into player-facing unlock notices. */
+export function cosmeticUnlockNotices(
+  itemIds: string[],
+): CosmeticUnlockNotice[] {
+  const seen = new Set<string>();
+  const out: CosmeticUnlockNotice[] = [];
+  for (const id of itemIds) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const item = getShopItem(id);
+    out.push({
+      id,
+      title: item?.title ?? id,
+      description:
+        item?.description ??
+        (item?.slot === "accessory"
+          ? "Equip it on your profile whenever you like."
+          : "New unlockable ready."),
+      kind:
+        item?.slot === "accessory"
+          ? "accessory"
+          : item?.slot === "avatar"
+            ? "avatar"
+            : "cosmetic",
+    });
+  }
+  return out;
+}
+
+/** Next Case File ribbon the player can still earn this month. */
+export function nextCaseFileAccessoryHint(
+  cleared: number,
+): {
+  milestone: MonthlyMilestoneDef;
+  accessoryId: string;
+  remaining: number;
+} | null {
+  for (const milestone of MONTHLY_MILESTONES) {
+    if (cleared >= milestone.threshold) continue;
+    const accessoryId = accessoryRewardForMilestone(milestone.id);
+    if (!accessoryId) continue;
+    return {
+      milestone,
+      accessoryId,
+      remaining: milestone.threshold - cleared,
+    };
+  }
+  return null;
 }

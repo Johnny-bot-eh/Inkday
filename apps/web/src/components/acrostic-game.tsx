@@ -71,6 +71,7 @@ export function AcrosticGame({
     ranks?: PlayRanks | null;
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
+    newCosmetics?: import("@daily-puzzle/puzzle-core").CosmeticUnlockNotice[];
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
@@ -172,7 +173,8 @@ export function AcrosticGame({
         }
         setDone(true);
         setResults({ won: true, elapsedMs, score: mres.data.score,
-          breakdown: mres.data.breakdown, answer: puzzle.message });
+          breakdown: mres.data.breakdown,
+          newCosmetics: mres.data.newCosmetics, answer: puzzle.message });
         setStatus(caseFileClearLabel(mres.data));
         router.refresh();
       } catch {
@@ -230,6 +232,7 @@ export function AcrosticGame({
         ranks: data.ranks,
         answer: data.answer ?? puzzle.message,
         newAchievements: data.newAchievements,
+        newCosmetics: data.newCosmetics,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,

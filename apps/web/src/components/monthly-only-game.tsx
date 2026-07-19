@@ -2,7 +2,7 @@
 
 import { clearMonthlyPlayerNotes } from "@/lib/player-notes";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Difficulty, MonthlyOnlyPuzzle, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
+import type { Difficulty, MonthlyOnlyPuzzle, ScoreBreakdown, CosmeticUnlockNotice } from "@daily-puzzle/puzzle-core";
 import {
   checkMonthlyOnlyAnswer,
   getMonthlyOnlyExplanation,
@@ -157,6 +157,9 @@ export function MonthlyOnlyGame({
   const [lastBreakdown, setLastBreakdown] = useState<ScoreBreakdown | null>(
     null,
   );
+  const [lastCosmetics, setLastCosmetics] = useState<CosmeticUnlockNotice[]>(
+    [],
+  );
 
   const timer = usePlayTimer({
     running: !done && !alreadyResolved,
@@ -276,6 +279,9 @@ export function MonthlyOnlyGame({
       setDone(true);
       if (typeof data.score === "number") setLastScore(data.score);
       if (data.breakdown) setLastBreakdown(data.breakdown);
+      if (Array.isArray(data.newCosmetics) && data.newCosmetics.length > 0) {
+        setLastCosmetics(data.newCosmetics);
+      }
       const parts = [`Cleared · ${data.score} pts · ${data.cleared}/${data.total}`];
       if (typeof data.timeBonus === "number" && data.timeBonus > 0) {
         parts.push(`speed +${data.timeBonus}`);
@@ -284,10 +290,18 @@ export function MonthlyOnlyGame({
         parts.push(`Milestone bonus +${data.totalBonus}`);
       }
       if (data.newMilestones?.length) {
+        const ranks = data.newMilestones
+          .map((m: { title: string }) => m.title)
+          .join(" · ");
+        const accessories = Array.isArray(data.newCosmetics)
+          ? data.newCosmetics
+              .filter((c: { kind?: string }) => c.kind === "accessory")
+              .map((c: { title: string }) => c.title)
+          : [];
         setBonusNote(
-          data.newMilestones
-            .map((m: { title: string }) => m.title)
-            .join(" · "),
+          accessories.length
+            ? `${ranks} · accessory: ${accessories.join(", ")}`
+            : ranks,
         );
       }
       setStatus(parts.join(" · "));
@@ -374,6 +388,7 @@ export function MonthlyOnlyGame({
             breakdown={lastBreakdown}
             answer={clearedAnswer}
             explanation={clearedExplanation}
+            newCosmetics={lastCosmetics}
           />
         </div>
       ) : null}

@@ -118,6 +118,7 @@ export function CryptogramGame({
     ranks?: PlayRanks | null;
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
+    newCosmetics?: import("@daily-puzzle/puzzle-core").CosmeticUnlockNotice[];
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
@@ -293,7 +294,8 @@ export function CryptogramGame({
         }
         setDone(true);
         setResults({ won: true, elapsedMs, score: mres.data.score,
-          breakdown: mres.data.breakdown, answer: puzzle.plaintext });
+          breakdown: mres.data.breakdown,
+          newCosmetics: mres.data.newCosmetics, answer: puzzle.plaintext });
         setStatus(caseFileClearLabel(mres.data));
         router.refresh();
       } catch {
@@ -350,6 +352,7 @@ export function CryptogramGame({
         ranks: data.ranks,
         answer: data.answer ?? puzzle.plaintext,
         newAchievements: data.newAchievements,
+        newCosmetics: data.newCosmetics,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,
