@@ -1,5 +1,7 @@
 /** Client-side board completion for the current UTC day (guests + instant UI sync). */
 
+import { clearDailyPlayerNotes } from "@/lib/player-notes";
+
 const STORAGE_PREFIX = "inkday-played:";
 
 export function playBoardKey(
@@ -41,6 +43,7 @@ export function markBoardPlayed(
       STORAGE_PREFIX + dateKey,
       JSON.stringify([...next]),
     );
+    clearDailyPlayerNotes(dateKey, puzzleType, difficulty, seasonId);
     window.dispatchEvent(
       new CustomEvent("inkday-played", { detail: { dateKey, key } }),
     );

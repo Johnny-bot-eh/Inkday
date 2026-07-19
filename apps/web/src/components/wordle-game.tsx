@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { caseFileClearLabel, forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { caseFileClearLabel, forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext, dismissMonthlySlotNotes } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -174,6 +174,7 @@ export function WordleGame({
       if (!won) {
         const outcome = opts.outcome ?? "failed";
         if (!signedIn) {
+          dismissMonthlySlotNotes(monthly);
           setDone(true);
           setRevealAnswer(config.answer);
           setResults({
@@ -223,6 +224,7 @@ export function WordleGame({
         return;
       }
       if (!signedIn) {
+        dismissMonthlySlotNotes(monthly);
         setRevealAnswer(config.answer);
         setResults({ won: true, elapsedMs, answer: config.answer, definition: config.definition });
         setStatus(`Solved! Sign in to save Case File progress.`);

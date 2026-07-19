@@ -1,6 +1,7 @@
 /** Shared monthly Case File submit helper for reused daily games. */
 
 import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
+import { clearMonthlyPlayerNotes } from "@/lib/player-notes";
 
 export type MonthlyPlayContext = {
   collectionId: string;
@@ -43,6 +44,11 @@ export function caseFileClearLabel(data: MonthlySubmitData): string {
   return parts.join(" · ");
 }
 
+/** Drop scratch notes when a Case File slot is finished on this device. */
+export function dismissMonthlySlotNotes(monthly: MonthlyPlayContext): void {
+  clearMonthlyPlayerNotes(monthly.collectionId, monthly.slotIndex);
+}
+
 export async function submitMonthlyFromGame(
   monthly: MonthlyPlayContext,
   payload: Record<string, unknown>,
@@ -61,6 +67,7 @@ export async function submitMonthlyFromGame(
     }),
   });
   const data = (await res.json()) as MonthlySubmitData;
+  if (res.ok) dismissMonthlySlotNotes(monthly);
   return { ok: res.ok, status: res.status, data };
 }
 

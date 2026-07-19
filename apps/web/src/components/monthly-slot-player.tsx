@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { Difficulty, MonthlyPuzzleType } from "@daily-puzzle/puzzle-core";
 import { isMonthlyOnlyType } from "@daily-puzzle/puzzle-core";
 import { CaseFileBackLink } from "@/components/case-file-back-link";
@@ -11,6 +12,7 @@ import { AnagramGame } from "@/components/anagram-game";
 import { CryptogramGame } from "@/components/cryptogram-game";
 import { AcrosticGame } from "@/components/acrostic-game";
 import { WordLadderGame } from "@/components/wordladder-game";
+import { clearMonthlyPlayerNotes } from "@/lib/player-notes";
 
 type Props = {
   collectionId: string;
@@ -29,6 +31,12 @@ type Props = {
 };
 
 export function MonthlySlotPlayer(props: Props) {
+  useEffect(() => {
+    if (props.alreadyResolved) {
+      clearMonthlyPlayerNotes(props.collectionId, props.slotIndex);
+    }
+  }, [props.alreadyResolved, props.collectionId, props.slotIndex]);
+
   const monthly = {
     collectionId: props.collectionId,
     slotIndex: props.slotIndex,

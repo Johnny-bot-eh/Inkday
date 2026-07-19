@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { caseFileClearLabel, forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { caseFileClearLabel, forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext, dismissMonthlySlotNotes } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -175,6 +175,7 @@ export function WordLadderGame({
       if (!won) {
         const outcome = opts.outcome ?? "failed";
         if (!signedIn) {
+          dismissMonthlySlotNotes(monthly);
           setDone(true);
           setResults({
             won: false,
@@ -220,6 +221,7 @@ export function WordLadderGame({
         return;
       }
       if (!signedIn) {
+        dismissMonthlySlotNotes(monthly);
         setResults({ won: true, elapsedMs });
         setStatus("Ladder complete! Sign in to save Case File progress.");
         return;
