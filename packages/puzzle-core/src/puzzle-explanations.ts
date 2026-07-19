@@ -19,9 +19,9 @@ const ESCAPE_EXPLANATIONS: Record<string, string[]> = {
     "Digits only: carriage 7, then 3 from 3A, then hour 19 from 19:45 → 7319.",
   ],
   "lab-centrifuge": [
-    "Notes order elements by role: life (C), breath (O), buzzing neon gas (Ne).",
-    "The chart shows their atomic numbers in a scrambled patch (Ne·10, C·6, O·8).",
-    "Reorder by the notes, then concatenate the counts → 6, 8, 10 → 6810.",
+    "Notes order elements by role: life (carbon), breath (oxygen), buzzing neon gas (neon).",
+    "Those are C, O, and Ne — atomic numbers 6, 8, and 10 on the periodic chart.",
+    "Follow the notes’ order and join the counts → 6, 8, 10 → 6810.",
   ],
   "library-cipher": [
     "The borrow slip shows call MYST-B-27 and a year ending in 19.",
@@ -42,6 +42,27 @@ const ESCAPE_EXPLANATIONS: Record<string, string[]> = {
     "The specials ticket is table 4 with two flat whites and one pour-over — three cups total.",
     "The tip-jar note wants the table number, then the cup count, as digits side by side (not added).",
     "Table 4 then 3 cups → 43.",
+  ],
+  "attic-trunk": [
+    "The diary ties the latch to the year of Sputnik’s fame and the Dallas tragedy.",
+    "Both point to 1963.",
+    "Four-digit year on the trunk → 1963.",
+  ],
+  "radio-booth": [
+    "“Twin nines around the quiet hour” with a glowing 0 on the clock → 9, 0, 9.",
+    "Three digits for the booth pad → 909.",
+  ],
+  "greenhouse-key": [
+    "Orchid chores fall on the 2nd, 7th, then 1st — in slate order.",
+    "Those calendar days become the gate code → 271.",
+  ],
+  "observatory-dome": [
+    "Altitude 11° then a figure with 23 tips.",
+    "Join them as written → 1123.",
+  ],
+  "pawnshop-safe": [
+    "Ticket 64 overdue by 8 days.",
+    "Night rule: ticket then overdue days → 648.",
   ],
 };
 

@@ -1,6 +1,6 @@
 import type { Difficulty } from "./types";
 import { buildEscapeExplanation } from "./puzzle-explanations";
-import { dayIndex, hashSeed, pickIndex } from "./types";
+import { dailyRotationIndex, hashSeed } from "./types";
 
 export type EscapeClue = {
   id: string;
@@ -10,6 +10,8 @@ export type EscapeClue = {
 
 export type EscapeRoom = {
   id: string;
+  /** Stable template id — unique across the repertoire. */
+  slug: string;
   title: string;
   briefing: string;
   prompt: string;
@@ -24,23 +26,22 @@ export type EscapeRoom = {
 
 /**
  * Clue reveal tiers:
- * - essential: always shown — facts you must synthesize (never the raw answer)
- * - helpful: easy only — format / confirmations
+ * - essential: always shown — facts to synthesize (never the raw answer, never a step-by-step recipe)
+ * - helpful: easy only — gentle format hints (still not the answer)
  * - spoiler: easy only — worked examples with DIFFERENT numbers (never this room’s answer)
- * - decoy: medium + hard — convincing false trails (never label themselves as junk)
+ * - decoy: medium + hard — convincing false trails
  *
- * Hard rule: no clue text may state, spell, or concatenate this room’s answer.
- *
- * Cryptic rule: denser wording is fine, but every term must still name the
- * concrete thing it refers to (e.g. “ABC-place”, not bare “place”; “cups on
- * the ticket”, not “+” that could mean add). Fold helpful-tier meaning into
- * cryptic text when helpful clues are hidden on medium/hard.
+ * Hard rules:
+ * - No clue may state, spell, or concatenate this room’s answer.
+ * - No clue may explicitly name the extraction recipe (“use atomic numbers”,
+ *   “digits only”, “type HHMM”, etc.). Players must deduce what the lock wants.
+ * - Cryptic text (medium+) must be denser / harder — never more explicit than easy.
  */
 type Tier = "essential" | "helpful" | "spoiler" | "decoy";
 
 type TieredClue = EscapeClue & {
   tier: Tier;
-  /** Shown on medium/hard when set — denser, but not vague about what a term means */
+  /** Medium+ wording — denser, never spoon-feed method more than `text`. */
   cryptic?: string;
 };
 
@@ -70,7 +71,7 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Notebook",
         text: '"Safe = the day winter first interrupted the case."',
         cryptic:
-          'Margin: safe code = the circled “First flakes” calendar date, month then day as four digits.',
+          'Margin: the circled “First flakes” calendar mark is what the safe listens for.',
       },
       {
         id: "calendar",
@@ -78,19 +79,19 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Calendar",
         text: "A circled date mid-autumn: the 12th of the tenth month. Margin note: First flakes.",
         cryptic:
-          "Circled autumn date: tenth month, day 12. Tiny ink: First flakes.",
+          "One autumn square is circled — tenth month, day twelve — inked First flakes.",
       },
       {
         id: "sticky",
         tier: "helpful",
         label: "Sticky note",
-        text: "Desk codes run month→day, four digits, no separators.",
+        text: "Desk codes prefer month before day.",
       },
       {
         id: "spoiler",
         tier: "spoiler",
         label: "Index card",
-        text: "Example style from last winter: January 5 → 0105.",
+        text: "Example style from last winter (different day): January 5 looked like 0105 on the pad.",
       },
       {
         id: "mug",
@@ -121,7 +122,7 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Plaque",
         text: '"Access = building number times the founding circle."',
         cryptic:
-          "Etched rule: building number × how many names stand in the founding circle.",
+          "Etched rule: the building number and the founding circle share a product.",
       },
       {
         id: "receipt",
@@ -141,13 +142,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "math",
         tier: "helpful",
         label: "Docent tip",
-        text: "\"Circle\" means how many founders — multiply, don't list them.",
+        text: "The “circle” is a count, not a guest list.",
       },
       {
         id: "spoiler",
         tier: "spoiler",
         label: "Maintenance sticker",
-        text: "Drill note from another wing: building 9 × two founders → 18.",
+        text: "Drill note from another wing: building 9 with two founders left 18 on the test pad.",
       },
       {
         id: "junk",
@@ -183,21 +184,21 @@ const ESCAPES: EscapeTemplate[] = [
         id: "chalk",
         tier: "essential",
         label: "Chalk on door",
-        text: "Order: carriage (ride) → seat digits only (berth) → departure hour (drop minutes).",
+        text: "Order on the dial: the carriage, then the berth, then when the train leaves.",
         cryptic:
-          "Chalk order: carriage number → seat digits only (drop the letter) → departure hour only (drop minutes).",
+          "Chalk stacks three ticket truths: which car, which seat’s number, which hour the wheels roll.",
       },
       {
         id: "tag",
         tier: "helpful",
         label: "Luggage tag",
-        text: "Letters are vanity. The dial only eats numbers.",
+        text: "Letters are vanity on this dial.",
       },
       {
         id: "spoiler",
         tier: "spoiler",
         label: "Porter scrap",
-        text: "Hour means the departure hour only — drop the minutes.",
+        text: "Another locker drill used carriage 2, seat 5B, depart 08:15 → 258.",
       },
       {
         id: "poster",
@@ -226,28 +227,29 @@ const ESCAPES: EscapeTemplate[] = [
         id: "notes",
         tier: "essential",
         label: "Lab notes",
-        text: "Sequence: the life element, then the breath element, then the buzzing gas — by nuclear count.",
+        text: "Sequence: the life element, then the breath element, then the buzzing neon gas.",
         cryptic:
-          "Order: life element → breath element → buzzing neon gas. Use each element’s atomic number from the chart — digits only, no symbols.",
+          "Life · breath · neon’s hum — that procession alone matters.",
       },
       {
         id: "poster",
         tier: "essential",
         label: "Periodic chart",
-        text: "Ice-scraped corner still shows: Ne·10 · C·6 · O·8 among other cells.",
-        cryptic: "Frost-cleared patch: Ne 10 · C 6 · O 8 among scratched neighbors.",
+        text: "Frost-scraped strip still lists: B 5 · C 6 · N 7 · O 8 · F 9 · Ne 10 · Na 11 among blank neighbors.",
+        cryptic:
+          "A cleared ribbon of the wall chart names boron through sodium — their counts are there if you know the table, or still faintly inked if you look close.",
       },
       {
         id: "magnet",
         tier: "helpful",
         label: "Fridge magnet",
-        text: "String the counts. No commas, no element letters in the pad.",
+        text: "The pad is happier with counts than with letters.",
       },
       {
         id: "spoiler",
         tier: "spoiler",
         label: "Intern sticky",
-        text: "Practice pad (different run): H 1, He 2, Li 3 → typed 123.",
+        text: "Practice run (different trio): hydrogen, helium, lithium in that order left 123 on the pad.",
       },
       {
         id: "spill",
@@ -283,9 +285,9 @@ const ESCAPES: EscapeTemplate[] = [
         id: "card",
         tier: "essential",
         label: "Librarian card",
-        text: "Vault recipe: letter's place in the alphabet → book number → year twin digits.",
+        text: "Vault listens to the call-letter’s rank, then the book number, then the year twin.",
         cryptic:
-          "Recipe: alphabet rank of the call-letter → number after that letter → last two year digits.",
+          "Three whispers from the slip: where the letter stands, what follows it, what the year ends on.",
       },
       {
         id: "alpha",
@@ -297,13 +299,13 @@ const ESCAPES: EscapeTemplate[] = [
         id: "spoiler",
         tier: "spoiler",
         label: "Practice pad",
-        text: "For shelf A-10 in '18 the drill code was 11018.",
+        text: "Drill for shelf A-10 in ’18 left 11018 on a practice lock.",
       },
       {
         id: "noise",
         tier: "decoy",
         label: "Discard pile",
-        text: "Pencil trials stacked: 2719, 1927, 2279.",
+        text: "Pencil trials stacked: 3018, 1922, 4419.",
       },
       {
         id: "spine",
@@ -328,7 +330,7 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Telegram",
         text: "MEET AT HALF PAST THE HOUR THE CLOCK FEARS.",
         cryptic:
-          "MEET · HALF PAST · the dead hour (midnight) — ignore the frozen dial.",
+          "MEET · HALF PAST · the hour every dial dreads — ignore the frozen face.",
       },
       {
         id: "clock",
@@ -336,15 +338,15 @@ const ESCAPES: EscapeTemplate[] = [
         label: "Clock face",
         text: "Short hand fixed at the crown. Long hand pinned straight down.",
         cryptic:
-          "Hands locked at noon on the dial — a red herring if you trust the face alone.",
+          "Hands locked at the crown and the base — trust them and you will be late forever.",
       },
       {
         id: "watch",
         tier: "essential",
         label: "Pocket watch note",
-        text: "Drawer latch speaks only four digits — two for the hour, two for the minutes — from midnight's side of the day.",
+        text: "Drawer latch wants the meeting time written the military way.",
         cryptic:
-          "Latch wants HHMM on a 24-hour clock (hour then minutes), not a 1–12 parlor face.",
+          "The latch prefers a four-beat time from the midnight side of the day.",
       },
       {
         id: "spoiler",
@@ -386,21 +388,21 @@ const ESCAPES: EscapeTemplate[] = [
         id: "ledger",
         tier: "essential",
         label: "Dock ledger",
-        text: "Bolt cipher: bay, then lot, then shift — as written.",
+        text: "Bolt cipher follows bay, then lot, then shift.",
         cryptic:
-          "Cipher: write the bay, lot, then shift numbers in that order as one code — no extra zeros.",
+          "Three stencil numbers — bay first, lot next, shift last — become one breath for the bolt.",
       },
       {
         id: "ink",
         tier: "helpful",
         label: "Underside ink",
-        text: "Glue the numbers. Do not zero-pad the bay.",
+        text: "Don’t fatten the bay with a leading zero.",
       },
       {
         id: "spoiler",
         tier: "spoiler",
         label: "Foreman scrap",
-        text: "Worked example from Pier 2 (not this crate): bay 4, lot 17, shift 9 → typed 4179.",
+        text: "Pier 2 drill (not this crate): bay 4, lot 17, shift 9 became 4179 on the practice bolt.",
       },
       {
         id: "siren",
@@ -436,21 +438,21 @@ const ESCAPES: EscapeTemplate[] = [
         id: "receipt",
         tier: "essential",
         label: "Tip-jar note",
-        text: "Back latch = table number, then how many cups on that ticket (digits side by side).",
+        text: "Back latch cares about the table, then how many cups that ticket carries.",
         cryptic:
-          "Latch: table number, then total cups on that ticket — digits side by side, not added.",
+          "Table first, cup-count second — the latch reads them as neighbors, not a sum.",
       },
       {
         id: "apron",
         tier: "helpful",
         label: "Apron pocket",
-        text: "Count every drink line — milk doesn't matter, cups do.",
+        text: "Milk foam doesn’t count — cups do.",
       },
       {
         id: "spoiler",
         tier: "spoiler",
         label: "Opening checklist",
-        text: "Example: table 9 with four drips → 94.",
+        text: "Drill: table 9 with four drips left 94 on the staff lock.",
       },
       {
         id: "chalk",
@@ -466,7 +468,276 @@ const ESCAPES: EscapeTemplate[] = [
       },
     ],
   },
+  {
+    slug: "attic-trunk",
+    title: "Attic Trunk Latch",
+    briefing:
+      "Dusty attic. A steamer trunk won’t open without a year the diary keeps circling.",
+    prompt: "Trunk code?",
+    answer: "1963",
+    placeholder: "····",
+    cluePool: [
+      {
+        id: "diary",
+        tier: "essential",
+        label: "Diary page",
+        text: "“The year the satellite sang and the president fell — that is the latch.”",
+        cryptic:
+          "Ink: latch = the year both the sky’s beep and the motorcade grief share.",
+      },
+      {
+        id: "poster",
+        tier: "essential",
+        label: "Pinned clipping",
+        text: "Yellowed headline: SPUTNIK FEVER FADES… beside a later photo of Dallas flags at half-mast.",
+        cryptic:
+          "Two clippings share a decade — a beeping sphere, then a darkened motorcade.",
+      },
+      {
+        id: "helpful",
+        tier: "helpful",
+        label: "Pencil margin",
+        text: "Four digits. A calendar year, not a day.",
+      },
+      {
+        id: "spoiler",
+        tier: "spoiler",
+        label: "Practice tag",
+        text: "Drill year for ‘moon step’ practice lock: 1969.",
+      },
+      {
+        id: "decoy1",
+        tier: "decoy",
+        label: "Ticket stub",
+        text: "World’s Fair — Flushing Meadows — 1964.",
+      },
+      {
+        id: "decoy2",
+        tier: "decoy",
+        label: "Vinyl sleeve",
+        text: "Pressed 1962. Side A still spins.",
+      },
+    ],
+  },
+  {
+    slug: "radio-booth",
+    title: "Midnight Booth",
+    briefing:
+      "A shuttered radio booth. The ON-AIR light is dead; the lock wants a quieter frequency.",
+    prompt: "Booth code?",
+    answer: "909",
+    placeholder: "···",
+    cluePool: [
+      {
+        id: "log",
+        tier: "essential",
+        label: "Broadcast log",
+        text: "Last show: “Dial the twin nines around the quiet hour.”",
+        cryptic:
+          "Log line: twin nines cradle the hour that never speaks.",
+      },
+      {
+        id: "clock",
+        tier: "essential",
+        label: "Studio clock",
+        text: "Hands stopped just after the top of the hour — only the hour digit still lit: 0.",
+        cryptic:
+          "One glowing digit on the dead clock: a lonely zero.",
+      },
+      {
+        id: "helpful",
+        tier: "helpful",
+        label: "Engineer sticky",
+        text: "Three beats on this pad — left, middle, right.",
+      },
+      {
+        id: "spoiler",
+        tier: "spoiler",
+        label: "Demo reel note",
+        text: "Practice booth used 808 for a different ‘quiet hour’ gag.",
+      },
+      {
+        id: "decoy1",
+        tier: "decoy",
+        label: "Call sheet",
+        text: "Guest booked for 21:00 sharp.",
+      },
+      {
+        id: "decoy2",
+        tier: "decoy",
+        label: "Frequency card",
+        text: "Station ID sticker: 101.7 FM.",
+      },
+    ],
+  },
+  {
+    slug: "greenhouse-key",
+    title: "Orchid House Gate",
+    briefing:
+      "Humid glasshouse. The gate pad wants a bloom code from the watering slate.",
+    prompt: "Gate code?",
+    answer: "271",
+    placeholder: "···",
+    cluePool: [
+      {
+        id: "slate",
+        tier: "essential",
+        label: "Watering slate",
+        text: "Orchid row: water on the 2nd, mist on the 7th, feed on the 1st — in that garden order.",
+        cryptic:
+          "Slate order for orchids: second → seventh → first.",
+      },
+      {
+        id: "tag",
+        tier: "essential",
+        label: "Pot tag",
+        text: "“Codes here are calendar days in the month, not plant counts.”",
+        cryptic:
+          "Tag: the numbers are days of the month the chores fall on.",
+      },
+      {
+        id: "helpful",
+        tier: "helpful",
+        label: "Apron note",
+        text: "Three chores, three digits, same order as the slate.",
+      },
+      {
+        id: "spoiler",
+        tier: "spoiler",
+        label: "Fern practice",
+        text: "Fern drill used days 4, 9, 3 → 493 on a spare lock.",
+      },
+      {
+        id: "decoy1",
+        tier: "decoy",
+        label: "Thermometer",
+        text: "Glass reads a steady 27°C.",
+      },
+      {
+        id: "decoy2",
+        tier: "decoy",
+        label: "Seed packet",
+        text: "Lot 712 stamped in green ink.",
+      },
+    ],
+  },
+  {
+    slug: "observatory-dome",
+    title: "Dome Hatch",
+    briefing:
+      "A small observatory. The hatch code is written in altitude and a star count.",
+    prompt: "Hatch code?",
+    answer: "1123",
+    placeholder: "····",
+    cluePool: [
+      {
+        id: "chart",
+        tier: "essential",
+        label: "Star chart",
+        text: "Tonight’s mark: altitude 11°, then the constellation with 23 labeled tips.",
+        cryptic:
+          "Chart margin: eleven degrees up, then twenty-three tips on the traced figure.",
+      },
+      {
+        id: "note",
+        tier: "essential",
+        label: "Observer note",
+        text: "Hatch wants altitude, then tip-count — nothing else from the sky.",
+        cryptic:
+          "Two sky numbers only: how high, then how many tips.",
+      },
+      {
+        id: "helpful",
+        tier: "helpful",
+        label: "Lens cloth",
+        text: "No decimals on this hatch — whole degrees.",
+      },
+      {
+        id: "spoiler",
+        tier: "spoiler",
+        label: "Old log",
+        text: "Practice night used 09° and 14 tips → 0914.",
+      },
+      {
+        id: "decoy1",
+        tier: "decoy",
+        label: "Azimuth dial",
+        text: "Stuck at 230°.",
+      },
+      {
+        id: "decoy2",
+        tier: "decoy",
+        label: "Meteor postcard",
+        text: "Peak rate scribbled as 112 per hour.",
+      },
+    ],
+  },
+  {
+    slug: "pawnshop-safe",
+    title: "Pawnshop After Dark",
+    briefing:
+      "Shutters down. The floor safe wants a ticket total the ledger already whispered.",
+    prompt: "Safe code?",
+    answer: "648",
+    placeholder: "···",
+    cluePool: [
+      {
+        id: "ticket",
+        tier: "essential",
+        label: "Pawn ticket",
+        text: "Ticket #64 — interest line shows +8 days overdue.",
+        cryptic:
+          "Ticket sixty-four; eight days past due in red.",
+      },
+      {
+        id: "rule",
+        tier: "essential",
+        label: "Counter rule",
+        text: "Night safe = ticket number, then overdue days.",
+        cryptic:
+          "Night rule: the ticket, then how late it ran.",
+      },
+      {
+        id: "helpful",
+        tier: "helpful",
+        label: "Sharpie",
+        text: "No slash between them on this dial.",
+      },
+      {
+        id: "spoiler",
+        tier: "spoiler",
+        label: "Training slip",
+        text: "Drill ticket #12 overdue 3 days → 123.",
+      },
+      {
+        id: "decoy1",
+        tier: "decoy",
+        label: "Price gun",
+        text: "Last sticker printed 19.99.",
+      },
+      {
+        id: "decoy2",
+        tier: "decoy",
+        label: "Calendar",
+        text: "Circled the 8th for rent day.",
+      },
+    ],
+  },
 ];
+
+/** Fail fast if authors duplicate answers or slugs. */
+for (const [field, values] of [
+  ["slug", ESCAPES.map((e) => e.slug)],
+  ["answer", ESCAPES.map((e) => e.answer)],
+] as const) {
+  const seen = new Set<string>();
+  for (const v of values) {
+    if (seen.has(v)) {
+      throw new Error(`Duplicate escape ${field}: ${v}`);
+    }
+    seen.add(v);
+  }
+}
 
 const ATTEMPTS: Record<Difficulty, number> = {
   easy: 3,
@@ -569,15 +840,17 @@ export function getEscapeRoom(
   pack: "standard" | "exclusive" | "premium" = "standard",
   seasonId: string | null = null,
 ): EscapeRoom {
-  const seed = hashSeed(
-    "escape",
+  // Same calendar day → same unique room for every difficulty.
+  // Difficulty only changes clue tiers (helpful/spoiler vs decoys/cryptic).
+  const seed = hashSeed("escape", pack, seasonId ?? "", dateKey);
+  const index = dailyRotationIndex(
+    dateKey,
+    ESCAPES.length,
+    "escape-rotate",
     pack,
     seasonId ?? "",
-    dateKey,
-    difficulty,
-    dayIndex(dateKey),
   );
-  const template = ESCAPES[pickIndex(seed, ESCAPES.length)]!;
+  const template = ESCAPES[index]!;
   const clues = cluesForDifficulty(template, difficulty, seed);
   const exclusive = pack === "exclusive";
   const premium = pack === "premium";
@@ -605,6 +878,7 @@ export function getEscapeRoom(
 
   const room: EscapeRoom = {
     id: `${template.slug}-${pack}-${seasonId ?? "std"}-${dateKey}-${difficulty}`,
+    slug: template.slug,
     title,
     briefing,
     prompt: template.prompt,

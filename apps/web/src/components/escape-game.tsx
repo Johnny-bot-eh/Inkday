@@ -94,12 +94,17 @@ export function EscapeGame({
   const escapeHintLadder = useMemo(() => {
     const steps = room.clues.map(
       (clue) =>
-        `Focus on “${clue.label}”: ${clue.text.slice(0, 100)}${clue.text.length > 100 ? "…" : ""}`,
+        `Re-read “${clue.label}” carefully — something there still matters.`,
     );
-    steps.push("Drop letters and punctuation — the lock wants digits only.");
-    steps.push("Follow the recipe order; ignore decoy numbers that don’t fit it.");
+    if (difficulty === "easy") {
+      steps.push("The lock usually wants numbers more than letters.");
+      steps.push("Follow the evidence order; ignore numbers that don’t fit the story.");
+    } else {
+      steps.push("Synthesize the essentials — decoys are meant to look useful.");
+      steps.push("Nothing in the evidence should hand you the finished code.");
+    }
     return steps;
-  }, [room.clues]);
+  }, [room.clues, difficulty]);
 
   function applyEscapeHint() {
     const n = hintStepRef.current;

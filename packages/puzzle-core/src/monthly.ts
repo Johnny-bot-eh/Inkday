@@ -309,7 +309,7 @@ export function monthlyContentFingerprint(
     case "wordle":
       return `wordle:${getWordleConfig(seedKey, difficulty).answer}`;
     case "escape":
-      return `escape:${getEscapeRoom(seedKey, difficulty).id.split("-")[0]}`;
+      return `escape:${getEscapeRoom(seedKey, difficulty).slug}`;
     case "logic":
       return `logic:${getLogicPuzzle(seedKey, difficulty).id.split("-")[0]}`;
     case "anagram":
