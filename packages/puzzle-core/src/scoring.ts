@@ -177,7 +177,7 @@ export function isPerfectWordLadder(opts: {
   return opts.stepsUsed > 0 && opts.stepsUsed <= opts.optimalSteps;
 }
 
-/** Speed bonus from elapsed solve time (ms). Faster clears earn more. */
+/** Speed bonus from elapsed solve time (ms). Faster clears earn more score points. */
 export const TIME_BONUS_TIERS = [
   { maxSec: 30, bonus: 40 },
   { maxSec: 60, bonus: 30 },
@@ -186,6 +186,40 @@ export const TIME_BONUS_TIERS = [
   { maxSec: 300, bonus: 10 },
   { maxSec: 480, bonus: 5 },
 ] as const;
+
+/** Player-facing schedule for Speed score points (not Ink Coins). */
+export function timeBonusScheduleLabel(): string {
+  return TIME_BONUS_TIERS.map((t) => {
+    const label =
+      t.maxSec < 60
+        ? `≤${t.maxSec}s`
+        : t.maxSec % 60 === 0
+          ? `≤${t.maxSec / 60}m`
+          : `≤${Math.floor(t.maxSec / 60)}m${t.maxSec % 60}s`;
+    return `${label} +${t.bonus}`;
+  }).join(" · ");
+}
+
+export function timeBonusTierHint(
+  elapsedMs: number | undefined | null,
+): string {
+  const pts = timeBonus(elapsedMs);
+  if (pts > 0) {
+    const sec =
+      typeof elapsedMs === "number" ? Math.max(0, elapsedMs / 1000) : 0;
+    const tier = TIME_BONUS_TIERS.find((t) => sec <= t.maxSec);
+    if (tier) {
+      const label =
+        tier.maxSec < 60
+          ? `${tier.maxSec}s`
+          : tier.maxSec % 60 === 0
+            ? `${tier.maxSec / 60} min`
+            : `${Math.floor(tier.maxSec / 60)}m ${tier.maxSec % 60}s`;
+      return `Cleared within ${label}`;
+    }
+  }
+  return `No Speed pts after 8 min · ${timeBonusScheduleLabel()}`;
+}
 
 export function timeBonus(elapsedMs: number | undefined | null): number {
   if (elapsedMs == null || elapsedMs < 0) return 0;

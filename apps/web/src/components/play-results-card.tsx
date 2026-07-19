@@ -3,7 +3,11 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { formatDuration } from "@/components/play-timer";
-import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
+import {
+  timeBonusScheduleLabel,
+  timeBonusTierHint,
+  type ScoreBreakdown,
+} from "@daily-puzzle/puzzle-core";
 import { emitAccountXp } from "@/components/account-xp-chip";
 
 export type PlayRanks = {
@@ -225,24 +229,26 @@ export function PlayResultsCard({
       )}
 
       {won && breakdown && (
-        <div className="grid grid-cols-2 gap-2 text-xs text-fog sm:grid-cols-3">
-          <Bonus label="Base" value={breakdown.base} />
-          <Bonus
-            label="Speed"
-            value={breakdown.timeBonus}
-            hint={
-              breakdown.timeBonus > 0
-                ? "Faster clear"
-                : "Under 8 min for speed pts"
-            }
-          />
-          <Bonus label="Perfect" value={breakdown.perfectBonus} />
-          {(breakdown.seasonBonus ?? 0) > 0 && (
-            <Bonus label="Season" value={breakdown.seasonBonus} />
-          )}
-          {(breakdown.plusBonus ?? 0) > 0 && (
-            <Bonus label="Plus" value={breakdown.plusBonus} />
-          )}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2 text-xs text-fog sm:grid-cols-3">
+            <Bonus label="Base" value={breakdown.base} />
+            <Bonus
+              label="Speed"
+              value={breakdown.timeBonus}
+              hint={timeBonusTierHint(elapsedMs)}
+            />
+            <Bonus label="Perfect" value={breakdown.perfectBonus} />
+            {(breakdown.seasonBonus ?? 0) > 0 && (
+              <Bonus label="Season" value={breakdown.seasonBonus} />
+            )}
+            {(breakdown.plusBonus ?? 0) > 0 && (
+              <Bonus label="Plus" value={breakdown.plusBonus} />
+            )}
+          </div>
+          <p className="text-[11px] leading-relaxed text-fog/80">
+            Speed adds score points (not Ink Coins) for faster clears:{" "}
+            {timeBonusScheduleLabel()}. After 8 minutes, Speed is +0.
+          </p>
         </div>
       )}
 

@@ -126,13 +126,13 @@ export default async function HomePage() {
               ? profile.stats.currentStreak > 0
                 ? `Today counts toward your ${profile.stats.currentStreak}-day streak. Win at least one puzzle each day to keep it alive.`
                 : "Play and win a puzzle today to start a streak."
-              : "Win any puzzle today to extend or start your daily streak. Faster solves earn a time bonus."}
+              : "Win any puzzle today to extend or start your daily streak. Faster clears earn Speed score points (see the timer)."}
           </p>
         )}
         {!session?.user && (
           <p className="mt-4 max-w-xl text-sm text-fog">
-            Sign in to track a daily streak. Every puzzle runs a timer — speed
-            bonuses stack onto your score.
+            Sign in to track a daily streak. Faster clears earn Speed score
+            points — up to +40 under 30 seconds, down to +5 within 8 minutes.
           </p>
         )}
       </section>
