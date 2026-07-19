@@ -4,6 +4,8 @@ import { FriendGardenVisit } from "@/components/friend-garden-visit";
 import { getFriendGardenSnapshot } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 export default async function FriendCompanionPage({
   params,
 }: {

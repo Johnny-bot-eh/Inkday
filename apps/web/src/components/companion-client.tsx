@@ -6,6 +6,7 @@ import { emitAccountXp } from "@/components/account-xp-chip";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import { GardenDiorama } from "@/components/garden-diorama";
 import { PetMark } from "@/components/pet-mark";
+import { authClient } from "@/lib/auth-client";
 import type { CompanionSnapshot } from "@daily-puzzle/puzzle-core";
 
 type Props = {
@@ -43,6 +44,8 @@ type GardenUndo =
 const MAX_UNDO = 40;
 
 export function CompanionClient({ signedIn, initial }: Props) {
+  const [sessionOk, setSessionOk] = useState(signedIn);
+  const [sessionCheckDone, setSessionCheckDone] = useState(signedIn);
   const [snapshot, setSnapshot] = useState<CompanionSnapshot | null>(initial);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -69,8 +72,36 @@ export function CompanionClient({ signedIn, initial }: Props) {
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
 
+  /** Recover when SSR said signed-out but the browser already has a session. */
   useEffect(() => {
-    if (!signedIn || snapshot) return;
+    if (signedIn) {
+      setSessionOk(true);
+      setSessionCheckDone(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data } = await authClient.getSession();
+        if (cancelled) return;
+        if (data?.user) {
+          setSessionOk(true);
+          const res = await fetch("/api/companion");
+          if (!cancelled && res.ok) {
+            setSnapshot((await res.json()) as CompanionSnapshot);
+          }
+        }
+      } finally {
+        if (!cancelled) setSessionCheckDone(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+
+  useEffect(() => {
+    if (!sessionOk || snapshot) return;
     let cancelled = false;
     void (async () => {
       const res = await fetch("/api/companion");
@@ -81,7 +112,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [signedIn, snapshot]);
+  }, [sessionOk, snapshot]);
 
   function pushUndo(entry: GardenUndo) {
     setUndoStack((prev) => [...prev.slice(-(MAX_UNDO - 1)), entry]);
@@ -253,7 +284,14 @@ export function CompanionClient({ signedIn, initial }: Props) {
     if (!ok) pushUndo(entry);
   }
 
-  if (!signedIn) {
+  if (!sessionOk) {
+    if (!sessionCheckDone) {
+      return (
+        <div className="mx-auto max-w-lg animate-rise py-16 text-center text-fog">
+          Loading garden…
+        </div>
+      );
+    }
     return (
       <div className="mx-auto max-w-lg animate-rise space-y-6 text-center">
         <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">
