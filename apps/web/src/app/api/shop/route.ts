@@ -7,12 +7,16 @@ import {
   buyAndUseConsumable,
   buyShopItem,
   claimAndEquipAvatar,
+  equipAccessory,
   equipAvatar,
   getCoinBalance,
+  getEquippedAccessory,
   getEquippedAvatar,
   listCoinInventory,
+  listOwnedAccessoryIds,
   listOwnedAvatarIds,
   restoreStreakWithCoins,
+  unequipAccessory,
   useConsumable,
 } from "@/lib/coin-service";
 import { getAccountLevel } from "@/lib/pet-service";
@@ -31,6 +35,7 @@ function catalogEntry(
   const available =
     !item.comingSoon &&
     !item.free &&
+    !item.badgeReward &&
     !levelLocked &&
     (item.price > 0 || isPlusClaim);
   return {
@@ -60,17 +65,21 @@ export async function GET() {
       balance: null,
       inventory: [],
       equippedAvatarId: null,
+      equippedAccessoryId: null,
       ownedAvatarIds: [],
+      ownedAccessoryIds: [],
       accountLevel: null,
     });
   }
 
-  const [balance, inventory, equippedAvatarId, ownedAvatarIds] =
+  const [balance, inventory, equippedAvatarId, equippedAccessoryId, ownedAvatarIds, ownedAccessoryIds] =
     await Promise.all([
       getCoinBalance(session.user.id),
       listCoinInventory(session.user.id),
       getEquippedAvatar(session.user.id),
+      getEquippedAccessory(session.user.id),
       listOwnedAvatarIds(session.user.id),
+      listOwnedAccessoryIds(session.user.id),
     ]);
 
   return NextResponse.json({
@@ -79,7 +88,9 @@ export async function GET() {
     balance,
     inventory,
     equippedAvatarId,
+    equippedAccessoryId,
     ownedAvatarIds,
+    ownedAccessoryIds,
     accountLevel,
   });
 }
@@ -97,11 +108,31 @@ export async function POST(req: Request) {
       | "buy_and_use"
       | "restore_streak"
       | "equip_avatar"
-      | "claim_equip_avatar";
+      | "claim_equip_avatar"
+      | "equip_accessory"
+      | "unequip_accessory";
     itemId?: string;
     avatarId?: string;
+    accessoryId?: string;
     refId?: string;
   };
+
+  if (body.action === "equip_accessory") {
+    const accessoryId = body.accessoryId ?? body.itemId;
+    if (!accessoryId) {
+      return NextResponse.json({ error: "accessoryId required" }, { status: 400 });
+    }
+    const result = await equipAccessory(userId, accessoryId);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+    return NextResponse.json(result);
+  }
+
+  if (body.action === "unequip_accessory") {
+    const result = await unequipAccessory(userId);
+    return NextResponse.json(result);
+  }
 
   if (body.action === "equip_avatar") {
     const avatarId = body.avatarId ?? body.itemId;

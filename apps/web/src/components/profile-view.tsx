@@ -33,6 +33,7 @@ type Props = {
       id: string;
       name: string;
       equippedAvatarId?: string | null;
+      equippedAccessoryId?: string | null;
     }>;
     achievements: Array<{
       id: string;
@@ -58,7 +59,9 @@ type Props = {
     metaJson: string | null;
   }>;
   equippedAvatarId?: string;
+  equippedAccessoryId?: string | null;
   ownedAvatarIds?: string[];
+  ownedAccessoryIds?: string[];
   coinBalance?: number | null;
 };
 
@@ -86,7 +89,9 @@ export function ProfileView({
   recent,
   isPlus = false,
   equippedAvatarId = "avatar_default",
+  equippedAccessoryId = null,
   ownedAvatarIds = [],
+  ownedAccessoryIds = [],
   coinBalance = null,
 }: Props & { isPlus?: boolean }) {
   const router = useRouter();
@@ -124,7 +129,9 @@ export function ProfileView({
 
       <AvatarPicker
         equippedAvatarId={equippedAvatarId}
+        equippedAccessoryId={equippedAccessoryId}
         ownedAvatarIds={ownedAvatarIds}
+        ownedAccessoryIds={ownedAccessoryIds}
         isPlus={isPlus}
         balance={coinBalance}
       />
@@ -258,7 +265,11 @@ export function ProfileView({
                 key={friend.id}
                 className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-ink-2/80 px-3 py-1 text-sm"
               >
-                <AvatarMark avatarId={friend.equippedAvatarId} size={22} />
+                <AvatarMark
+                  avatarId={friend.equippedAvatarId}
+                  accessoryId={friend.equippedAccessoryId}
+                  size={22}
+                />
                 {friend.name}
               </span>
             ))

@@ -16,6 +16,7 @@ type Friendship = {
     email: string;
     displayName: string | null;
     equippedAvatarId?: string | null;
+    equippedAccessoryId?: string | null;
   } | null;
 };
 
@@ -345,7 +346,11 @@ export function FriendsPanel({
               className="flex items-center justify-between rounded-xl border border-[var(--line)] bg-ink-2/80 px-4 py-3"
             >
               <span className="inline-flex items-center gap-2">
-                <AvatarMark avatarId={f.other?.equippedAvatarId} size={28} />
+                <AvatarMark
+                  avatarId={f.other?.equippedAvatarId}
+                  accessoryId={f.other?.equippedAccessoryId}
+                  size={28}
+                />
                 {f.other?.displayName || f.other?.name}
               </span>
               <div className="flex gap-2">
@@ -393,7 +398,11 @@ export function FriendsPanel({
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--line)] bg-panel/50 px-4 py-3"
             >
               <div className="flex items-center gap-3">
-                <AvatarMark avatarId={f.other?.equippedAvatarId} size={36} />
+                <AvatarMark
+                  avatarId={f.other?.equippedAvatarId}
+                  accessoryId={f.other?.equippedAccessoryId}
+                  size={36}
+                />
                 <div>
                   <div>{f.other?.displayName || f.other?.name}</div>
                   <div className="text-xs text-fog">{f.other?.email}</div>

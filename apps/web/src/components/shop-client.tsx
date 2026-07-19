@@ -28,7 +28,11 @@ export function ShopClient({
   const [balance, setBalance] = useState(initialBalance);
   const [inventory, setInventory] = useState<InvRow[]>([]);
   const [ownedAvatarIds, setOwnedAvatarIds] = useState<string[]>([]);
+  const [ownedAccessoryIds, setOwnedAccessoryIds] = useState<string[]>([]);
   const [equippedAvatarId, setEquippedAvatarId] = useState<string | null>(null);
+  const [equippedAccessoryId, setEquippedAccessoryId] = useState<string | null>(
+    null,
+  );
   const [accountLevel, setAccountLevel] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
@@ -41,7 +45,9 @@ export function ShopClient({
     setBalance(data.balance);
     setInventory(data.inventory ?? []);
     setOwnedAvatarIds(data.ownedAvatarIds ?? []);
+    setOwnedAccessoryIds(data.ownedAccessoryIds ?? []);
     setEquippedAvatarId(data.equippedAvatarId ?? null);
+    setEquippedAccessoryId(data.equippedAccessoryId ?? null);
     setAccountLevel(
       typeof data.accountLevel === "number" ? data.accountLevel : null,
     );
@@ -130,7 +136,7 @@ export function ShopClient({
         return;
       }
       setEquippedAvatarId(avatarId);
-      emitEquippedAvatar(avatarId);
+      emitEquippedAvatar(avatarId, equippedAccessoryId);
       setMessage("Portrait equipped.");
       if (typeof data.balance === "number") {
         setBalance(data.balance);
@@ -145,7 +151,18 @@ export function ShopClient({
   const qty = (id: string) =>
     inventory.find((i) => i.itemId === id)?.qty ?? 0;
 
-  const avatars = catalog.filter((i) => i.slot === "avatar");
+  const avatars = catalog.filter(
+    (i) =>
+      i.slot === "avatar" &&
+      (!i.badgeReward || ownedAvatarIds.includes(i.id) || qty(i.id) > 0),
+  );
+  const accessories = catalog.filter(
+    (i) =>
+      i.slot === "accessory" &&
+      (i.available ||
+        ownedAccessoryIds.includes(i.id) ||
+        qty(i.id) > 0),
+  );
   const food = catalog.filter((i) => i.kind === "food");
   const level = accountLevel ?? 1;
   const decorations = catalog
@@ -160,7 +177,11 @@ export function ShopClient({
       return a.title.localeCompare(b.title);
     });
   const other = catalog.filter(
-    (i) => i.slot !== "avatar" && i.kind !== "food" && i.kind !== "decoration",
+    (i) =>
+      i.slot !== "avatar" &&
+      i.slot !== "accessory" &&
+      i.kind !== "food" &&
+      i.kind !== "decoration",
   );
 
   function avatarOwned(item: ShopItem) {
@@ -238,8 +259,8 @@ export function ShopClient({
           Portraits
         </h2>
         <p className="text-sm text-fog">
-          Free starters for everyone. Coin exclusives and Plus seals unlock more
-          looks.
+          Free starters, coin exclusives, Plus seals, and badge-earned portraits.
+          Equip accessories on your profile.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2">
           {avatars.map((item) => {
@@ -248,7 +269,11 @@ export function ShopClient({
                 key={item.id}
                 className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-panel/60 p-4"
               >
-                <AvatarMark avatarId={item.id} size={48} />
+                <AvatarMark
+                  avatarId={item.id}
+                  accessoryId={equippedAccessoryId}
+                  size={48}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-paper">
                     {item.title}
@@ -260,6 +285,11 @@ export function ShopClient({
                     {item.free ? (
                       <span className="ml-2 text-[10px] font-normal uppercase tracking-wider text-fog">
                         Free
+                      </span>
+                    ) : null}
+                    {item.badgeReward ? (
+                      <span className="ml-2 text-[10px] font-normal uppercase tracking-wider text-mint">
+                        Badge
                       </span>
                     ) : null}
                   </div>
@@ -278,6 +308,64 @@ export function ShopClient({
           })}
         </ul>
       </section>
+
+      {accessories.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+            Accessories
+          </h2>
+          <p className="text-sm text-fog">
+            Ribbons and crowns from Case File ranks and weekly tournaments. Buy
+            frames with coins — equip everything on your profile.
+          </p>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {accessories.map((item) => {
+              const owned =
+                ownedAccessoryIds.includes(item.id) || qty(item.id) > 0;
+              return (
+                <li
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-panel/60 p-4"
+                >
+                  <AvatarMark
+                    avatarId={equippedAvatarId ?? "avatar_default"}
+                    accessoryId={item.id}
+                    size={48}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-paper">
+                      {item.title}
+                      {item.badgeReward ? (
+                        <span className="ml-2 text-[10px] font-normal uppercase tracking-wider text-mint">
+                          Event
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-0.5 text-xs text-fog">{item.description}</p>
+                  </div>
+                  {owned ? (
+                    <Link
+                      href="/profile"
+                      className="shrink-0 rounded-lg border border-[var(--line)] px-3 py-2 text-xs font-semibold text-paper hover:bg-white/5"
+                    >
+                      Equip →
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!signedIn || loading === item.id || !item.available}
+                      onClick={() => void buy(item.id)}
+                      className="shrink-0 rounded-lg bg-ember px-3 py-2 text-xs font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
+                    >
+                      {loading === item.id ? "…" : `${item.price}◈`}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">

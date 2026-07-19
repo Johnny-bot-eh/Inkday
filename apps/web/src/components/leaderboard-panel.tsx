@@ -10,6 +10,7 @@ type Row = {
   name: string;
   displayName: string | null;
   equippedAvatarId?: string | null;
+  equippedAccessoryId?: string | null;
   dayScore: number;
   wins: number;
 };
@@ -176,7 +177,11 @@ export function LeaderboardPanel({ signedIn }: { signedIn: boolean }) {
             <div className="w-8 font-[family-name:var(--font-display)] text-xl font-bold text-ember">
               {index + 1}
             </div>
-            <AvatarMark avatarId={row.equippedAvatarId} size={32} />
+            <AvatarMark
+              avatarId={row.equippedAvatarId}
+              accessoryId={row.equippedAccessoryId}
+              size={32}
+            />
             <div className="flex-1">
               <div className="font-semibold">
                 {row.displayName || row.name}

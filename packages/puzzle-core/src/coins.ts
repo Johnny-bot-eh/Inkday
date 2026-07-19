@@ -36,7 +36,7 @@ export type CoinItemKind =
   | "food"
   | "pack";
 
-export type ShopItemSlot = "avatar";
+export type ShopItemSlot = "avatar" | "accessory";
 
 export type ShopItem = {
   id: string;
@@ -48,10 +48,12 @@ export type ShopItem = {
   effect?: "streak_restore" | "plus_stipend";
   comingSoon?: boolean;
   plusOnly?: boolean;
-  /** Cosmetic sub-slot (avatars equip on profile) */
+  /** Cosmetic sub-slot (avatars / accessories equip on profile) */
   slot?: ShopItemSlot;
   /** Free starter avatars — always owned, never bought */
   free?: boolean;
+  /** Earned via achievement — cannot be purchased */
+  badgeReward?: boolean;
   /** Garden / pet shop unlock category */
   shopCategory?: ShopCategoryId;
   /** Account level required to purchase (XP unlocks eligibility only) */
@@ -279,13 +281,159 @@ export const SHOP_ITEMS: ShopItem[] = [
     price: 0,
     plusOnly: true,
   },
+  // —— Badge-unlocked avatars (earned via achievements) ——
   {
-    id: "cosmetic_frame_ember",
-    title: "Ember profile frame",
-    description: "Cosmetic frame for your profile avatar.",
+    id: "avatar_badge_gumshoe",
+    title: "Gumshoe badge",
+    description: "Earned by clearing Escape Room milestones.",
     kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "avatar_badge_sherlock",
+    title: "Sherlock badge",
+    description: "Earned by mastering the detective desk.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "avatar_badge_logic",
+    title: "Logic grid badge",
+    description: "Earned by conquering logic puzzles.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "avatar_badge_einstein",
+    title: "Einstein badge",
+    description: "Earned by solving 100 logic grids.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "avatar_badge_master",
+    title: "Puzzle master badge",
+    description: "Earned by completing hundreds of puzzles.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "avatar_badge_legend",
+    title: "Legend badge",
+    description: "Earned by reaching legendary status.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "avatar_badge_season",
+    title: "Season devotee badge",
+    description: "Earned by playing every season.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "avatar_badge_weekly",
+    title: "Weekly champion badge",
+    description: "Earned by winning weekly tournaments.",
+    kind: "cosmetic",
+    slot: "avatar",
+    price: 0,
+    badgeReward: true,
+  },
+  // —— Profile accessories (ribbons, crowns, frames) ——
+  {
+    id: "accessory_ribbon_junior",
+    title: "Junior ribbon",
+    description: "Monthly Case File — Junior Detective milestone.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_ribbon_investigator",
+    title: "Investigator ribbon",
+    description: "Monthly Case File — Investigator milestone.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_ribbon_master",
+    title: "Master ribbon",
+    description: "Monthly Case File — Master Detective milestone.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_ribbon_legendary",
+    title: "Legendary ribbon",
+    description: "Monthly Case File — Legendary Detective milestone.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_ribbon_casefile",
+    title: "Case File ribbon",
+    description: "Complete an entire monthly Case File.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_crown_gold",
+    title: "Gold crown",
+    description: "Weekly tournament — 1st place.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_crown_silver",
+    title: "Silver laurel",
+    description: "Weekly tournament — 2nd place.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_crown_bronze",
+    title: "Bronze seal",
+    description: "Weekly tournament — 3rd place.",
+    kind: "cosmetic",
+    slot: "accessory",
+    price: 0,
+    badgeReward: true,
+  },
+  {
+    id: "accessory_frame_ember",
+    title: "Ember profile frame",
+    description: "Warm ember ring around your portrait.",
+    kind: "cosmetic",
+    slot: "accessory",
     price: 400,
-    comingSoon: true,
   },
   {
     id: "food_apple",
@@ -351,6 +499,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     requiredLevel: 1,
   },
   {
+    id: "deco_grass_tuft",
+    title: "Grass tuft",
+    description: "A soft patch of meadow grass.",
+    kind: "decoration",
+    price: 20,
+    shopCategory: "garden",
+    requiredLevel: 1,
+  },
+  {
+    id: "deco_twig",
+    title: "Fallen twig",
+    description: "A weathered twig for rustic charm.",
+    kind: "decoration",
+    price: 18,
+    shopCategory: "garden",
+    requiredLevel: 1,
+  },
+  {
     id: "deco_berry_bush",
     title: "Berry bush",
     description: "A small bush with bright berries.",
@@ -387,6 +553,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     requiredLevel: 5,
   },
   {
+    id: "deco_fern_pot",
+    title: "Fern pot",
+    description: "A potted fern for shady corners.",
+    kind: "decoration",
+    price: 52,
+    shopCategory: "garden",
+    requiredLevel: 5,
+  },
+  {
+    id: "deco_snail_shell",
+    title: "Snail shell",
+    description: "A spiral shell left by a garden visitor.",
+    kind: "decoration",
+    price: 42,
+    shopCategory: "garden",
+    requiredLevel: 5,
+  },
+  {
     id: "deco_sunflower",
     title: "Sunflower",
     description: "Tall golden petals that follow the light.",
@@ -419,6 +603,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: "Elegant petals for a calm corner.",
     kind: "decoration",
     price: 85,
+    shopCategory: "garden",
+    requiredLevel: 10,
+  },
+  {
+    id: "deco_wheelbarrow",
+    title: "Wheelbarrow",
+    description: "A rusty wheelbarrow ready for harvest.",
+    kind: "decoration",
+    price: 88,
+    shopCategory: "garden",
+    requiredLevel: 10,
+  },
+  {
+    id: "deco_beehive",
+    title: "Beehive",
+    description: "A small hive buzzing with garden life.",
+    kind: "decoration",
+    price: 92,
     shopCategory: "garden",
     requiredLevel: 10,
   },
@@ -468,6 +670,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     requiredLevel: 20,
   },
   {
+    id: "deco_orchid",
+    title: "Ink orchid",
+    description: "An exotic bloom with deep violet petals.",
+    kind: "decoration",
+    price: 115,
+    shopCategory: "flowers",
+    requiredLevel: 20,
+  },
+  {
+    id: "deco_ivy_pot",
+    title: "Ivy pot",
+    description: "Trailing ivy spilling from a clay pot.",
+    kind: "decoration",
+    price: 108,
+    shopCategory: "flowers",
+    requiredLevel: 20,
+  },
+  {
     id: "deco_log_bench",
     title: "Log bench",
     description: "A weathered seat carved from a fallen trunk.",
@@ -504,6 +724,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     requiredLevel: 30,
   },
   {
+    id: "deco_hammock",
+    title: "Garden hammock",
+    description: "A cozy hammock strung between trees.",
+    kind: "decoration",
+    price: 220,
+    shopCategory: "garden",
+    requiredLevel: 30,
+  },
+  {
+    id: "deco_scarecrow",
+    title: "Scarecrow",
+    description: "A friendly scarecrow guarding the beds.",
+    kind: "decoration",
+    price: 200,
+    shopCategory: "garden",
+    requiredLevel: 30,
+  },
+  {
     id: "deco_pond",
     title: "Mirror pond",
     description: "A still pond that reflects starlight.",
@@ -527,6 +765,33 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: "A path of flat stones across soft ground.",
     kind: "decoration",
     price: 290,
+    shopCategory: "ponds",
+    requiredLevel: 40,
+  },
+  {
+    id: "deco_koi_bridge",
+    title: "Koi bridge",
+    description: "A small arched bridge over still water.",
+    kind: "decoration",
+    price: 310,
+    shopCategory: "ponds",
+    requiredLevel: 40,
+  },
+  {
+    id: "deco_lily_pad",
+    title: "Lily pad cluster",
+    description: "Floating pads with a single bloom.",
+    kind: "decoration",
+    price: 275,
+    shopCategory: "ponds",
+    requiredLevel: 40,
+  },
+  {
+    id: "deco_dragonfly",
+    title: "Dragonfly perch",
+    description: "A reed where dragonflies like to land.",
+    kind: "decoration",
+    price: 285,
     shopCategory: "ponds",
     requiredLevel: 40,
   },
@@ -567,6 +832,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     requiredLevel: 50,
   },
   {
+    id: "deco_gazebo_mini",
+    title: "Mini gazebo",
+    description: "A tiny gazebo for afternoon shade.",
+    kind: "decoration",
+    price: 390,
+    shopCategory: "garden",
+    requiredLevel: 50,
+  },
+  {
+    id: "deco_moon_gate",
+    title: "Moon gate",
+    description: "A circular gate framing the garden path.",
+    kind: "decoration",
+    price: 410,
+    shopCategory: "garden",
+    requiredLevel: 50,
+  },
+  {
     id: "deco_tree_oak",
     title: "Case-file oak",
     description: "A sturdy oak for shade and secrets.",
@@ -603,6 +886,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     requiredLevel: 60,
   },
   {
+    id: "deco_maple",
+    title: "Autumn maple",
+    description: "A maple with warm seasonal foliage.",
+    kind: "decoration",
+    price: 540,
+    shopCategory: "trees",
+    requiredLevel: 60,
+  },
+  {
+    id: "deco_bamboo",
+    title: "Bamboo grove",
+    description: "Slender bamboo stalks for zen shade.",
+    kind: "decoration",
+    price: 525,
+    shopCategory: "trees",
+    requiredLevel: 60,
+  },
+  {
     id: "deco_seasonal_lantern",
     title: "Seasonal lantern",
     description: "Festival light for rare garden nights.",
@@ -617,6 +918,33 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: "Bright cloth for celebration days.",
     kind: "decoration",
     price: 880,
+    shopCategory: "seasonal",
+    requiredLevel: 80,
+  },
+  {
+    id: "deco_firefly_jar",
+    title: "Firefly jar",
+    description: "A jar of gentle evening fireflies.",
+    kind: "decoration",
+    price: 920,
+    shopCategory: "seasonal",
+    requiredLevel: 80,
+  },
+  {
+    id: "deco_snow_lantern",
+    title: "Snow lantern",
+    description: "A lantern dusted with winter frost.",
+    kind: "decoration",
+    price: 900,
+    shopCategory: "seasonal",
+    requiredLevel: 80,
+  },
+  {
+    id: "deco_harvest_wreath",
+    title: "Harvest wreath",
+    description: "A wreath of autumn leaves and berries.",
+    kind: "decoration",
+    price: 860,
     shopCategory: "seasonal",
     requiredLevel: 80,
   },
@@ -639,6 +967,33 @@ export const SHOP_ITEMS: ShopItem[] = [
     requiredLevel: 100,
   },
   {
+    id: "deco_aurora_spire",
+    title: "Aurora spire",
+    description: "A crystalline spire catching northern light.",
+    kind: "decoration",
+    price: 2400,
+    shopCategory: "legendary",
+    requiredLevel: 100,
+  },
+  {
+    id: "deco_starfall_orb",
+    title: "Starfall orb",
+    description: "A floating orb of captured starlight.",
+    kind: "decoration",
+    price: 2500,
+    shopCategory: "legendary",
+    requiredLevel: 100,
+  },
+  {
+    id: "deco_eternal_fountain",
+    title: "Eternal fountain",
+    description: "A legendary fountain that never runs dry.",
+    kind: "decoration",
+    price: 2600,
+    shopCategory: "legendary",
+    requiredLevel: 100,
+  },
+  {
     id: "coin_pack_small",
     title: "Coin pack (coming soon)",
     description: "Real-money packs will plug in later via Stripe.",
@@ -655,6 +1010,10 @@ export const DECORATION_SHOP_ITEMS = SHOP_ITEMS.filter(
 );
 
 export const AVATAR_ITEMS = SHOP_ITEMS.filter((i) => i.slot === "avatar");
+
+export const ACCESSORY_ITEMS = SHOP_ITEMS.filter((i) => i.slot === "accessory");
+
+export const DEFAULT_ACCESSORY_ID = null;
 
 export const CONSUMABLE_ITEM_IDS = ["hint", "extra_attempt", "skip"] as const;
 export type ConsumableItemId = (typeof CONSUMABLE_ITEM_IDS)[number];
@@ -678,6 +1037,22 @@ export function isFreeAvatar(id: string): boolean {
 
 export function isAvatarItemId(id: string): boolean {
   return Boolean(getAvatarItem(id));
+}
+
+export function getAccessoryItem(id: string): ShopItem | undefined {
+  const item = getShopItem(id);
+  return item?.slot === "accessory" ? item : undefined;
+}
+
+export function isAccessoryItemId(id: string): boolean {
+  return Boolean(getAccessoryItem(id));
+}
+
+export function resolveAccessoryId(
+  id: string | null | undefined,
+): string | null {
+  if (id && getAccessoryItem(id)) return id;
+  return DEFAULT_ACCESSORY_ID;
 }
 
 export function resolveAvatarId(id: string | null | undefined): string {

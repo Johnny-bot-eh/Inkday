@@ -20,5 +20,6 @@ export * from "./pets";
 export * from "./garden";
 export * from "./companion-types";
 export * from "./coins";
+export * from "./cosmetics";
 export * from "./puzzle-design";
 export * from "./puzzle-explanations";

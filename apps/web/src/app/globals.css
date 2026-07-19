@@ -677,3 +677,41 @@ select {
     linear-gradient(180deg, transparent 20%, #d8e4ec55 70%, #c8d8e066 100%);
   animation: garden-bob 6s ease-in-out infinite;
 }
+
+@keyframes avatar-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes avatar-sparkle {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(1.03);
+    filter: brightness(1.12);
+  }
+  50% {
+    transform: scale(1.06);
+    filter: brightness(1.2);
+  }
+  75% {
+    transform: scale(1.03);
+    filter: brightness(1.1);
+  }
+}
+
+.avatar-idle {
+  animation: avatar-breathe 4s ease-in-out infinite;
+}
+
+.avatar-sparkle {
+  animation: avatar-sparkle 2.8s ease-in-out infinite;
+}

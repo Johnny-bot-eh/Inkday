@@ -11,6 +11,7 @@ const statements = [
   image TEXT,
   display_name TEXT,
   equipped_avatar_id TEXT,
+  equipped_accessory_id TEXT,
   created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
   updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 )`,
@@ -322,6 +323,7 @@ const alters = [
   `ALTER TABLE user_stats ADD COLUMN challenge_wins INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE play_result ADD COLUMN season_id TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE user ADD COLUMN equipped_avatar_id TEXT`,
+  `ALTER TABLE user ADD COLUMN equipped_accessory_id TEXT`,
   `ALTER TABLE garden_placement ADD COLUMN x INTEGER NOT NULL DEFAULT 50`,
   `ALTER TABLE garden_placement ADD COLUMN y INTEGER NOT NULL DEFAULT 60`,
   `ALTER TABLE garden_placement ADD COLUMN layer TEXT NOT NULL DEFAULT 'middle'`,
