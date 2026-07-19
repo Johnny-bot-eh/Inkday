@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { emitAccountXp } from "@/components/account-xp-chip";
 import {
   MAX_COIN_GIFT,
   MIN_COIN_GIFT,
@@ -17,7 +18,7 @@ type Props = {
   recipientName: string;
   open: boolean;
   onClose: () => void;
-  onSent?: () => void;
+  onSent?: (detail?: { xpEarned?: number }) => void;
 };
 
 export function FriendGiftModal({
@@ -80,8 +81,15 @@ export function FriendGiftModal({
         );
         return;
       }
+      if (typeof data.accountXp === "number") {
+        emitAccountXp({ accountXp: data.accountXp });
+      }
       setMessage("");
-      onSent?.();
+      onSent?.(
+        typeof data.xpEarned === "number"
+          ? { xpEarned: data.xpEarned }
+          : undefined,
+      );
       onClose();
     } finally {
       setLoading(false);
@@ -108,7 +116,8 @@ export function FriendGiftModal({
           Send a gift to {recipientName}
         </h2>
         <p className="mt-1 text-sm text-fog">
-          Send coins or an unplaced decoration from your inventory.
+          Send coins or an unplaced decoration — you earn a little XP for
+          sharing.
         </p>
 
         <div className="mt-4 flex gap-2">
