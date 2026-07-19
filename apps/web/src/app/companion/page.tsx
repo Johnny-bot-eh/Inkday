@@ -1,13 +1,17 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { CompanionClient } from "@/components/companion-client";
 import { getCompanionSnapshot } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function CompanionPage() {
+type PageProps = {
+  searchParams?: Promise<{ highlight?: string; place?: string }>;
+};
+
+export default async function CompanionPage({ searchParams }: PageProps) {
   const session = await getSession();
+  const sp = (await searchParams) ?? {};
   let snapshot = null;
   let loadError: string | null = null;
 
@@ -28,18 +32,12 @@ export default async function CompanionPage() {
           {loadError}
         </p>
       ) : null}
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-3xl animate-pulse py-16 text-center text-fog">
-            Loading garden…
-          </div>
-        }
-      >
-        <CompanionClient
-          signedIn={Boolean(session?.user)}
-          initial={snapshot}
-        />
-      </Suspense>
+      <CompanionClient
+        signedIn={Boolean(session?.user)}
+        initial={snapshot}
+        highlightItemId={sp.highlight ?? null}
+        placeItemId={sp.place ?? null}
+      />
       {session?.user ? (
         <p className="mx-auto max-w-3xl text-center text-xs text-fog">
           <Link href="/" className="text-ember hover:underline">

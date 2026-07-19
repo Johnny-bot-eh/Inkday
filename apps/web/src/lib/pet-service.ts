@@ -492,6 +492,27 @@ async function enrichPetDialogue(opts: {
   };
 }
 
+/** Lightweight placed-count map for inventory labels (avoids full companion snapshot). */
+export async function listGardenPlacedCounts(
+  userId: string,
+): Promise<Map<string, number>> {
+  const db = getDb();
+  const counts = new Map<string, number>();
+  try {
+    const rows = await db.query.gardenPlacement.findMany({
+      where: eq(gardenPlacement.userId, userId),
+      columns: { itemId: true },
+    });
+    for (const row of rows) {
+      if (isHabitatDecorItemId(row.itemId)) continue;
+      counts.set(row.itemId, (counts.get(row.itemId) ?? 0) + 1);
+    }
+  } catch {
+    // Table may be mid-migrate — treat as empty.
+  }
+  return counts;
+}
+
 export async function getCompanionSnapshot(
   userId: string,
 ): Promise<CompanionSnapshot> {

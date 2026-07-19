@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { emitAccountXp } from "@/components/account-xp-chip";
 import { emitCoinBalance } from "@/components/coin-balance-chip";
 import { GardenDiorama } from "@/components/garden-diorama";
@@ -13,6 +12,10 @@ import type { CompanionSnapshot } from "@daily-puzzle/puzzle-core";
 type Props = {
   signedIn: boolean;
   initial: CompanionSnapshot | null;
+  /** From /companion?highlight= — focus a placed decoration. */
+  highlightItemId?: string | null;
+  /** From /companion?place= — start placing that inventory item. */
+  placeItemId?: string | null;
 };
 
 type GardenUndo =
@@ -44,7 +47,12 @@ type GardenUndo =
 
 const MAX_UNDO = 40;
 
-export function CompanionClient({ signedIn, initial }: Props) {
+export function CompanionClient({
+  signedIn,
+  initial,
+  highlightItemId = null,
+  placeItemId = null,
+}: Props) {
   const [sessionOk, setSessionOk] = useState(signedIn);
   const [sessionCheckDone, setSessionCheckDone] = useState(signedIn);
   const [snapshot, setSnapshot] = useState<CompanionSnapshot | null>(initial);
@@ -74,9 +82,8 @@ export function CompanionClient({ signedIn, initial }: Props) {
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
   const gardenSectionRef = useRef<HTMLElement | null>(null);
-  const searchParams = useSearchParams();
-  const highlightParam = searchParams.get("highlight");
-  const placeParam = searchParams.get("place");
+  const highlightParam = highlightItemId?.trim() || null;
+  const placeParam = placeItemId?.trim() || null;
 
   useEffect(() => {
     if (!snapshot) return;
@@ -89,12 +96,18 @@ export function CompanionClient({ signedIn, initial }: Props) {
         setSelectedPlacement(match.id);
         setFocusItemId(highlightParam);
         setMessage(`Showing ${match.title} in your garden`);
-        gardenSectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+        // Defer scroll until after paint so the garden section exists.
+        const scrollTimer = window.setTimeout(() => {
+          gardenSectionRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 50);
         const clear = window.setTimeout(() => setFocusItemId(null), 4500);
-        return () => window.clearTimeout(clear);
+        return () => {
+          window.clearTimeout(scrollTimer);
+          window.clearTimeout(clear);
+        };
       }
       setMessage("That decoration isn’t in your garden yet.");
       return;
@@ -108,10 +121,13 @@ export function CompanionClient({ signedIn, initial }: Props) {
         setSelectedPlacement(null);
         setSelectedDecor(placeParam);
         setMessage(`Tap the garden to place ${remaining.title}`);
-        gardenSectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+        const scrollTimer = window.setTimeout(() => {
+          gardenSectionRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 50);
+        return () => window.clearTimeout(scrollTimer);
       }
     }
   }, [snapshot, highlightParam, placeParam]);
