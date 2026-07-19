@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   MAX_COIN_GIFT,
   MIN_COIN_GIFT,
-} from "@/lib/friend-gift-service";
+} from "@/lib/friend-gift-constants";
 
 type SendableDecor = {
   itemId: string;
