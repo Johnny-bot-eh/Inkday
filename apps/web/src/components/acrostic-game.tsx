@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { caseFileClearLabel, forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { caseFileClearLabel, forfeitMonthlyFromGame, submitMonthlyFromGame, type MonthlyPlayContext, dismissMonthlySlotNotes } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -106,6 +106,7 @@ export function AcrosticGame({
       if (!opts.won) {
         const outcome = opts.outcome ?? "failed";
         if (!signedIn) {
+          dismissMonthlySlotNotes(monthly);
           setDone(true);
           setResults({
             won: false,
@@ -152,6 +153,7 @@ export function AcrosticGame({
         return;
       }
       if (!signedIn) {
+        dismissMonthlySlotNotes(monthly);
         setDone(true);
         setResults({ won: true, elapsedMs, answer: puzzle.message });
         setStatus("Solved! Sign in to save Case File progress.");

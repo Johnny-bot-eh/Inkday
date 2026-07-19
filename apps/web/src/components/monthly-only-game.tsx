@@ -1,5 +1,6 @@
 "use client";
 
+import { clearMonthlyPlayerNotes } from "@/lib/player-notes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Difficulty, MonthlyOnlyPuzzle, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
@@ -176,6 +177,7 @@ export function MonthlyOnlyGame({
 
   async function forfeitSlot(outcome: "skipped" | "failed") {
     if (!signedIn) {
+      clearMonthlyPlayerNotes(collectionId, slotIndex);
       if (outcome === "skipped") setSkipped(true);
       else setFailed(true);
       setDone(true);
@@ -203,6 +205,7 @@ export function MonthlyOnlyGame({
         setStatus(data.error ?? "Could not save");
         return;
       }
+      clearMonthlyPlayerNotes(collectionId, slotIndex);
       if (outcome === "skipped") setSkipped(true);
       else setFailed(true);
       setDone(true);
@@ -243,6 +246,7 @@ export function MonthlyOnlyGame({
 
     if (!signedIn) {
       const elapsedMs = timer.freeze();
+      clearMonthlyPlayerNotes(collectionId, slotIndex);
       setLastElapsedMs(elapsedMs);
       setDone(true);
       setStatus(`Cleared! Sign in to save Case File progress (+${points} pts).`);
@@ -268,6 +272,7 @@ export function MonthlyOnlyGame({
         setStatus(data.error ?? "Could not save");
         return;
       }
+      clearMonthlyPlayerNotes(collectionId, slotIndex);
       setDone(true);
       if (typeof data.score === "number") setLastScore(data.score);
       if (data.breakdown) setLastBreakdown(data.breakdown);

@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { caseFileClearLabel, submitMonthlyFromGame, forfeitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { caseFileClearLabel, submitMonthlyFromGame, forfeitMonthlyFromGame, type MonthlyPlayContext, dismissMonthlySlotNotes } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -118,6 +118,7 @@ export function AnagramGame({
       if (!opts.won) {
         const outcome = opts.outcome ?? "failed";
         if (!signedIn) {
+          dismissMonthlySlotNotes(monthly);
           setDone(true);
           setResults({
             won: false,
@@ -163,6 +164,7 @@ export function AnagramGame({
         return;
       }
       if (!signedIn) {
+        dismissMonthlySlotNotes(monthly);
         setDone(true);
         setResults({ won: true, elapsedMs, answer: puzzle.answer });
         setStatus("Solved! Sign in to save Case File progress.");
