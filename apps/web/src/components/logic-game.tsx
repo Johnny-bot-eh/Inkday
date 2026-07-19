@@ -98,9 +98,15 @@ export function LogicGame({
 
   const logicHintLadder = useMemo(() => {
     const steps = puzzle.clues.map((clue, i) => `Clue ${i + 1}: ${clue}`);
-    const subject = puzzle.subjects.values.find(
+    const subjectByName = puzzle.subjects.values.find(
       (name) => name.toLowerCase() === puzzle.answer.toLowerCase(),
     );
+    const subjectByPlace = puzzle.subjects.values.find((name) =>
+      Object.values(puzzle.solution[name] ?? {}).some(
+        (v) => v.toLowerCase() === puzzle.answer.toLowerCase(),
+      ),
+    );
+    const subject = subjectByName ?? subjectByPlace;
     const trait = puzzle.traits[0];
     if (subject && trait) {
       const row = puzzle.solution[subject];
@@ -143,6 +149,16 @@ export function LogicGame({
       }
       return updated;
     });
+  }
+
+  /** Right-click / secondary click: mark or clear a red × (rule-out). */
+  function markNoCell(subject: string, traitId: string, value: string) {
+    if (done) return;
+    const key = cellKey(subject, traitId, value);
+    const current = grid[key] ?? "unknown";
+    const next: GridMark = current === "no" ? "unknown" : "no";
+    setGridHistory((hist) => [...hist.slice(-79), grid]);
+    setGrid((prev) => ({ ...prev, [key]: next }));
   }
 
   function undoGrid() {
@@ -482,6 +498,10 @@ export function LogicGame({
                           type="button"
                           disabled={done}
                           onClick={() => cycleCell(subject, trait.id, value)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            markNoCell(subject, trait.id, value);
+                          }}
                           className={[
                             "flex h-10 w-full items-center justify-center transition",
                             mark === "yes" && "bg-mint/25 text-mint",
@@ -490,7 +510,7 @@ export function LogicGame({
                           ]
                             .filter(Boolean)
                             .join(" ")}
-                          aria-label={`${subject} ${trait.label} ${value}: ${mark}`}
+                          aria-label={`${subject} ${trait.label} ${value}: ${mark}. Left-click to cycle; right-click for ×.`}
                         >
                           {markLabel(mark)}
                         </button>
@@ -502,7 +522,8 @@ export function LogicGame({
             </tbody>
           </table>
           <p className="mt-2 text-xs text-fog">
-            Tap cells to cycle blank → yes (●) → no (×).
+            Left-click / tap cycles blank → yes (●) → no (×). Right-click (or
+            two-finger click) marks a red × to rule a cell out.
           </p>
         </section>
       ))}
@@ -520,8 +541,8 @@ export function LogicGame({
               className="flex-1 rounded-lg border border-[var(--line)] bg-ink-2 px-3 py-3 outline-none ring-ember/40 focus:ring-2"
               disabled={submitting}
             >
-              <option value="">Choose suspect…</option>
-              {puzzle.subjects.values.map((name) => (
+              <option value="">{puzzle.answerPrompt}</option>
+              {puzzle.answerChoices.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
@@ -533,7 +554,7 @@ export function LogicGame({
               disabled={!answer || submitting}
               className="rounded-lg bg-ember px-5 py-3 font-semibold text-on-ember hover:bg-ember-deep disabled:opacity-50"
             >
-              Accuse
+              Submit
             </button>
           </div>
         )}
