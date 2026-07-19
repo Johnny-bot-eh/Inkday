@@ -8,8 +8,11 @@ import {
   clampGardenCoord,
   clampHappiness,
   daysAway,
+  dayIndex,
   decayedHappiness,
   dialogueFor,
+  composePetDialogue,
+  personalityDisplayTitle,
   gardenAmbience,
   gardenDecorVisual,
   gardenSceneTone,
@@ -30,13 +33,17 @@ import {
   xpForGardenBuy,
   xpForMonthlySlot,
   xpForStreak7,
+  ACHIEVEMENTS,
+  PUZZLE_LABELS,
   type CompanionGiftView,
   type CompanionPetView,
   type CompanionSnapshot,
   type Difficulty,
   type FoodItemId,
   type GardenLayer,
+  type PetPersonalityId,
   type PetSpeciesId,
+  type PuzzleType,
   type ShopCategoryId,
 } from "@daily-puzzle/puzzle-core";
 import {
@@ -47,12 +54,13 @@ import {
   playResult,
   progressionEvent,
   user,
+  userAchievement,
   userPet,
   userProgression,
   coinInventory,
   monthlyCompletion,
 } from "@daily-puzzle/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { grantCoins, getInventoryQty, listCoinInventory } from "@/lib/coin-service";
 import { areFriends } from "@/lib/game-service";
@@ -222,7 +230,7 @@ async function maybeRollGift(opts: {
       message: dialogueFor(
         opts.pet.personalityId as never,
         "gift",
-        opts.dateKey.length,
+        dayIndex(opts.dateKey) + opts.happiness,
       ),
       rewardLabel: describeGiftReward(existing.coins, existing.itemId),
     };
@@ -259,7 +267,7 @@ async function maybeRollGift(opts: {
       message: dialogueFor(
         opts.pet.personalityId as never,
         "gift",
-        opts.dateKey.length,
+        dayIndex(opts.dateKey) + opts.happiness,
       ),
       rewardLabel: describeGiftReward(again.coins, again.itemId),
     };
@@ -274,7 +282,7 @@ async function maybeRollGift(opts: {
     message: dialogueFor(
       opts.pet.personalityId as never,
       "gift",
-      opts.dateKey.length,
+      dayIndex(opts.dateKey) + opts.happiness,
     ),
     rewardLabel: describeGiftReward(rolled.coins ?? 0, rolled.itemId ?? null),
   };
@@ -363,6 +371,125 @@ export function describeGiftReward(coins: number, itemId: string | null): string
   return parts.join(" · ") || "a surprise";
 }
 
+async function enrichPetDialogue(opts: {
+  userId: string;
+  dateKey: string;
+  petRow: {
+    personalityId: string;
+    lastFeedDate: string | null;
+    lastPetDate: string | null;
+  };
+  petView: CompanionPetView;
+  placementItemIds: string[];
+}): Promise<CompanionPetView> {
+  const db = getDb();
+  const { petView, dateKey, petRow } = opts;
+  const personalityId = petRow.personalityId as PetPersonalityId;
+
+  let lastFoodTitle: string | null = null;
+  try {
+    const lastFeed = await db.query.progressionEvent.findFirst({
+      where: and(
+        eq(progressionEvent.userId, opts.userId),
+        eq(progressionEvent.kind, "feed"),
+      ),
+      orderBy: [desc(progressionEvent.createdAt)],
+    });
+    if (lastFeed?.metaJson) {
+      const meta = JSON.parse(lastFeed.metaJson) as { itemId?: string };
+      if (meta.itemId) {
+        lastFoodTitle = getShopItem(meta.itemId)?.title ?? meta.itemId;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  let recentPlayLabels: string[] = [];
+  try {
+    const plays = await db.query.playResult.findMany({
+      where: and(
+        eq(playResult.userId, opts.userId),
+        eq(playResult.dateKey, dateKey),
+        eq(playResult.won, true),
+      ),
+      orderBy: [desc(playResult.createdAt)],
+      limit: 6,
+    });
+    recentPlayLabels = plays.map(
+      (p) =>
+        PUZZLE_LABELS[p.puzzleType as PuzzleType] ??
+        String(p.puzzleType),
+    );
+  } catch {
+    recentPlayLabels = [];
+  }
+
+  let recentAchievementTitles: string[] = [];
+  try {
+    const earned = await db.query.userAchievement.findMany({
+      where: eq(userAchievement.userId, opts.userId),
+      orderBy: [desc(userAchievement.earnedAt)],
+      limit: 4,
+    });
+    const byId = new Map(ACHIEVEMENTS.map((a) => [a.id, a.title]));
+    recentAchievementTitles = earned
+      .map((row) => byId.get(row.achievementId as never) ?? row.achievementId)
+      .filter(Boolean);
+  } catch {
+    recentAchievementTitles = [];
+  }
+
+  const decorTitles = opts.placementItemIds
+    .map((id) => getShopItem(id)?.title ?? null)
+    .filter((t): t is string => Boolean(t));
+
+  const away = petView.awayDays;
+  const state = petView.happinessState;
+  const mood =
+    away > 0
+      ? ("welcomeBack" as const)
+      : state === "sad" || state === "sleepy"
+        ? ("sleepy" as const)
+        : state === "ecstatic" || state === "happy"
+          ? ("happy" as const)
+          : ("idle" as const);
+
+  const rotateSalt =
+    dayIndex(dateKey) * 31 +
+    petView.happiness +
+    decorTitles.length * 3 +
+    recentPlayLabels.length * 5 +
+    Math.floor(Date.now() / (5 * 60_000));
+
+  const ctx = {
+    dateKey,
+    happiness: petView.happiness,
+    happinessState: petView.happinessState,
+    stage: petView.stage,
+    level: petView.level,
+    awayDays: away,
+    lastFoodTitle,
+    fedToday: petRow.lastFeedDate === dateKey,
+    pettedToday: petRow.lastPetDate === dateKey,
+    decorTitles,
+    recentPlayLabels,
+    recentAchievementTitles,
+    rotateSalt,
+  };
+
+  const dialogue =
+    away > 0
+      ? welcomeBackLine(personalityId, away, dateKey, ctx)
+      : composePetDialogue(personalityId, mood, ctx);
+
+  return {
+    ...petView,
+    personalityTitle: personalityDisplayTitle(petRow.personalityId),
+    dialogue,
+  };
+}
+
 export async function getCompanionSnapshot(
   userId: string,
 ): Promise<CompanionSnapshot> {
@@ -401,14 +528,6 @@ export async function getCompanionSnapshot(
     const levelInfo = levelFromXp(petRow.petXp);
     const species = PET_SPECIES[petRow.speciesId as PetSpeciesId];
     const state = happinessState(happiness);
-    const dialogueMood =
-      away > 0
-        ? "welcomeBack"
-        : state === "sad" || state === "sleepy"
-          ? "sleepy"
-          : state === "ecstatic" || state === "happy"
-            ? "happy"
-            : "idle";
 
     petView = {
       id: petRow.id,
@@ -417,7 +536,7 @@ export async function getCompanionSnapshot(
       eggTitle: species?.eggTitle ?? "Egg",
       tagline: species?.tagline ?? "",
       personalityId: petRow.personalityId,
-      personalityTitle: petRow.personalityId,
+      personalityTitle: personalityDisplayTitle(petRow.personalityId),
       name: petRow.name,
       petXp: petRow.petXp,
       level: levelInfo.level,
@@ -426,10 +545,8 @@ export async function getCompanionSnapshot(
       stage: stageFromLevel(levelInfo.level),
       happiness,
       happinessState: state,
-      dialogue:
-        away > 0
-          ? welcomeBackLine(petRow.personalityId as never, away, dateKey)
-          : dialogueFor(petRow.personalityId as never, dialogueMood, dateKey.length),
+      // Filled below once decor / play context is loaded.
+      dialogue: "",
       awayDays: away,
       colors: species?.colors ?? {
         primary: "#333",
@@ -488,6 +605,16 @@ export async function getCompanionSnapshot(
   const placedCounts = new Map<string, number>();
   for (const p of placements) {
     placedCounts.set(p.itemId, (placedCounts.get(p.itemId) ?? 0) + 1);
+  }
+
+  if (petView && petRow) {
+    petView = await enrichPetDialogue({
+      userId,
+      dateKey,
+      petRow,
+      petView,
+      placementItemIds: placements.map((p) => p.itemId),
+    });
   }
 
   const petLevel = petView?.level ?? 1;

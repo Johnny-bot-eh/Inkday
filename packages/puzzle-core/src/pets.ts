@@ -100,98 +100,262 @@ export const PET_PERSONALITIES: Record<PetPersonalityId, PetPersonality> = {
     id: "curious",
     title: "Curious",
     lines: {
-      idle: ["What's that over there?", "I found a new corner of the garden."],
-      happy: ["I found something shiny for you!", "Look what I sniffed out!"],
-      sleepy: ["Still curious… just quietly.", "I'll investigate later."],
+      idle: [
+        "What's that over there?",
+        "I found a new corner of the garden.",
+        "Hmm… interesting footprints.",
+        "Can we investigate something next?",
+        "I catalogued three suspicious pebbles.",
+      ],
+      happy: [
+        "I found something shiny for you!",
+        "Look what I sniffed out!",
+        "My whiskers are buzzing with clues!",
+        "Today feels like a mystery waiting to happen.",
+        "I love when the garden has secrets.",
+      ],
+      sleepy: [
+        "Still curious… just quietly.",
+        "I'll investigate later.",
+        "Even detectives need naps.",
+        "Dreaming of open case files…",
+      ],
       welcomeBack: [
         "Welcome back! I saved a clue for you.",
         "I explored while you were away.",
+        "I kept watch — and took notes.",
+        "You're back! Tell me everything.",
       ],
-      gift: ["I found something shiny for you!", "Look — a surprise!"],
+      gift: [
+        "I found something shiny for you!",
+        "Look — a surprise!",
+        "This mystery came with a reward.",
+        "I dug this up just for you.",
+      ],
     },
   },
   lazy: {
     id: "lazy",
     title: "Lazy",
     lines: {
-      idle: ["I'm still sleepy today.", "Nap first, puzzles later."],
-      happy: ["Okay… that was nice.", "A snack and a stretch."],
-      sleepy: ["Zzz… don't mind me.", "Wake me for cake."],
+      idle: [
+        "I'm still sleepy today.",
+        "Nap first, puzzles later.",
+        "Gravity is winning.",
+        "If you need me, I'll be horizontal.",
+        "Effort is optional before noon.",
+      ],
+      happy: [
+        "Okay… that was nice.",
+        "A snack and a stretch.",
+        "Slightly less sleepy. Slightly.",
+        "I'll allow this joy… briefly.",
+      ],
+      sleepy: [
+        "Zzz… don't mind me.",
+        "Wake me for cake.",
+        "Soft patch. Do not relocate.",
+        "Hibernating with style.",
+      ],
       welcomeBack: [
         "Oh, you're back. I barely moved.",
         "I waited… mostly by napping.",
+        "Missed you. Didn't stand up about it.",
+        "Welcome back. Couch privileges restored.",
       ],
-      gift: ["I rolled onto this. Take it.", "Found it without standing up."],
+      gift: [
+        "I rolled onto this. Take it.",
+        "Found it without standing up.",
+        "A treasure… delivered horizontally.",
+        "Here. Now let me sleep.",
+      ],
     },
   },
   playful: {
     id: "playful",
     title: "Playful",
     lines: {
-      idle: ["Let's solve today's puzzle together!", "Tag — you're it!"],
-      happy: ["Best day ever!", "Again! Again!"],
-      sleepy: ["Play later… soft pillow now.", "My bounce is on pause."],
+      idle: [
+        "Let's solve today's puzzle together!",
+        "Tag — you're it!",
+        "Bounce mode: engaged!",
+        "Race you to the next clue!",
+        "I practiced my victory dance.",
+      ],
+      happy: [
+        "Best day ever!",
+        "Again! Again!",
+        "Wheee — happiness overload!",
+        "I'm vibrating with good vibes!",
+        "High five… or high paw!",
+      ],
+      sleepy: [
+        "Play later… soft pillow now.",
+        "My bounce is on pause.",
+        "Recharging my zoomies.",
+        "Even rockets need sleep.",
+      ],
       welcomeBack: [
         "You're back! I missed our games.",
         "I've been waiting to play!",
+        "Welcome back, teammate!",
+        "Ready? Set? Puzzle!",
       ],
-      gift: ["Catch!", "I brought you a toy-shaped surprise!"],
+      gift: [
+        "Catch!",
+        "I brought you a toy-shaped surprise!",
+        "Present party!",
+        "For you — with sparkles!",
+      ],
     },
   },
   shy: {
     id: "shy",
     title: "Shy",
     lines: {
-      idle: ["Hi… quietly.", "I'll stay beside you."],
-      happy: ["That was… really nice.", "Thank you for noticing me."],
-      sleepy: ["I'm hiding under the leaves.", "Soft shadows feel safer."],
+      idle: [
+        "Hi… quietly.",
+        "I'll stay beside you.",
+        "Is it okay if I sit nearby?",
+        "Soft steps only today.",
+        "I'm listening… from over here.",
+      ],
+      happy: [
+        "That was… really nice.",
+        "Thank you for noticing me.",
+        "I feel a little braver now.",
+        "Warm feelings. Tiny smile.",
+      ],
+      sleepy: [
+        "I'm hiding under the leaves.",
+        "Soft shadows feel safer.",
+        "Quiet dreams, please.",
+        "I'll peek out later… maybe.",
+      ],
       welcomeBack: [
         "Welcome back. I missed you.",
         "I waited behind the flowers.",
+        "You're here… that helps.",
+        "I saved a quiet hello for you.",
       ],
-      gift: ["I… left this for you.", "Please take it — carefully."],
+      gift: [
+        "I… left this for you.",
+        "Please take it — carefully.",
+        "A small gift. No fuss.",
+        "I hope you like it…",
+      ],
     },
   },
   food_lover: {
     id: "food_lover",
     title: "Food Lover",
     lines: {
-      idle: ["Can I have another snack?", "Is that an apple I smell?"],
-      happy: ["Delicious!", "More crumbs, please."],
-      sleepy: ["Hunger nap…", "Dreaming of cake."],
+      idle: [
+        "Can I have another snack?",
+        "Is that an apple I smell?",
+        "My tummy filed a request.",
+        "Snack o'clock is every o'clock.",
+        "Crumbs are a love language.",
+      ],
+      happy: [
+        "Delicious!",
+        "More crumbs, please.",
+        "Flavor unlocked!",
+        "That hit the spot.",
+        "10/10 would nibble again.",
+      ],
+      sleepy: [
+        "Hunger nap…",
+        "Dreaming of cake.",
+        "Food coma loading…",
+        "Wake me for dessert.",
+      ],
       welcomeBack: [
         "You're back! Did you bring snacks?",
         "I saved a crumb for sharing.",
+        "Welcome back, chef.",
+        "I practiced tasting… mentally.",
       ],
-      gift: ["I traded a crumb for this!", "Snack-powered treasure!"],
+      gift: [
+        "I traded a crumb for this!",
+        "Snack-powered treasure!",
+        "Found between bites!",
+        "A gift — edible vibes included.",
+      ],
     },
   },
   mischievous: {
     id: "mischievous",
     title: "Mischievous",
     lines: {
-      idle: ["Hehe… I hid a present somewhere.", "Don't look behind you."],
-      happy: ["Gotcha!", "My schemes are thriving."],
-      sleepy: ["Even tricksters rest.", "Plotting… later."],
+      idle: [
+        "Hehe… I hid a present somewhere.",
+        "Don't look behind you.",
+        "I definitely didn't move that flower.",
+        "Schemes loading…",
+        "Innocent face. Suspicious paws.",
+      ],
+      happy: [
+        "Gotcha!",
+        "My schemes are thriving.",
+        "Chaos, but make it cute.",
+        "Prank successful. Morale high.",
+      ],
+      sleepy: [
+        "Even tricksters rest.",
+        "Plotting… later.",
+        "Dreaming of mild mayhem.",
+        "Shh. Villain nap in progress.",
+      ],
       welcomeBack: [
         "Hehe. I rearranged one flower.",
         "I kept a secret while you were gone.",
+        "Welcome back — nothing's on fire!",
+        "I only mildly misbehaved.",
       ],
-      gift: ["Hehe… I hid a present somewhere.", "Surprise!"],
+      gift: [
+        "Hehe… surprise!",
+        "Stolen… I mean found… for you.",
+        "A gift with zero traps. Probably.",
+        "Take it before I hide it again.",
+      ],
     },
   },
   sassy: {
     id: "sassy",
     title: "Sassy",
     lines: {
-      idle: ["Obviously I'm fabulous.", "Solve faster — I'm waiting."],
-      happy: ["Acceptable.", "You may continue praising me."],
-      sleepy: ["Do not disturb the icon.", "Even legends rest."],
+      idle: [
+        "Obviously I'm fabulous.",
+        "Solve faster — I'm waiting.",
+        "You're welcome for my presence.",
+        "Standards remain high.",
+        "Try to keep up.",
+      ],
+      happy: [
+        "Acceptable.",
+        "You may continue praising me.",
+        "Yes, I noticed. Impressive of you.",
+        "I allow this celebration.",
+      ],
+      sleepy: [
+        "Do not disturb the icon.",
+        "Even legends rest.",
+        "Beauty sleep is non-negotiable.",
+        "Wake me only for excellence.",
+      ],
       welcomeBack: [
         "Took you long enough.",
         "I missed you — slightly.",
+        "Welcome back. Try not to spoil the vibe.",
+        "I maintained the aesthetic without you.",
       ],
-      gift: ["You're welcome.", "Don't lose this. It's tasteful."],
+      gift: [
+        "You're welcome.",
+        "Don't lose this. It's tasteful.",
+        "A gift. Be grateful.",
+        "I selected this. Obviously.",
+      ],
     },
   },
 };
@@ -419,27 +583,243 @@ export function dialogueFor(
 ): string {
   const pack = PET_PERSONALITIES[personalityId];
   const lines = pack.lines[mood];
-  return lines[salt % lines.length]!;
+  return lines[Math.abs(salt) % lines.length]!;
+}
+
+export type PetDialogueContext = {
+  dateKey: string;
+  happiness: number;
+  happinessState: string;
+  stage: string;
+  level: number;
+  awayDays?: number;
+  /** Last food title fed (e.g. "Cake"), if any. */
+  lastFoodTitle?: string | null;
+  fedToday?: boolean;
+  pettedToday?: boolean;
+  /** Titles of decorations currently placed in the garden. */
+  decorTitles?: string[];
+  /** Labels of puzzles cleared today (e.g. "Word Daily"). */
+  recentPlayLabels?: string[];
+  /** Recent achievement titles. */
+  recentAchievementTitles?: string[];
+  /** Extra salt so feed/pet/refresh can rotate lines within a day. */
+  rotateSalt?: number;
+};
+
+function contextualLines(
+  personalityId: PetPersonalityId,
+  ctx: PetDialogueContext,
+): string[] {
+  const lines: string[] = [];
+  const food = ctx.lastFoodTitle?.trim();
+  const decor = (ctx.decorTitles ?? []).filter(Boolean);
+  const plays = (ctx.recentPlayLabels ?? []).filter(Boolean);
+  const badges = (ctx.recentAchievementTitles ?? []).filter(Boolean);
+  const happy = ctx.happiness;
+
+  if (food) {
+    lines.push(
+      `That ${food} was wonderful — thank you!`,
+      `Still tasting the ${food}…`,
+      `More ${food} someday? Asking for a friend.`,
+    );
+    if (personalityId === "food_lover") {
+      lines.push(`${food} ranking: legendary.`, `I would write a review of that ${food}.`);
+    }
+  } else if (!ctx.fedToday) {
+    lines.push(
+      "A snack would really hit the spot.",
+      "My tummy filed a polite request.",
+    );
+  }
+
+  if (ctx.pettedToday) {
+    lines.push(
+      "Your pets always make my day.",
+      "Still glowing from that headpat.",
+      "Affection received. Morale excellent.",
+    );
+  } else {
+    lines.push("A little petting never hurts…", "I'm right here if you want to say hi.");
+  }
+
+  if (decor.length > 0) {
+    const piece = decor[Math.abs(hashSeed("decor-line", ctx.dateKey, String(decor.length))) % decor.length]!;
+    lines.push(
+      `I love our ${piece} — it makes the garden feel like home.`,
+      `Been admiring the ${piece} all day.`,
+      `The ${piece} is my favorite hangout spot.`,
+    );
+    if (personalityId === "mischievous") {
+      lines.push(`I absolutely did not rearrange the ${piece}.`);
+    }
+  } else {
+    lines.push(
+      "Our garden could use a new decoration…",
+      "Empty corners are so… empty.",
+    );
+  }
+
+  if (plays.length > 0) {
+    const game = plays[0]!;
+    lines.push(
+      `Proud of you clearing ${game}!`,
+      `${game} looked fun — I cheered from the garden.`,
+      `You solved ${game}. I felt that win.`,
+    );
+    if (plays.length > 1) {
+      lines.push(`A whole puzzle streak today — ${plays.slice(0, 2).join(" and ")}!`);
+    }
+    if (personalityId === "playful") {
+      lines.push("Puzzle buddy energy is unmatched!");
+    }
+    if (personalityId === "sassy") {
+      lines.push("Acceptable puzzle form. Continue.");
+    }
+  } else {
+    lines.push(
+      "Shall we clear a puzzle together today?",
+      "I'm ready whenever you want to solve something.",
+      "A win would make both of us sparkle.",
+    );
+  }
+
+  if (badges.length > 0) {
+    const badge = badges[0]!;
+    lines.push(
+      `"${badge}" looks good on you.`,
+      `That ${badge} achievement made me proud.`,
+      `I framed "${badge}" in my mind.`,
+    );
+  }
+
+  // Emotion / encouragement by happiness band
+  if (happy >= 90) {
+    lines.push(
+      "I'm over the moon today!",
+      "Happiness overflowing — thanks to you.",
+      "Ecstatic mode: fully engaged.",
+    );
+  } else if (happy >= 70) {
+    lines.push(
+      "Feeling bright and buoyant.",
+      "Good vibes in the garden air.",
+      "You've got this — and I've got your back.",
+    );
+  } else if (happy >= 50) {
+    lines.push(
+      "Doing okay — company helps.",
+      "A little attention goes a long way.",
+      "Steady as we grow together.",
+    );
+  } else if (happy >= 25) {
+    lines.push(
+      "I'm a bit low… a pet or snack would help.",
+      "Feeling quiet. Stay with me?",
+      "Could use a boost of kindness.",
+    );
+  } else {
+    lines.push(
+      "I'm sad… please don't forget me.",
+      "The garden feels lonely right now.",
+      "I miss feeling cheerful with you.",
+    );
+  }
+
+  lines.push(
+    `Level ${ctx.level} ${ctx.stage} life suits me.`,
+    "One paw in front of the other.",
+    "You're my favorite human.",
+    "We've got this — together.",
+  );
+
+  return lines;
+}
+
+/**
+ * Pick a pet line from personality mood pools + situational context
+ * (food, decor, recent clears, achievements, emotions).
+ */
+export function composePetDialogue(
+  personalityId: PetPersonalityId,
+  mood: keyof PetPersonality["lines"],
+  ctx: PetDialogueContext,
+): string {
+  const pack = PET_PERSONALITIES[personalityId] ?? PET_PERSONALITIES.curious;
+  const pool = [
+    ...pack.lines[mood],
+    ...contextualLines(personalityId, ctx),
+  ];
+  const salt = hashSeed(
+    "pet-dialogue",
+    personalityId,
+    mood,
+    ctx.dateKey,
+    String(ctx.happiness),
+    ctx.lastFoodTitle ?? "",
+    String(ctx.decorTitles?.length ?? 0),
+    String(ctx.recentPlayLabels?.length ?? 0),
+    String(ctx.rotateSalt ?? 0),
+    String(dayIndex(ctx.dateKey)),
+  );
+  return pool[pickIndex(salt, pool.length)]!;
 }
 
 export function welcomeBackLine(
   personalityId: PetPersonalityId,
   awayDays: number,
   dateKey: string,
+  ctx?: Partial<PetDialogueContext>,
 ): string {
+  const base: PetDialogueContext = {
+    dateKey,
+    happiness: ctx?.happiness ?? 50,
+    happinessState: ctx?.happinessState ?? "idle",
+    stage: ctx?.stage ?? "baby",
+    level: ctx?.level ?? 1,
+    awayDays,
+    ...ctx,
+  };
   if (awayDays <= 0) {
-    return dialogueFor(personalityId, "idle", dayIndex(dateKey));
+    return composePetDialogue(personalityId, "idle", base);
   }
   if (awayDays >= 28) {
-    return "I've been waiting for you… I took a long nap.";
+    const long = [
+      "I've been waiting for you… I took a long nap.",
+      "Weeks passed. I kept the garden warm for you.",
+      "You're back… I almost forgot how loud joy is.",
+      composePetDialogue(personalityId, "welcomeBack", {
+        ...base,
+        rotateSalt: awayDays,
+      }),
+    ];
+    return long[dayIndex(dateKey) % long.length]!;
   }
   if (awayDays >= 7) {
-    return "Welcome back! I missed solving puzzles with you.";
+    const week = [
+      "Welcome back! I missed solving puzzles with you.",
+      `A whole week… I counted the sunrises (${awayDays} of them).`,
+      "The flowers asked where you went. So did I.",
+      composePetDialogue(personalityId, "welcomeBack", base),
+    ];
+    return week[dayIndex(dateKey) % week.length]!;
   }
   if (awayDays >= 3) {
-    return "I got a little sleepy while you were away.";
+    const mid = [
+      "I got a little sleepy while you were away.",
+      `You were gone ${awayDays} days — I saved you a hello.`,
+      "Missed you. The garden did too.",
+      composePetDialogue(personalityId, "welcomeBack", base),
+    ];
+    return mid[dayIndex(dateKey) % mid.length]!;
   }
-  return dialogueFor(personalityId, "welcomeBack", dayIndex(dateKey));
+  return composePetDialogue(personalityId, "welcomeBack", base);
+}
+
+export function personalityDisplayTitle(personalityId: string): string {
+  const pack = PET_PERSONALITIES[personalityId as PetPersonalityId];
+  return pack?.title ?? personalityId;
 }
 
 export type PetGiftKind =
