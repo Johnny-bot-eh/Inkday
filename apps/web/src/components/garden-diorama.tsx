@@ -43,6 +43,8 @@ type Props = {
   ) => void;
   onSelectPlacement?: (placementId: string | null) => void;
   selectedPlacement?: string | null;
+  /** Pulse all placements of this item id (inventory “view location”). */
+  focusItemId?: string | null;
   onRemove?: (placementId: string) => void;
 };
 
@@ -140,6 +142,7 @@ export function GardenDiorama({
   onMoveNest,
   onSelectPlacement,
   selectedPlacement = null,
+  focusItemId = null,
   onRemove,
 }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -440,6 +443,7 @@ export function GardenDiorama({
           const pos =
             isDragging && livePos ? livePos : { x: p.x, y: p.y };
           const selected = selectedPlacement === p.id && !isDragging;
+          const focused = focusItemId != null && p.itemId === focusItemId;
           const visited =
             !inNest &&
             roam.mode === "interact" &&
@@ -452,6 +456,7 @@ export function GardenDiorama({
                 "pointer-events-none absolute",
                 motionClass(p.motion),
                 visited ? "garden-decor-visited" : "",
+                focused ? "garden-decor-focus" : "",
               ].join(" ")}
               style={{
                 left: `${pos.x}%`,
@@ -461,7 +466,7 @@ export function GardenDiorama({
                   ? undefined
                   : "translate(-50%, -100%)",
                 transformOrigin: "50% 100%",
-                zIndex: stageZ(p.layer, pos.y),
+                zIndex: focused ? 36 : stageZ(p.layer, pos.y),
               }}
             >
               <GardenDecorSprite
@@ -491,10 +496,11 @@ export function GardenDiorama({
                 isDragging
                   ? "garden-dragging [pointer-events:auto]"
                   : "[pointer-events:none]",
-                selected
-                  ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent"
+                selected || focused
+                  ? "ring-2 ring-ember/80 ring-offset-2 ring-offset-transparent"
                   : "",
                 visited ? "garden-decor-visited" : "",
+                focused ? "garden-decor-focus" : "",
                 !isDragging ? motionClass(p.motion) : "",
               ].join(" ")}
               style={{
@@ -507,7 +513,7 @@ export function GardenDiorama({
                     ? undefined
                     : "translate(-50%, -100%)",
                 transformOrigin: "50% 100%",
-                zIndex: isDragging ? 40 : stageZ(p.layer, pos.y),
+                zIndex: isDragging ? 40 : focused ? 36 : stageZ(p.layer, pos.y),
               }}
             >
               <GardenDecorSprite

@@ -538,6 +538,20 @@ select {
   filter: drop-shadow(0 0 6px rgba(255, 220, 140, 0.55));
 }
 
+@keyframes garden-decor-focus {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgba(232, 120, 64, 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(232, 120, 64, 0.95));
+  }
+}
+
+.garden-decor-focus {
+  animation: garden-decor-focus 0.9s ease-in-out 5;
+}
+
 .garden-ambience-pollen::before,
 .garden-ambience-pollen::after,
 .garden-ambience-fireflies::before,
