@@ -241,17 +241,34 @@ export function GardenDiorama({
     if (readOnly) return;
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
+
+    // Prefer the topmost painted decor under the cursor when sprites overlap.
+    let chosen = placement;
+    if (typeof document !== "undefined") {
+      const stack = document.elementsFromPoint(e.clientX, e.clientY);
+      for (const el of stack) {
+        const host = (el as Element).closest?.("[data-garden-decor]");
+        if (!host) continue;
+        const id = host.getAttribute("data-garden-decor");
+        const found = garden.placements.find((p) => p.id === id);
+        if (found) {
+          chosen = found;
+          break;
+        }
+      }
+    }
+
     const target: DragTarget = {
       kind: "decor",
-      id: placement.id,
-      fromX: placement.x,
-      fromY: placement.y,
+      id: chosen.id,
+      fromX: chosen.x,
+      fromY: chosen.y,
     };
     dragRef.current = target;
-    livePosRef.current = { x: placement.x, y: placement.y };
+    livePosRef.current = { x: chosen.x, y: chosen.y };
     setDrag(target);
-    setLivePos({ x: placement.x, y: placement.y });
-    onSelectPlacement?.(placement.id);
+    setLivePos({ x: chosen.x, y: chosen.y });
+    onSelectPlacement?.(chosen.id);
   }
 
   function beginNestDrag(e: ReactPointerEvent<HTMLButtonElement>) {
@@ -458,6 +475,7 @@ export function GardenDiorama({
               key={p.id}
               type="button"
               aria-label={p.title}
+              data-garden-decor={p.id}
               onPointerDown={(e) => beginDecorDrag(p, e)}
               onPointerMove={onDragPointerMove}
               onPointerUp={endDrag}
@@ -467,12 +485,17 @@ export function GardenDiorama({
                 onRemove?.(p.id);
               }}
               className={[
+                // Transparent SVG padding must not steal hits from neighbors —
+                // only painted pixels on the sprite receive pointer events.
                 "absolute border-0 bg-transparent p-0 cursor-grab",
-                isDragging ? "garden-dragging" : motionClass(p.motion),
+                isDragging
+                  ? "garden-dragging [pointer-events:auto]"
+                  : "[pointer-events:none]",
                 selected
                   ? "ring-2 ring-ember/70 ring-offset-2 ring-offset-transparent"
                   : "",
                 visited ? "garden-decor-visited" : "",
+                !isDragging ? motionClass(p.motion) : "",
               ].join(" ")}
               style={{
                 left: `${pos.x}%`,
@@ -490,7 +513,7 @@ export function GardenDiorama({
               <GardenDecorSprite
                 itemId={p.itemId}
                 tone={p.tone}
-                className="mx-auto h-auto w-full drop-shadow-md"
+                className="mx-auto h-auto w-full cursor-grab drop-shadow-md [pointer-events:visiblePainted]"
               />
             </button>
           );
