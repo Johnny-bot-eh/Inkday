@@ -21,6 +21,9 @@ type Props = {
   label: string;
   points: number;
   alreadyCleared: boolean;
+  /** Slot was cleared, skipped, or failed — cannot be played again. */
+  alreadyResolved: boolean;
+  priorOutcome?: "cleared" | "skipped" | "failed" | null;
   signedIn: boolean;
   priorScore?: number;
 };
@@ -30,8 +33,11 @@ export function MonthlySlotPlayer(props: Props) {
     collectionId: props.collectionId,
     slotIndex: props.slotIndex,
   };
-  const alreadyPlayed = props.alreadyCleared
-    ? { score: props.priorScore ?? props.points, won: true }
+  const alreadyPlayed = props.alreadyResolved
+    ? {
+        score: props.priorScore ?? (props.alreadyCleared ? props.points : 0),
+        won: props.alreadyCleared,
+      }
     : null;
 
   if (isMonthlyOnlyType(props.puzzleType)) {
@@ -45,6 +51,8 @@ export function MonthlySlotPlayer(props: Props) {
         label={props.label}
         points={props.points}
         alreadyCleared={props.alreadyCleared}
+        alreadyResolved={props.alreadyResolved}
+        priorOutcome={props.priorOutcome}
         signedIn={props.signedIn}
       />
     );

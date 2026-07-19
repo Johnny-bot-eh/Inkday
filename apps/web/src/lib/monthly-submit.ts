@@ -19,6 +19,10 @@ export async function submitMonthlyFromGame(
     totalBonus?: number;
     newMilestones?: Array<{ title: string }>;
     alreadyCleared?: boolean;
+    alreadyResolved?: boolean;
+    forfeited?: boolean;
+    won?: boolean;
+    outcome?: string | null;
     coinsEarned?: number;
     coinBalance?: number;
     xpEarned?: number;
@@ -40,4 +44,16 @@ export async function submitMonthlyFromGame(
   });
   const data = await res.json();
   return { ok: res.ok, status: res.status, data };
+}
+
+export async function forfeitMonthlyFromGame(
+  monthly: MonthlyPlayContext,
+  outcome: "skipped" | "failed",
+  payload: Record<string, unknown> = {},
+) {
+  return submitMonthlyFromGame(monthly, {
+    ...payload,
+    forfeit: true,
+    outcome,
+  });
 }
