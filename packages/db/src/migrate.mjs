@@ -299,6 +299,20 @@ const statements = [
 )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS pet_gift_daily_idx ON pet_gift(pet_id, date_key)`,
   `CREATE INDEX IF NOT EXISTS pet_gift_user_idx ON pet_gift(user_id)`,
+  `CREATE TABLE IF NOT EXISTS user_gift (
+  id TEXT PRIMARY KEY NOT NULL,
+  sender_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  recipient_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  coins INTEGER NOT NULL DEFAULT 0,
+  item_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  message TEXT,
+  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  claimed_at INTEGER
+)`,
+  `CREATE INDEX IF NOT EXISTS user_gift_recipient_status_idx ON user_gift(recipient_id, status)`,
+  `CREATE INDEX IF NOT EXISTS user_gift_sender_idx ON user_gift(sender_id)`,
   `CREATE TABLE IF NOT EXISTS garden_placement (
   id TEXT PRIMARY KEY NOT NULL,
   user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,

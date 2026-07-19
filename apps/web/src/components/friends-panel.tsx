@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { todayKey, type Difficulty, type PuzzleType } from "@daily-puzzle/puzzle-core";
 import { AvatarMark } from "@/components/avatar-mark";
+import { FriendGiftModal } from "@/components/friend-gift-modal";
 import { absoluteAppUrl } from "@/lib/app-url";
 
 type Friendship = {
@@ -34,6 +35,21 @@ type Challenge = {
   other: { id: string; name: string } | null;
 };
 
+type PendingGift = {
+  id: string;
+  kind: "coins" | "decoration";
+  coins: number;
+  itemId: string | null;
+  itemTitle: string | null;
+  message: string | null;
+  sender: {
+    id: string;
+    name: string;
+    equippedAvatarId: string | null;
+    equippedAccessoryId: string | null;
+  };
+};
+
 const CHALLENGE_OPTIONS: Array<{
   puzzleType: PuzzleType;
   difficulty: Difficulty;
@@ -59,9 +75,10 @@ export function FriendsPanel({
 }) {
   const [friendships, setFriendships] = useState<Friendship[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [gifts, setGifts] = useState<PendingGift[]>([]);
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(
-    invited ? "You’re friends now — say hi with a challenge." : null,
+    invited ? "You’re friends now — visit their garden or send a gift." : null,
   );
   const [loading, setLoading] = useState(false);
   const [challengeTarget, setChallengeTarget] = useState<string | null>(null);
@@ -70,6 +87,10 @@ export function FriendsPanel({
   const [inviteUrl, setInviteUrl] = useState(
     userId ? `/invite/${userId}` : null,
   );
+  const [giftTarget, setGiftTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -89,12 +110,20 @@ export function FriendsPanel({
     }
   }
 
+  async function loadGifts() {
+    const res = await fetch("/api/social?view=gifts");
+    if (!res.ok) return;
+    const data = await res.json();
+    setGifts(data.gifts ?? []);
+  }
+
   async function load() {
     const res = await fetch("/api/social?view=friends");
     if (!res.ok) return;
     const data = await res.json();
     setFriendships(data.friendships ?? []);
     setChallenges(data.challenges ?? []);
+    await loadGifts();
   }
 
   useEffect(() => {
@@ -108,7 +137,8 @@ export function FriendsPanel({
           Friends
         </h1>
         <p className="mt-2 text-fog">
-          Add friends, send puzzle challenges, and compete on weekly ladders.
+          Add friends, visit their gardens, send gifts, and compete on weekly
+          ladders.
         </p>
         <Link
           href="/auth"
@@ -210,6 +240,40 @@ export function FriendsPanel({
     await load();
   }
 
+  async function claimGift(giftId: string) {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/social", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "claim_gift", giftId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error ?? "Could not claim gift");
+        return;
+      }
+      setMessage(
+        data.kind === "coins"
+          ? `Claimed ${data.coins} coins!`
+          : `Claimed ${data.itemId ? "decoration" : "gift"}!`,
+      );
+      await load();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function declineGift(giftId: string) {
+    await fetch("/api/social", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "decline_gift", giftId }),
+    });
+    await load();
+  }
+
   const pending = friendships.filter(
     (f) => f.status === "pending" && f.incoming,
   );
@@ -229,8 +293,8 @@ export function FriendsPanel({
           Friends
         </h1>
         <p className="mt-2 text-fog">
-          Invite friends, challenge them to today’s boards, and battle on weekly
-          tournaments.
+          Visit gardens, send coins or decorations, challenge friends to
+          today’s boards, and battle on weekly tournaments.
         </p>
       </div>
 
@@ -279,6 +343,52 @@ export function FriendsPanel({
         </button>
       </form>
       {message && <p className="text-sm text-fog">{message}</p>}
+
+      {gifts.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm uppercase tracking-wider text-ember">
+            Gifts for you
+          </h2>
+          {gifts.map((g) => (
+            <div
+              key={g.id}
+              className="rounded-xl border border-[var(--line)] bg-ink-2/80 px-4 py-3"
+            >
+              <div className="flex items-center gap-2 font-semibold">
+                <AvatarMark
+                  avatarId={g.sender.equippedAvatarId}
+                  accessoryId={g.sender.equippedAccessoryId}
+                  size={28}
+                />
+                From {g.sender.name}
+              </div>
+              <div className="mt-1 text-sm text-fog">
+                {g.kind === "coins"
+                  ? `${g.coins} coins`
+                  : g.itemTitle ?? "Decoration"}
+                {g.message ? ` — “${g.message}”` : ""}
+              </div>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void claimGift(g.id)}
+                  className="rounded-md bg-mint/20 px-3 py-1 text-sm text-mint"
+                >
+                  Claim
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void declineGift(g.id)}
+                  className="rounded-md px-3 py-1 text-sm text-fog"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       {openChallenges.length > 0 && (
         <section className="space-y-2">
@@ -409,17 +519,37 @@ export function FriendsPanel({
                 </div>
               </div>
               {f.other && (
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    setChallengeTarget(f.other!.id);
-                    void sendChallenge(f.other!.id);
-                  }}
-                  className="rounded-lg border border-ember/40 px-3 py-1.5 text-sm text-ember hover:bg-ember/10"
-                >
-                  {challengeTarget === f.other.id ? "Sending…" : "Challenge"}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/companion/${f.other.id}`}
+                    className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm text-paper hover:border-ember/40"
+                  >
+                    Visit garden
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGiftTarget({
+                        id: f.other!.id,
+                        name: f.other!.displayName || f.other!.name,
+                      })
+                    }
+                    className="rounded-lg border border-ember/40 px-3 py-1.5 text-sm text-ember hover:bg-ember/10"
+                  >
+                    Gift
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      setChallengeTarget(f.other!.id);
+                      void sendChallenge(f.other!.id);
+                    }}
+                    className="rounded-lg border border-ember/40 px-3 py-1.5 text-sm text-ember hover:bg-ember/10"
+                  >
+                    {challengeTarget === f.other.id ? "Sending…" : "Challenge"}
+                  </button>
+                </div>
               )}
             </div>
           ))}
@@ -469,6 +599,18 @@ export function FriendsPanel({
       {accepted.length === 0 && pending.length === 0 && (
         <p className="text-sm text-fog">No friends yet — send an invite above.</p>
       )}
+
+      {giftTarget ? (
+        <FriendGiftModal
+          recipientId={giftTarget.id}
+          recipientName={giftTarget.name}
+          open={Boolean(giftTarget)}
+          onClose={() => setGiftTarget(null)}
+          onSent={() => {
+            setMessage("Gift sent!");
+          }}
+        />
+      ) : null}
     </div>
   );
 }

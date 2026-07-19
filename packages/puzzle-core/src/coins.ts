@@ -1085,4 +1085,6 @@ export type CoinReason =
   | "shop_buy"
   | "shop_use"
   | "streak_restore"
-  | "pet_gift";
+  | "pet_gift"
+  | "friend_gift_send"
+  | "friend_gift_receive";
