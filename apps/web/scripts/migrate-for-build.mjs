@@ -19,6 +19,9 @@ if (result.status !== 0) {
   console.warn(
     `[migrate] exited ${result.status ?? "null"} — continuing with next build`,
   );
+  console.warn(
+    "[migrate] Runtime ensureUserColumns() will add missing auth columns on first request.",
+  );
 }
 
 process.exit(0);
