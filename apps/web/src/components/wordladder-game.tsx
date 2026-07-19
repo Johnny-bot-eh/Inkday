@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Difficulty, ScoreBreakdown } from "@daily-puzzle/puzzle-core";
 import {
   checkWordLadder,
@@ -21,6 +21,42 @@ import {
 import { CoinConsumableBar } from "@/components/coin-consumable-bar";
 import { DifficultyLabel } from "@/components/difficulty-label";
 import { ShowAnswerPanel } from "@/components/show-answer-panel";
+
+const LETTER_ORDINALS = [
+  "first",
+  "second",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh",
+] as const;
+
+function letterOrdinal(index: number): string {
+  return LETTER_ORDINALS[index] ?? `letter ${index + 1}`;
+}
+
+/** Paid rungs beyond the free step clue — each purchase unlocks the next. */
+function wordLadderPaidHints(
+  prev: string,
+  next: string,
+): string[] {
+  let changeAt = 0;
+  for (let i = 0; i < prev.length; i++) {
+    if (prev[i] !== next[i]) {
+      changeAt = i;
+      break;
+    }
+  }
+  const ordinal = letterOrdinal(changeAt);
+  const from = prev[changeAt]!.toUpperCase();
+  const to = next[changeAt]!.toUpperCase();
+  return [
+    `Change the ${ordinal} letter of ${prev.toUpperCase()}.`,
+    `Change that ${ordinal} letter from “${from}” to “${to}”.`,
+    `The next word is ${next.toUpperCase()}.`,
+  ];
+}
 
 type Props = {
   difficulty: Difficulty;
@@ -48,7 +84,8 @@ export function WordLadderGame({
   const [bonusSteps, setBonusSteps] = useState(0);
   const [wrongTries, setWrongTries] = useState(0);
   const [bonusTries, setBonusTries] = useState(0);
-  const [coinHint, setCoinHint] = useState<string | null>(null);
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const hintStepRef = useRef(0);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
     alreadyPlayed
@@ -90,6 +127,26 @@ export function WordLadderGame({
   const maxSteps = puzzle.maxSteps + bonusSteps;
   const maxWrongTries = 3 + bonusTries;
   const nextStep = nextWordLadderStep(puzzle, chain.length);
+  const prevWord = chain[chain.length - 1]!;
+  const paidHintLadder = useMemo(
+    () =>
+      nextStep ? wordLadderPaidHints(prevWord, nextStep.word) : [],
+    [nextStep, prevWord],
+  );
+
+  // New ladder step → fresh paid-hint ladder (don't carry prior-step spoilers).
+  useEffect(() => {
+    hintStepRef.current = 0;
+    setUnlockedHints([]);
+  }, [nextStep?.step, nextStep?.word]);
+
+  function applyPaidHint() {
+    const n = hintStepRef.current;
+    if (n >= paidHintLadder.length) return;
+    const next = paidHintLadder[n]!;
+    hintStepRef.current = n + 1;
+    setUnlockedHints((prev) => [...prev, next]);
+  }
 
   async function finish(
     finalChain: string[],
@@ -348,12 +405,6 @@ export function WordLadderGame({
     }
   }
 
-  function undo() {
-    if (done || chain.length <= 1) return;
-    setChain(chain.slice(0, -1));
-    setStatus(null);
-  }
-
   return (
     <div className="mx-auto max-w-lg animate-rise">
       <div className="mb-6 flex items-end justify-between gap-4">
@@ -446,13 +497,6 @@ export function WordLadderGame({
           >
             Add step
           </button>
-          <button
-            type="button"
-            onClick={undo}
-            className="rounded-lg border border-[var(--line)] px-4 text-fog hover:text-paper"
-          >
-            Undo
-          </button>
         </div>
       )}
 
@@ -460,35 +504,10 @@ export function WordLadderGame({
         <CoinConsumableBar
           signedIn={signedIn}
           disabled={submitting}
-          onHint={() => {
-            if (!nextStep) {
-              setCoinHint("No further steps — you’re at the end.");
-              return;
-            }
-            const prev = chain[chain.length - 1]!;
-            const next = nextStep.word;
-            let changeAt = 0;
-            for (let i = 0; i < prev.length; i++) {
-              if (prev[i] !== next[i]) {
-                changeAt = i;
-                break;
-              }
-            }
-            const ordinals = [
-              "first",
-              "second",
-              "third",
-              "fourth",
-              "fifth",
-              "sixth",
-              "seventh",
-            ];
-            const ordinal =
-              ordinals[changeAt] ?? `letter ${changeAt + 1}`;
-            setCoinHint(
-              `Extra hint: change the ${ordinal} letter. The next word starts with “${next[0]!.toUpperCase()}”.`,
-            );
-          }}
+          canUseHint={
+            Boolean(nextStep) && unlockedHints.length < paidHintLadder.length
+          }
+          onHint={applyPaidHint}
           onExtraAttempt={() => {
             setBonusSteps((n) => n + 1);
             setBonusTries((n) => n + 1);
@@ -502,8 +521,15 @@ export function WordLadderGame({
         />
       )}
 
-      {coinHint && !done && (
-        <p className="mt-2 text-sm text-mint">{coinHint}</p>
+      {unlockedHints.length > 0 && !done && (
+        <ul className="mt-3 space-y-1.5 text-sm text-mint">
+          {unlockedHints.map((hint, i) => (
+            <li key={`ladder-hint-${i}`}>
+              <span className="text-fog">Hint {i + 1}: </span>
+              {hint}
+            </li>
+          ))}
+        </ul>
       )}
 
       {status && (
