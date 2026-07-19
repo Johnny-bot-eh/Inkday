@@ -1087,4 +1087,5 @@ export type CoinReason =
   | "streak_restore"
   | "pet_gift"
   | "friend_gift_send"
-  | "friend_gift_receive";
+  | "friend_gift_receive"
+  | "friend_gift_refund";

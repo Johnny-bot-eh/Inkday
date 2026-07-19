@@ -1,16 +1,16 @@
+import { cache } from "react";
 import { headers } from "next/headers";
-import { ensureUserColumns } from "@daily-puzzle/db";
 import { auth } from "./auth";
+import { ensureUserColumns } from "@daily-puzzle/db";
 
-export async function getSession() {
-  // Cosmetics columns must exist before better-auth SELECTs the user row.
+/**
+ * Deduped per RSC request so layout + page always agree on auth.
+ * Companion used to render “Sign in” while the header already showed the name
+ * when those two trees each called getSession and/or hit a stale payload.
+ */
+export const getSession = cache(async () => {
   await ensureUserColumns();
-  try {
-    return await auth.api.getSession({
-      headers: await headers(),
-    });
-  } catch (err) {
-    console.error("getSession failed", err);
-    return null;
-  }
-}
+  return auth.api.getSession({
+    headers: await headers(),
+  });
+});

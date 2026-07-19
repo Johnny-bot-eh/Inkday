@@ -3,6 +3,8 @@ import { CompanionClient } from "@/components/companion-client";
 import { getCompanionSnapshot } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 export default async function CompanionPage() {
   const session = await getSession();
   let snapshot = null;
