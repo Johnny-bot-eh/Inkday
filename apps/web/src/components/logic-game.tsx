@@ -161,6 +161,7 @@ export function LogicGame({
   async function finishLogic(opts: {
     won: boolean;
     answer: string;
+    attemptsUsed: number;
     outcome?: "skipped" | "failed";
   }) {
     const elapsedMs = timer.freeze();
@@ -174,6 +175,11 @@ export function LogicGame({
     }
     const timeLabel = formatDuration(elapsedMs);
     const correct = opts.won;
+    const outcomeLabel = correct
+      ? undefined
+      : opts.outcome === "skipped"
+        ? "Skipped"
+        : "Out of attempts";
 
     if (monthly) {
       if (!correct) {
@@ -182,7 +188,7 @@ export function LogicGame({
           setDone(true);
           setResults({
             won: false,
-            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            outcomeLabel,
             elapsedMs,
             answer: puzzle.answer,
             explanation: puzzle.explanation,
@@ -198,6 +204,7 @@ export function LogicGame({
         try {
           const mres = await forfeitMonthlyFromGame(monthly, outcome, {
             answer: opts.answer,
+            attemptsUsed: opts.attemptsUsed,
             elapsedMs,
           });
           if (!mres.ok) {
@@ -207,7 +214,7 @@ export function LogicGame({
           setDone(true);
           setResults({
             won: false,
-            outcomeLabel: outcome === "skipped" ? "Skipped" : "Out of attempts",
+            outcomeLabel,
             elapsedMs,
             answer: puzzle.answer,
             explanation: puzzle.explanation,
@@ -272,7 +279,7 @@ export function LogicGame({
       setDone(true);
       setResults({
         won: correct,
-        outcomeLabel: correct ? undefined : "Out of attempts",
+        outcomeLabel,
         elapsedMs,
         answer: puzzle.answer,
         explanation: puzzle.explanation,
@@ -280,7 +287,9 @@ export function LogicGame({
       setStatus(
         correct
           ? `Cleared in ${timeLabel}. Sign in to save points.`
-          : `Out of attempts (${timeLabel}).`,
+          : opts.outcome === "skipped"
+            ? `Skipped (${timeLabel}).`
+            : `Out of attempts (${timeLabel}).`,
       );
       return;
     }
@@ -294,7 +303,9 @@ export function LogicGame({
           puzzleType: "logic",
           difficulty,
           dateKey,
-          answer: opts.answer,
+          answer: correct ? opts.answer : opts.answer || undefined,
+          attemptsUsed: Math.max(1, opts.attemptsUsed),
+          forfeit: !correct,
           elapsedMs,
           seasonId: seasonId || undefined,
           premium: premium || undefined,
@@ -308,12 +319,13 @@ export function LogicGame({
       setDone(true);
       setResults({
         won: Boolean(data.won),
+        outcomeLabel: data.won ? undefined : outcomeLabel,
         elapsedMs: data.elapsedMs ?? elapsedMs,
         score: data.score,
         streak: data.streak,
         breakdown: data.breakdown,
         ranks: data.ranks,
-        answer: data.answer,
+        answer: data.answer ?? puzzle.answer,
         explanation: data.explanation ?? puzzle.explanation,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
@@ -343,12 +355,18 @@ export function LogicGame({
     setAttempts(nextAttempts);
 
     if (correct) {
-      void finishLogic({ won: true, answer });
+      void finishLogic({ won: true, answer, attemptsUsed: nextAttempts });
       return;
     }
 
+    // Wrong guesses stay private until the last try — no solution yet.
     if (nextAttempts >= maxAttempts) {
-      void finishLogic({ won: false, answer });
+      void finishLogic({
+        won: false,
+        answer,
+        attemptsUsed: nextAttempts,
+        outcome: "failed",
+      });
       return;
     }
 
@@ -530,7 +548,12 @@ export function LogicGame({
             onHint={revealLogicHint}
             onExtraAttempt={() => setBonusAttempts((n) => n + 1)}
             onSkip={() => {
-              void finishLogic({ won: false, answer: puzzle.answer, outcome: "skipped" });
+              void finishLogic({
+                won: false,
+                answer: answer || "",
+                attemptsUsed: Math.max(1, attempts),
+                outcome: "skipped",
+              });
             }}
           />
         )}

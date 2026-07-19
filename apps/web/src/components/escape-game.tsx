@@ -244,8 +244,9 @@ export function EscapeGame({
           puzzleType: "escape",
           difficulty,
           dateKey,
-          code: opts.code,
-          attemptsUsed: opts.attemptsUsed,
+          code: opts.won ? opts.code : opts.code || undefined,
+          attemptsUsed: Math.max(1, opts.attemptsUsed),
+          forfeit: !opts.won,
           elapsedMs,
           seasonId: seasonId || undefined,
           premium: pack === "premium" || undefined,
@@ -263,13 +264,17 @@ export function EscapeGame({
       setDone(true);
       setResults({
         won: Boolean(data.won),
-        outcomeLabel: data.won ? undefined : "Out of attempts",
+        outcomeLabel: data.won
+          ? undefined
+          : opts.outcome === "skipped"
+            ? "Skipped"
+            : "Out of attempts",
         elapsedMs: data.elapsedMs ?? elapsedMs,
         score: data.score,
         streak: data.streak,
         breakdown: data.breakdown,
         ranks: data.ranks,
-        answer: data.answer,
+        answer: data.answer ?? room.answer,
         explanation: data.explanation ?? room.explanation,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
@@ -403,8 +408,8 @@ export function EscapeGame({
             onSkip={() => {
               void finish({
                 won: false,
-                attemptsUsed: attempts,
-                code: room.answer,
+                attemptsUsed: Math.max(1, attempts),
+                code: code.trim() || "",
                 outcome: "skipped",
               });
             }}
