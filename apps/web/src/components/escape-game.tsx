@@ -74,6 +74,7 @@ export function EscapeGame({
     answer?: string | null;
     explanation?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
+    newCosmetics?: import("@daily-puzzle/puzzle-core").CosmeticUnlockNotice[];
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
@@ -198,6 +199,7 @@ export function EscapeGame({
           elapsedMs,
           score: mres.data.score,
           breakdown: mres.data.breakdown,
+          newCosmetics: mres.data.newCosmetics,
           answer: room.answer,
           explanation: room.explanation,
           coinsEarned: mres.data.coinsEarned,
@@ -281,6 +283,7 @@ export function EscapeGame({
         answer: data.answer ?? room.answer,
         explanation: data.explanation ?? room.explanation,
         newAchievements: data.newAchievements,
+        newCosmetics: data.newCosmetics,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,

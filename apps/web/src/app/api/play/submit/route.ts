@@ -254,6 +254,7 @@ export async function POST(req: Request) {
       ranks,
       newAchievements: result.ok ? result.newAchievements : [],
       newUnlocks: result.ok ? result.newUnlocks : [],
+      newCosmetics: result.ok ? result.newCosmetics : [],
     });
   }
 

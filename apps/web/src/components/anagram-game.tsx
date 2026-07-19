@@ -68,6 +68,7 @@ export function AnagramGame({
     ranks?: PlayRanks | null;
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
+    newCosmetics?: import("@daily-puzzle/puzzle-core").CosmeticUnlockNotice[];
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
@@ -186,6 +187,7 @@ export function AnagramGame({
           elapsedMs,
           score: mres.data.score,
           breakdown: mres.data.breakdown,
+          newCosmetics: mres.data.newCosmetics,
           answer: puzzle.answer,
           coinsEarned: mres.data.coinsEarned,
           coinBalance: mres.data.coinBalance,
@@ -260,6 +262,7 @@ export function AnagramGame({
         ranks: data.ranks,
         answer: data.answer ?? puzzle.answer,
         newAchievements: data.newAchievements,
+        newCosmetics: data.newCosmetics,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,

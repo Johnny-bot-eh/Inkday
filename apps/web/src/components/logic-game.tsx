@@ -81,6 +81,7 @@ export function LogicGame({
     answer?: string | null;
     explanation?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
+    newCosmetics?: import("@daily-puzzle/puzzle-core").CosmeticUnlockNotice[];
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
@@ -277,6 +278,7 @@ export function LogicGame({
           elapsedMs,
           score: mres.data.score,
           breakdown: mres.data.breakdown,
+          newCosmetics: mres.data.newCosmetics,
           answer: puzzle.answer,
           explanation: puzzle.explanation,
         });
@@ -343,6 +345,7 @@ export function LogicGame({
         answer: data.answer ?? puzzle.answer,
         explanation: data.explanation ?? puzzle.explanation,
         newAchievements: data.newAchievements,
+        newCosmetics: data.newCosmetics,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,

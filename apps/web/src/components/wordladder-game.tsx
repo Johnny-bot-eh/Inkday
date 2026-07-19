@@ -107,6 +107,7 @@ export function WordLadderGame({
     ranks?: PlayRanks | null;
     answer?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
+    newCosmetics?: import("@daily-puzzle/puzzle-core").CosmeticUnlockNotice[];
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
@@ -237,7 +238,7 @@ export function WordLadderGame({
           return;
         }
         setDone(true);
-        setResults({ won: true, elapsedMs, score: mres.data.score, breakdown: mres.data.breakdown });
+        setResults({ won: true, elapsedMs, score: mres.data.score, breakdown: mres.data.breakdown, newCosmetics: mres.data.newCosmetics });
         setStatus(caseFileClearLabel(mres.data));
         router.refresh();
       } catch {
@@ -309,6 +310,7 @@ export function WordLadderGame({
         ranks: data.ranks,
         answer: data.answer ?? puzzle.solution.join(" → "),
         newAchievements: data.newAchievements,
+        newCosmetics: data.newCosmetics,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,

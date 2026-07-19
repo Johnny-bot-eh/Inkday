@@ -6,9 +6,11 @@ import { formatDuration } from "@/components/play-timer";
 import {
   timeBonusScheduleLabel,
   timeBonusTierHint,
+  type CosmeticUnlockNotice,
   type ScoreBreakdown,
 } from "@daily-puzzle/puzzle-core";
 import { emitAccountXp } from "@/components/account-xp-chip";
+import { queueUnlockNotices } from "@/lib/unlock-notices";
 
 export type PlayRanks = {
   friends: {
@@ -42,6 +44,8 @@ type Props = {
   solutionItems?: Array<{ label: string; answer: string }>;
   newAchievements?: ProgressToast[];
   newUnlocks?: ProgressToast[];
+  /** Ribbons, crowns, badge avatars granted for this clear. */
+  newCosmetics?: CosmeticUnlockNotice[];
   coinsEarned?: number | null;
   coinBalance?: number | null;
   xpEarned?: number | null;
@@ -66,6 +70,7 @@ export function PlayResultsCard({
   solutionItems,
   newAchievements,
   newUnlocks,
+  newCosmetics,
   coinsEarned,
   coinBalance,
   xpEarned,
@@ -84,6 +89,10 @@ export function PlayResultsCard({
       emitAccountXp({ level: accountLevel });
     }
   }, [accountXp, accountLevel]);
+
+  useEffect(() => {
+    queueUnlockNotices(newCosmetics);
+  }, [newCosmetics]);
 
   const heading =
     outcomeLabel?.trim() || (won ? "Cleared" : "Not solved");
@@ -210,7 +219,8 @@ export function PlayResultsCard({
       ) : null}
 
       {((newAchievements && newAchievements.length > 0) ||
-        (newUnlocks && newUnlocks.length > 0)) && (
+        (newUnlocks && newUnlocks.length > 0) ||
+        (newCosmetics && newCosmetics.length > 0)) && (
         <div className="space-y-2 rounded-xl border border-ember/30 bg-ember/10 px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-ember">Unlocked</p>
           {newAchievements?.map((a) => (
@@ -223,6 +233,23 @@ export function PlayResultsCard({
             <div key={u.title}>
               <div className="font-semibold">{u.title}</div>
               <div className="text-xs text-fog">{u.description}</div>
+            </div>
+          ))}
+          {newCosmetics?.map((c) => (
+            <div key={c.id}>
+              <div className="font-semibold">
+                {c.kind === "accessory" ? "Accessory · " : ""}
+                {c.title}
+              </div>
+              <div className="text-xs text-fog">{c.description}</div>
+              {c.kind === "accessory" ? (
+                <Link
+                  href="/profile"
+                  className="mt-1 inline-block text-xs font-semibold text-ember hover:underline"
+                >
+                  Equip on profile →
+                </Link>
+              ) : null}
             </div>
           ))}
         </div>

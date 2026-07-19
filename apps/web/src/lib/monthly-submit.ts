@@ -1,6 +1,9 @@
 /** Shared monthly Case File submit helper for reused daily games. */
 
-import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
+import type {
+  CosmeticUnlockNotice,
+  ScoreBreakdown,
+} from "@daily-puzzle/puzzle-core";
 import { clearMonthlyPlayerNotes } from "@/lib/player-notes";
 
 export type MonthlyPlayContext = {
@@ -18,6 +21,8 @@ export type MonthlySubmitData = {
   total?: number;
   totalBonus?: number;
   newMilestones?: Array<{ title: string }>;
+  newBadges?: Array<{ badgeId: string; title: string }>;
+  newCosmetics?: CosmeticUnlockNotice[];
   alreadyCleared?: boolean;
   alreadyResolved?: boolean;
   forfeited?: boolean;

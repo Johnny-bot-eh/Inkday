@@ -16,6 +16,7 @@ import {
   accessoryRewardForMilestone,
   accessoryRewardForTournament,
   caseFileCompleteAccessoryId,
+  cosmeticUnlockNotices,
   getMonthlyCollection,
   isAchievementVisible,
   isNightOwlClear,
@@ -33,6 +34,7 @@ import {
   unlockRequiredForDifficulty,
   weekStartKey,
   todayKey,
+  type CosmeticUnlockNotice,
   type MonthlyMilestoneDef,
   type NotificationPrefView,
   type PremiumStatusView,
@@ -257,6 +259,7 @@ export async function submitPlay(opts: {
   // Re-sync if a challenge win may unlock Challenge Victor
   let finalAchievements = progress.newAchievements;
   let finalUnlocks = progress.newUnlocks;
+  let grantedCosmeticIds = [...progress.grantedCosmetics];
   if (challengeUpdate?.wonChallenge) {
     const again = await syncProgression(opts.userId, {
       dailyStreak: streak,
@@ -266,6 +269,10 @@ export async function submitPlay(opts: {
     });
     finalAchievements = again.newAchievements;
     finalUnlocks = again.newUnlocks;
+    grantedCosmeticIds = [
+      ...grantedCosmeticIds,
+      ...again.grantedCosmetics,
+    ];
   }
 
   const play = await db.query.playResult.findFirst({
@@ -302,6 +309,7 @@ export async function submitPlay(opts: {
     totalScore,
     newAchievements: finalAchievements,
     newUnlocks: finalUnlocks,
+    newCosmetics: cosmeticUnlockNotices(grantedCosmeticIds),
     challenge: challengeUpdate,
     coinsEarned: coins.coinsEarned,
     coinBalance: coins.coinBalance,
@@ -1733,6 +1741,7 @@ export async function submitMonthlyClear(opts: {
   cleared: number;
   newMilestones: MonthlyMilestoneDef[];
   newBadges: Array<{ badgeId: string; title: string }>;
+  newCosmetics: CosmeticUnlockNotice[];
   totalBonus: number;
   coinsEarned?: number;
   coinBalance?: number;
@@ -1762,6 +1771,7 @@ export async function submitMonthlyClear(opts: {
       cleared: completions.length,
       newMilestones: [],
       newBadges: [],
+      newCosmetics: [],
       totalBonus: 0,
       coinsEarned: 0,
       xpEarned: 0,
@@ -1831,6 +1841,7 @@ export async function submitMonthlyClear(opts: {
   );
 
   const newBadges: Array<{ badgeId: string; title: string }> = [];
+  const grantedCosmeticIds: string[] = [];
   let totalBonus = 0;
 
   for (const milestone of newlyEarned) {
@@ -1864,7 +1875,8 @@ export async function submitMonthlyClear(opts: {
     const accessoryId = accessoryRewardForMilestone(milestone.id);
     if (accessoryId) {
       const { grantCosmeticItem } = await import("@/lib/coin-service");
-      await grantCosmeticItem(opts.userId, accessoryId);
+      const grant = await grantCosmeticItem(opts.userId, accessoryId);
+      if (grant.ok && grant.granted) grantedCosmeticIds.push(accessoryId);
     }
   }
 
@@ -1873,7 +1885,9 @@ export async function submitMonthlyClear(opts: {
     newlyEarned.some((m) => m.id === "legendary")
   ) {
     const { grantCosmeticItem } = await import("@/lib/coin-service");
-    await grantCosmeticItem(opts.userId, caseFileCompleteAccessoryId());
+    const caseRibbon = caseFileCompleteAccessoryId();
+    const grant = await grantCosmeticItem(opts.userId, caseRibbon);
+    if (grant.ok && grant.granted) grantedCosmeticIds.push(caseRibbon);
   }
 
   if (totalBonus > 0) {
@@ -1911,6 +1925,7 @@ export async function submitMonthlyClear(opts: {
     cleared,
     newMilestones: newlyEarned,
     newBadges,
+    newCosmetics: cosmeticUnlockNotices(grantedCosmeticIds),
     totalBonus,
     coinsEarned: coins.coinsEarned,
     coinBalance: coins.coinBalance,

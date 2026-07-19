@@ -81,6 +81,7 @@ export function WordleGame({
     answer?: string | null;
     definition?: string | null;
     newAchievements?: Array<{ title: string; description: string }>;
+    newCosmetics?: import("@daily-puzzle/puzzle-core").CosmeticUnlockNotice[];
     newUnlocks?: Array<{ title: string; description: string }>;
     coinsEarned?: number | null;
     coinBalance?: number | null;
@@ -246,6 +247,7 @@ export function WordleGame({
           elapsedMs,
           score: mres.data.score,
           breakdown: mres.data.breakdown,
+          newCosmetics: mres.data.newCosmetics,
           answer: config.answer,
           definition: config.definition,
           coinsEarned: mres.data.coinsEarned,
@@ -319,6 +321,7 @@ export function WordleGame({
         answer: data.answer,
         definition: data.definition ?? config.definition,
         newAchievements: data.newAchievements,
+        newCosmetics: data.newCosmetics,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
         coinBalance: data.coinBalance,

@@ -151,6 +151,7 @@ export async function POST(req: Request) {
       total: collection.puzzles.length,
       newMilestones: [],
       newBadges: [],
+      newCosmetics: [],
       totalBonus: 0,
     });
   }
@@ -180,6 +181,7 @@ export async function POST(req: Request) {
       total: collection.puzzles.length,
       newMilestones: [],
       newBadges: [],
+      newCosmetics: [],
       totalBonus: 0,
     });
   }
@@ -249,6 +251,7 @@ export async function POST(req: Request) {
     alreadyCleared: result.alreadyCleared,
     newMilestones: result.newMilestones,
     newBadges: result.newBadges,
+    newCosmetics: result.newCosmetics ?? [],
     totalBonus: result.totalBonus,
     coinsEarned: result.coinsEarned,
     coinBalance: result.coinBalance,
