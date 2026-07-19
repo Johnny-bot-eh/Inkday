@@ -459,6 +459,9 @@ const LOCATION_TRAIT_IDS = new Set([
   "aisle",
   "dock",
   "bay",
+  "yard",
+  "car",
+  "easel",
 ]);
 
 function locationTraitFor(template: LogicTemplate): LogicCategory {
