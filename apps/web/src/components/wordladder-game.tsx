@@ -46,6 +46,8 @@ export function WordLadderGame({
   const [chain, setChain] = useState<string[]>([puzzle.start]);
   const [current, setCurrent] = useState("");
   const [bonusSteps, setBonusSteps] = useState(0);
+  const [wrongTries, setWrongTries] = useState(0);
+  const [bonusTries, setBonusTries] = useState(0);
   const [coinHint, setCoinHint] = useState<string | null>(null);
   const [done, setDone] = useState(Boolean(alreadyPlayed));
   const [status, setStatus] = useState<string | null>(
@@ -86,16 +88,21 @@ export function WordLadderGame({
 
   const stepsUsed = Math.max(0, chain.length - 1);
   const maxSteps = puzzle.maxSteps + bonusSteps;
+  const maxWrongTries = 3 + bonusTries;
   const nextStep = nextWordLadderStep(puzzle, chain.length);
 
   async function finish(
     finalChain: string[],
     won: boolean,
-    opts: { outcome?: "skipped" | "failed" } = {},
+    opts: { outcome?: "skipped" | "failed"; attemptsUsed?: number } = {},
   ) {
     const elapsedMs = timer.freeze();
     if (!monthly) markBoardPlayed(dateKey, "wordladder", difficulty);
     const timeLabel = formatDuration(elapsedMs);
+    const attemptsUsed = Math.max(
+      1,
+      opts.attemptsUsed ?? (won ? 1 : Math.max(wrongTries, maxWrongTries)),
+    );
 
     if (won) {
       // Give immediate feedback; persistence can finish in the background.
@@ -187,15 +194,23 @@ export function WordLadderGame({
     }
 
     if (!signedIn) {
+      setDone(true);
       setResults({
         won,
+        outcomeLabel: won
+          ? undefined
+          : opts.outcome === "skipped"
+            ? "Skipped"
+            : "Out of attempts",
         elapsedMs,
         answer: puzzle.solution.join(" → "),
       });
       setStatus(
         won
           ? `Ladder complete in ${timeLabel}! Sign in to save.`
-          : `Could not finish (${timeLabel}).`,
+          : opts.outcome === "skipped"
+            ? `Skipped (${timeLabel}).`
+            : `Out of attempts (${timeLabel}).`,
       );
       return;
     }
@@ -210,6 +225,8 @@ export function WordLadderGame({
           difficulty,
           dateKey,
           guesses: finalChain,
+          attemptsUsed,
+          forfeit: !won,
           elapsedMs,
         }),
       });
@@ -222,14 +239,20 @@ export function WordLadderGame({
         );
         return;
       }
+      setDone(true);
       setResults({
         won,
+        outcomeLabel: won
+          ? undefined
+          : opts.outcome === "skipped"
+            ? "Skipped"
+            : "Out of attempts",
         elapsedMs: data.elapsedMs ?? elapsedMs,
         score: data.score,
         streak: data.streak,
         breakdown: data.breakdown,
         ranks: data.ranks,
-        answer: data.answer,
+        answer: data.answer ?? puzzle.solution.join(" → "),
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
@@ -283,7 +306,21 @@ export function WordLadderGame({
     }
 
     if (word !== nextStep.word) {
-      setStatus(`Not the intended next word. Hint: ${nextStep.hint}`);
+      const nextWrong = wrongTries + 1;
+      setWrongTries(nextWrong);
+      setCurrent("");
+      if (nextWrong >= maxWrongTries) {
+        void finish(chain, false, {
+          outcome: "failed",
+          attemptsUsed: nextWrong,
+        });
+        return;
+      }
+      setStatus(
+        `Not quite · ${maxWrongTries - nextWrong} attempt${
+          maxWrongTries - nextWrong === 1 ? "" : "s"
+        } left. Hint: ${nextStep.hint}`,
+      );
       return;
     }
 
@@ -307,8 +344,7 @@ export function WordLadderGame({
     setStatus(null);
 
     if (nextSteps >= maxSteps) {
-      setDone(true);
-      void finish(next, false);
+      void finish(next, false, { outcome: "failed" });
     }
   }
 
@@ -350,7 +386,8 @@ export function WordLadderGame({
 
       <p className="mb-4 text-sm text-fog">{puzzle.hint}</p>
       <p className="mb-4 text-xs text-fog">
-        Steps used {stepsUsed} / {maxSteps}
+        Steps used {stepsUsed} / {maxSteps} · Attempts {wrongTries}/
+        {maxWrongTries}
       </p>
 
       {!done && nextStep && (
@@ -452,10 +489,15 @@ export function WordLadderGame({
               `Extra hint: change the ${ordinal} letter. The next word starts with “${next[0]!.toUpperCase()}”.`,
             );
           }}
-          onExtraAttempt={() => setBonusSteps((n) => n + 1)}
+          onExtraAttempt={() => {
+            setBonusSteps((n) => n + 1);
+            setBonusTries((n) => n + 1);
+          }}
           onSkip={() => {
-            if (!monthly) setDone(true);
-            void finish(chain, false, { outcome: "skipped" });
+            void finish(chain, false, {
+              outcome: "skipped",
+              attemptsUsed: Math.max(1, wrongTries),
+            });
           }}
         />
       )}

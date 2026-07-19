@@ -235,8 +235,9 @@ export function AnagramGame({
           puzzleType: "anagram",
           difficulty,
           dateKey,
-          answer: opts.answer,
-          attemptsUsed: opts.attemptsUsed,
+          answer: opts.won ? opts.answer : opts.answer || undefined,
+          attemptsUsed: Math.max(1, opts.attemptsUsed),
+          forfeit: !opts.won,
           elapsedMs,
         }),
       });
@@ -248,13 +249,17 @@ export function AnagramGame({
       setDone(true);
       setResults({
         won: opts.won,
-        outcomeLabel: opts.won ? undefined : "Out of attempts",
+        outcomeLabel: opts.won
+          ? undefined
+          : opts.outcome === "skipped"
+            ? "Skipped"
+            : "Out of attempts",
         elapsedMs: data.elapsedMs ?? elapsedMs,
         score: data.score,
         streak: data.streak,
         breakdown: data.breakdown,
         ranks: data.ranks,
-        answer: data.answer,
+        answer: data.answer ?? puzzle.answer,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
@@ -391,8 +396,8 @@ export function AnagramGame({
           onSkip={() => {
             void finish({
               won: false,
-              attemptsUsed: attempts,
-              answer: puzzle.answer,
+              attemptsUsed: Math.max(1, attempts),
+              answer: guess.trim() || "",
               outcome: "skipped",
             });
           }}

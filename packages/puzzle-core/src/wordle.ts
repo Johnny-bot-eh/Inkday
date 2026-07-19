@@ -41,12 +41,13 @@ const BY_DIFFICULTY: Record<Difficulty, string[]> = {
   impossible: WORDLE_HARD_ANSWERS,
 };
 
+/** All boards use 3 guesses — same attempt budget as other Inkday games. */
 const GUESS_LIMIT: Record<Difficulty, number> = {
-  easy: 6,
-  medium: 6,
-  hard: 5,
-  obscure: 6,
-  impossible: 4,
+  easy: 3,
+  medium: 3,
+  hard: 3,
+  obscure: 3,
+  impossible: 3,
 };
 
 function dictionaryForLength(length: number): string[] {

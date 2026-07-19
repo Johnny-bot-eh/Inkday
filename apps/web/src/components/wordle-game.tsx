@@ -265,7 +265,7 @@ export function WordleGame({
           dateKey,
           guesses: finalGuesses,
           elapsedMs,
-          forfeit: !won && finalGuesses.length < config.maxGuesses,
+          forfeit: !won,
           ...(category ? { category } : {}),
           ...(seasonId && !category ? { seasonId } : {}),
         }),

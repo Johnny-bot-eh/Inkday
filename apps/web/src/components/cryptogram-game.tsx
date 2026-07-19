@@ -325,8 +325,9 @@ export function CryptogramGame({
           puzzleType: "cryptogram",
           difficulty,
           dateKey,
-          answer: opts.answer,
-          attemptsUsed: opts.attemptsUsed,
+          answer: opts.won ? opts.answer : opts.answer || undefined,
+          attemptsUsed: Math.max(1, opts.attemptsUsed),
+          forfeit: !opts.won,
           elapsedMs,
         }),
       });
@@ -338,12 +339,17 @@ export function CryptogramGame({
       setDone(true);
       setResults({
         won: opts.won,
+        outcomeLabel: opts.won
+          ? undefined
+          : opts.outcome === "skipped"
+            ? "Skipped"
+            : "Out of attempts",
         elapsedMs: data.elapsedMs ?? elapsedMs,
         score: data.score,
         streak: data.streak,
         breakdown: data.breakdown,
         ranks: data.ranks,
-        answer: data.answer,
+        answer: data.answer ?? puzzle.plaintext,
         newAchievements: data.newAchievements,
         newUnlocks: data.newUnlocks,
         coinsEarned: data.coinsEarned,
@@ -526,8 +532,8 @@ export function CryptogramGame({
           onSkip={() => {
             void finish({
               won: false,
-              attemptsUsed: attempts,
-              answer: puzzle.plaintext,
+              attemptsUsed: Math.max(1, attempts),
+              answer: "",
               outcome: "skipped",
             });
           }}

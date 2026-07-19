@@ -84,6 +84,17 @@ const TYPES: PuzzleType[] = [
   "wordladder",
 ];
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "obscure", "impossible"];
+/** Coin “extra attempt” consumables may push a few past the base max of 3. */
+const ATTEMPT_BONUS_SLACK = 5;
+const LOGIC_BASE_ATTEMPTS = 3;
+
+function clampAttemptsUsed(
+  raw: number | undefined,
+  baseMax: number,
+): number {
+  const n = typeof raw === "number" && Number.isFinite(raw) ? raw : 1;
+  return Math.min(Math.max(1, Math.floor(n)), baseMax + ATTEMPT_BONUS_SLACK);
+}
 
 function clampElapsed(ms: unknown): number | undefined {
   if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) return undefined;
@@ -322,17 +333,21 @@ export async function POST(req: Request) {
       premiumBoard ? "premium" : "standard",
       seasonId,
     );
-    const attemptsUsed = Math.min(
-      Math.max(1, body.attemptsUsed ?? 1),
+    const attemptsUsed = clampAttemptsUsed(
+      body.attemptsUsed,
       room.maxAttempts,
     );
-    if (!body.code) {
+    if (!body.code && !body.forfeit) {
       return NextResponse.json({ error: "Missing code" }, { status: 400 });
     }
 
-    const verdict = checkEscapeAnswer(room, body.code);
-    const failedOut = !verdict.correct && attemptsUsed >= room.maxAttempts;
-    if (!verdict.correct && !failedOut) {
+    const verdict = body.code
+      ? checkEscapeAnswer(room, body.code)
+      : { correct: false };
+    const won = body.forfeit ? false : verdict.correct;
+    const failedOut =
+      !won && (Boolean(body.forfeit) || attemptsUsed >= room.maxAttempts);
+    if (!won && !failedOut) {
       return NextResponse.json(
         { error: "Incorrect code", remaining: room.maxAttempts - attemptsUsed },
         { status: 400 },
@@ -341,40 +356,44 @@ export async function POST(req: Request) {
 
     const base = scoreEscape({
       difficulty,
-      correct: verdict.correct,
+      correct: won,
       attemptsUsed,
       maxAttempts: room.maxAttempts,
     });
     const scoreBreakdown = buildBreakdown({
-      won: verdict.correct,
+      won,
       difficulty,
       base,
       elapsedMs,
-      isPerfect: verdict.correct && isPerfectEscape(attemptsUsed),
+      isPerfect: won && isPerfectEscape(attemptsUsed),
       seasonActive: Boolean(seasonId),
       plusActive,
     });
 
     return finish({
       scoreBreakdown,
-      won: verdict.correct,
-      meta: { attemptsUsed },
+      won,
+      meta: { attemptsUsed, forfeit: Boolean(body.forfeit) },
       extra: { answer: room.answer, explanation: room.explanation },
     });
   }
 
   if (puzzleType === "anagram") {
     const puzzle = getAnagramPuzzle(dateKey, difficulty);
-    const attemptsUsed = Math.min(
-      Math.max(1, body.attemptsUsed ?? 1),
+    const attemptsUsed = clampAttemptsUsed(
+      body.attemptsUsed,
       puzzle.maxAttempts,
     );
-    if (!body.answer) {
+    if (!body.answer && !body.forfeit) {
       return NextResponse.json({ error: "Missing answer" }, { status: 400 });
     }
-    const verdict = checkAnagramAnswer(puzzle, body.answer);
-    const failedOut = !verdict.correct && attemptsUsed >= puzzle.maxAttempts;
-    if (!verdict.correct && !failedOut) {
+    const verdict = body.answer
+      ? checkAnagramAnswer(puzzle, body.answer)
+      : { correct: false, normalized: "" };
+    const won = body.forfeit ? false : verdict.correct;
+    const failedOut =
+      !won && (Boolean(body.forfeit) || attemptsUsed >= puzzle.maxAttempts);
+    if (!won && !failedOut) {
       return NextResponse.json(
         {
           error: "Incorrect",
@@ -385,39 +404,43 @@ export async function POST(req: Request) {
     }
     const base = scoreAnagram({
       difficulty,
-      correct: verdict.correct,
+      correct: won,
       attemptsUsed,
       maxAttempts: puzzle.maxAttempts,
     });
     const scoreBreakdown = buildBreakdown({
-      won: verdict.correct,
+      won,
       difficulty,
       base,
       elapsedMs,
-      isPerfect: verdict.correct && isPerfectAnagram(attemptsUsed),
+      isPerfect: won && isPerfectAnagram(attemptsUsed),
       seasonActive: Boolean(seasonId),
       plusActive,
     });
     return finish({
       scoreBreakdown,
-      won: verdict.correct,
-      meta: { attemptsUsed },
+      won,
+      meta: { attemptsUsed, forfeit: Boolean(body.forfeit) },
       extra: { answer: puzzle.answer },
     });
   }
 
   if (puzzleType === "cryptogram") {
     const puzzle = getCryptogramPuzzle(dateKey, difficulty);
-    const attemptsUsed = Math.min(
-      Math.max(1, body.attemptsUsed ?? 1),
+    const attemptsUsed = clampAttemptsUsed(
+      body.attemptsUsed,
       puzzle.maxAttempts,
     );
-    if (!body.answer) {
+    if (!body.answer && !body.forfeit) {
       return NextResponse.json({ error: "Missing answer" }, { status: 400 });
     }
-    const verdict = checkCryptogramAnswer(puzzle, body.answer);
-    const failedOut = !verdict.correct && attemptsUsed >= puzzle.maxAttempts;
-    if (!verdict.correct && !failedOut) {
+    const verdict = body.answer
+      ? checkCryptogramAnswer(puzzle, body.answer)
+      : { correct: false };
+    const won = body.forfeit ? false : verdict.correct;
+    const failedOut =
+      !won && (Boolean(body.forfeit) || attemptsUsed >= puzzle.maxAttempts);
+    if (!won && !failedOut) {
       return NextResponse.json(
         {
           error: "Incorrect",
@@ -428,42 +451,44 @@ export async function POST(req: Request) {
     }
     const base = scoreCryptogram({
       difficulty,
-      correct: verdict.correct,
+      correct: won,
       attemptsUsed,
       maxAttempts: puzzle.maxAttempts,
     });
     const scoreBreakdown = buildBreakdown({
-      won: verdict.correct,
+      won,
       difficulty,
       base,
       elapsedMs,
-      isPerfect: verdict.correct && isPerfectCryptogram(attemptsUsed),
+      isPerfect: won && isPerfectCryptogram(attemptsUsed),
       seasonActive: Boolean(seasonId),
       plusActive,
     });
     return finish({
       scoreBreakdown,
-      won: verdict.correct,
-      meta: { attemptsUsed },
+      won,
+      meta: { attemptsUsed, forfeit: Boolean(body.forfeit) },
       extra: { answer: puzzle.plaintext },
     });
   }
 
   if (puzzleType === "acrostic") {
     const puzzle = getAcrosticPuzzle(dateKey, difficulty);
-    const attemptsUsed = Math.min(
-      Math.max(1, body.attemptsUsed ?? 1),
+    const attemptsUsed = clampAttemptsUsed(
+      body.attemptsUsed,
       puzzle.maxAttempts,
     );
-    const byMessage = body.answer
-      ? checkAcrosticMessage(puzzle, body.answer)
-      : { correct: false };
+    const byMessage =
+      body.answer && !body.forfeit
+        ? checkAcrosticMessage(puzzle, body.answer)
+        : { correct: false };
     const byClues =
-      body.guesses && Array.isArray(body.guesses)
+      !body.forfeit && body.guesses && Array.isArray(body.guesses)
         ? checkAcrosticAnswers(puzzle, body.guesses)
         : { correct: false, solved: [] as boolean[] };
-    const won = byMessage.correct || byClues.correct;
-    const failedOut = !won && attemptsUsed >= puzzle.maxAttempts;
+    const won = body.forfeit ? false : byMessage.correct || byClues.correct;
+    const failedOut =
+      !won && (Boolean(body.forfeit) || attemptsUsed >= puzzle.maxAttempts);
     if (!won && !failedOut) {
       return NextResponse.json(
         {
@@ -490,7 +515,7 @@ export async function POST(req: Request) {
     return finish({
       scoreBreakdown,
       won,
-      meta: { attemptsUsed },
+      meta: { attemptsUsed, forfeit: Boolean(body.forfeit) },
       extra: { answer: puzzle.message, answers: puzzle.answers },
     });
   }
@@ -500,18 +525,26 @@ export async function POST(req: Request) {
     const guesses = body.guesses ?? [];
     const verdict = checkWordLadder(puzzle, guesses);
     const stepsUsed = Math.max(0, guesses.length - 1);
+    const wrongTries = clampAttemptsUsed(
+      body.attemptsUsed,
+      LOGIC_BASE_ATTEMPTS,
+    );
     const reachedEnd =
       guesses.length > 0 &&
       guesses[guesses.length - 1]!.toLowerCase() === puzzle.end;
-    const won = verdict.ok;
-    const exhausted = !won && stepsUsed >= puzzle.maxSteps;
+    const won = body.forfeit ? false : verdict.ok;
+    const exhausted =
+      !won &&
+      (Boolean(body.forfeit) ||
+        stepsUsed >= puzzle.maxSteps ||
+        wrongTries >= LOGIC_BASE_ATTEMPTS);
     if (!won && !exhausted && !reachedEnd) {
       return NextResponse.json(
         { error: verdict.ok ? "Incomplete ladder" : verdict.reason },
         { status: 400 },
       );
     }
-    if (!won && reachedEnd && !verdict.ok) {
+    if (!won && reachedEnd && !verdict.ok && !body.forfeit) {
       return NextResponse.json({ error: verdict.reason }, { status: 400 });
     }
     const base = scoreWordLadder({
@@ -537,7 +570,11 @@ export async function POST(req: Request) {
     return finish({
       scoreBreakdown,
       won,
-      meta: { stepsUsed },
+      meta: {
+        stepsUsed,
+        wrongTries,
+        forfeit: Boolean(body.forfeit),
+      },
       extra: { answer: puzzle.solution.join(" → ") },
     });
   }
@@ -547,28 +584,51 @@ export async function POST(req: Request) {
     difficulty,
     premiumBoard ? "plus" : seasonId,
   );
-  if (!body.answer) {
+  const attemptsUsed = clampAttemptsUsed(
+    body.attemptsUsed,
+    LOGIC_BASE_ATTEMPTS,
+  );
+  if (!body.answer && !body.forfeit) {
     return NextResponse.json({ error: "Missing answer" }, { status: 400 });
   }
-  const verdict = checkLogicAnswer(puzzle, body.answer);
+  const verdict = body.answer
+    ? checkLogicAnswer(puzzle, body.answer)
+    : { correct: false };
+  const won = body.forfeit ? false : verdict.correct;
+  const failedOut =
+    !won &&
+    (Boolean(body.forfeit) || attemptsUsed >= LOGIC_BASE_ATTEMPTS);
+  if (!won && !failedOut) {
+    return NextResponse.json(
+      {
+        error: "Incorrect",
+        remaining: LOGIC_BASE_ATTEMPTS - attemptsUsed,
+      },
+      { status: 400 },
+    );
+  }
   const base = scoreLogic({
     difficulty,
-    correct: verdict.correct,
+    correct: won,
   });
   const scoreBreakdown = buildBreakdown({
-    won: verdict.correct,
+    won,
     difficulty,
     base,
     elapsedMs,
-    isPerfect: isPerfectLogic(verdict.correct),
+    isPerfect: isPerfectLogic(won),
     seasonActive: Boolean(seasonId),
     plusActive,
   });
 
   return finish({
     scoreBreakdown,
-    won: verdict.correct,
-    meta: { answer: body.answer },
+    won,
+    meta: {
+      answer: body.answer ?? null,
+      attemptsUsed,
+      forfeit: Boolean(body.forfeit),
+    },
     extra: {
       answer: puzzle.answer,
       solution: puzzle.solution,
