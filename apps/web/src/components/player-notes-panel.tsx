@@ -4,15 +4,11 @@ import { todayKey } from "@daily-puzzle/puzzle-core";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   useCallback,
-<<<<<<< HEAD
   useEffect,
-=======
->>>>>>> origin/main
   useId,
   useSyncExternalStore,
   type ChangeEvent,
 } from "react";
-<<<<<<< HEAD
 import { isBoardPlayedLocally } from "@/lib/played-boards";
 import {
   arePlayerNotesClosed,
@@ -25,43 +21,6 @@ import {
 } from "@/lib/player-notes";
 
 const MINIMIZED_KEY = "inkday-notes:minimized";
-=======
-
-const NOTES_PREFIX = "inkday-notes:v1:";
-const MINIMIZED_KEY = "inkday-notes:minimized";
-const NOTES_EVENT = "inkday-notes-change";
-
-function boardStorageKey(pathname: string, search: string): string {
-  const params = new URLSearchParams(search);
-  const pack = params.get("pack") ?? "";
-  const season = params.get("season") ?? params.get("seasonId") ?? "";
-  const date = pathname.startsWith("/monthly") ? "case" : todayKey();
-  return `${NOTES_PREFIX}${date}:${pathname}:${pack}:${season}`;
-}
-
-function readStored(key: string): string {
-  if (typeof window === "undefined") return "";
-  try {
-    return window.localStorage.getItem(key) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function writeStored(key: string, value: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    if (value.trim()) {
-      window.localStorage.setItem(key, value);
-    } else {
-      window.localStorage.removeItem(key);
-    }
-  } catch {
-    /* quota / private mode */
-  }
-  window.dispatchEvent(new Event(NOTES_EVENT));
-}
->>>>>>> origin/main
 
 function readMinimized(): boolean {
   if (typeof window === "undefined") return true;
@@ -81,20 +40,7 @@ function writeMinimized(minimized: boolean): void {
   } catch {
     /* ignore */
   }
-<<<<<<< HEAD
   emitPlayerNotesChange();
-=======
-  window.dispatchEvent(new Event(NOTES_EVENT));
-}
-
-function subscribeNotes(onStoreChange: () => void) {
-  window.addEventListener(NOTES_EVENT, onStoreChange);
-  window.addEventListener("storage", onStoreChange);
-  return () => {
-    window.removeEventListener(NOTES_EVENT, onStoreChange);
-    window.removeEventListener("storage", onStoreChange);
-  };
->>>>>>> origin/main
 }
 
 function isPuzzleSurface(pathname: string): boolean {
@@ -102,7 +48,6 @@ function isPuzzleSurface(pathname: string): boolean {
   return /^\/monthly\/\d+(?:\/|$)/.test(pathname);
 }
 
-<<<<<<< HEAD
 function dailyBoardClosed(pathname: string, search: string): boolean {
   const daily = pathname.match(/^\/play\/([^/]+)\/([^/]+)/);
   if (!daily) return false;
@@ -115,8 +60,6 @@ function dailyBoardClosed(pathname: string, search: string): boolean {
   return isBoardPlayedLocally(todayKey(), daily[1]!, daily[2]!, seasonId);
 }
 
-=======
->>>>>>> origin/main
 function NotesIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -149,18 +92,13 @@ function NotesIcon({ className }: { className?: string }) {
   );
 }
 
-<<<<<<< HEAD
 /** Floating scratch pad scoped to the active daily / Case File puzzle only. */
-=======
-/** Floating scratch pad for jotting letters, leads, and hunches during a puzzle. */
->>>>>>> origin/main
 export function PlayerNotesPanel() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   if (!isPuzzleSurface(pathname)) return null;
 
   const search = searchParams.toString();
-<<<<<<< HEAD
   const storageKey = playerNotesKeyFromLocation(pathname, search);
   if (!storageKey) return null;
 
@@ -191,21 +129,10 @@ function PlayerNotesPanelInner({
 
   const minimized = useSyncExternalStore(
     subscribePlayerNotes,
-=======
-  const storageKey = boardStorageKey(pathname, search);
-  return <PlayerNotesPanelInner key={storageKey} storageKey={storageKey} />;
-}
-
-function PlayerNotesPanelInner({ storageKey }: { storageKey: string }) {
-  const textareaId = useId();
-  const minimized = useSyncExternalStore(
-    subscribeNotes,
->>>>>>> origin/main
     readMinimized,
     () => true,
   );
   const text = useSyncExternalStore(
-<<<<<<< HEAD
     subscribePlayerNotes,
     () => readPlayerNotes(storageKey),
     () => "",
@@ -220,16 +147,6 @@ function PlayerNotesPanelInner({ storageKey }: { storageKey: string }) {
   const onChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
       writePlayerNotes(storageKey, e.target.value);
-=======
-    subscribeNotes,
-    () => readStored(storageKey),
-    () => "",
-  );
-
-  const onChange = useCallback(
-    (e: ChangeEvent<HTMLTextAreaElement>) => {
-      writeStored(storageKey, e.target.value);
->>>>>>> origin/main
     },
     [storageKey],
   );
@@ -239,18 +156,12 @@ function PlayerNotesPanelInner({ storageKey }: { storageKey: string }) {
   }
 
   function clearNotes() {
-<<<<<<< HEAD
     writePlayerNotes(storageKey, "");
   }
 
   // Finished boards do not keep a scratch pad.
   if (closed) return null;
 
-=======
-    writeStored(storageKey, "");
-  }
-
->>>>>>> origin/main
   if (minimized) {
     return (
       <div className="pointer-events-none fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6">
@@ -283,11 +194,7 @@ function PlayerNotesPanelInner({ storageKey }: { storageKey: string }) {
               Scratch pad
             </p>
             <p className="truncate text-xs text-fog">
-<<<<<<< HEAD
               This puzzle only · clears when you finish or the daily resets
-=======
-              Private notes for this board — stays on this device
->>>>>>> origin/main
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
