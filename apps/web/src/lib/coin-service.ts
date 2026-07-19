@@ -3,6 +3,7 @@ import {
   COIN_EARN,
   PLUS_MONTHLY_STIPEND,
   applyPlusCoinBonus,
+  getAccessoryItem,
   getAvatarItem,
   getShopItem,
   isConsumableItemId,
@@ -10,6 +11,7 @@ import {
   isPremiumActive,
   monthlyMilestoneCoins,
   monthStartKey,
+  resolveAccessoryId,
   resolveAvatarId,
   todayKey,
   type ConsumableItemId,
@@ -273,6 +275,10 @@ export async function buyShopItem(userId: string, itemId: string) {
     return { ok: false as const, reason: "unavailable" as const };
   }
 
+  if (item.badgeReward) {
+    return { ok: false as const, reason: "not_purchasable" as const };
+  }
+
   // Free starters are always owned — no purchase.
   if (item.free) {
     return { ok: false as const, reason: "unavailable" as const };
@@ -306,8 +312,12 @@ export async function buyShopItem(userId: string, itemId: string) {
     return restoreStreakWithCoins(userId);
   }
 
-  // Avatars / cosmetics: idempotent — already owned. Decorations may stack.
-  if (item.slot === "avatar" || item.kind === "cosmetic") {
+  // Avatars / accessories / cosmetics: idempotent — already owned. Decorations may stack.
+  if (
+    item.slot === "avatar" ||
+    item.slot === "accessory" ||
+    item.kind === "cosmetic"
+  ) {
     const owned = await getInventoryQty(userId, itemId);
     if (owned > 0) {
       return {
@@ -347,8 +357,13 @@ export async function buyShopItem(userId: string, itemId: string) {
   }
 
   const qty = await addInventory(userId, itemId, 1);
-  // Cap cosmetics / avatars at 1 (decorations stack).
-  if ((item.slot === "avatar" || item.kind === "cosmetic") && qty > 1) {
+  // Cap cosmetics / avatars / accessories at 1 (decorations stack).
+  if (
+    (item.slot === "avatar" ||
+      item.slot === "accessory" ||
+      item.kind === "cosmetic") &&
+    qty > 1
+  ) {
     const db = getDb();
     const row = await db.query.coinInventory.findFirst({
       where: and(
@@ -383,6 +398,84 @@ export async function buyShopItem(userId: string, itemId: string) {
     spent,
     xpEarned,
   };
+}
+
+/** Grant a cosmetic item (avatar/accessory). Idempotent when already owned. */
+export async function grantCosmeticItem(userId: string, itemId: string) {
+  const item = getShopItem(itemId);
+  if (!item || item.kind !== "cosmetic") {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+  const owned = await getInventoryQty(userId, itemId);
+  if (owned >= 1) {
+    return {
+      ok: true as const,
+      itemId,
+      granted: false as const,
+      qty: owned,
+    };
+  }
+  const qty = await addInventory(userId, itemId, 1);
+  return {
+    ok: true as const,
+    itemId,
+    granted: true as const,
+    qty: Math.min(qty, 1),
+  };
+}
+
+export async function userOwnsAccessory(userId: string, accessoryId: string) {
+  const item = getAccessoryItem(accessoryId);
+  if (!item) return false;
+  return (await getInventoryQty(userId, accessoryId)) > 0;
+}
+
+export async function getEquippedAccessory(
+  userId: string,
+): Promise<string | null> {
+  const db = getDb();
+  const row = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { equippedAccessoryId: true },
+  });
+  return resolveAccessoryId(row?.equippedAccessoryId);
+}
+
+export async function listOwnedAccessoryIds(
+  userId: string,
+): Promise<string[]> {
+  const inv = await listCoinInventory(userId);
+  const owned: string[] = [];
+  for (const item of inv) {
+    if (getAccessoryItem(item.itemId)) owned.push(item.itemId);
+  }
+  return owned;
+}
+
+export async function equipAccessory(userId: string, accessoryId: string) {
+  const item = getAccessoryItem(accessoryId);
+  if (!item) {
+    return { ok: false as const, reason: "invalid" as const };
+  }
+  const owns = await userOwnsAccessory(userId, accessoryId);
+  if (!owns) {
+    return { ok: false as const, reason: "not_owned" as const };
+  }
+  const db = getDb();
+  await db
+    .update(user)
+    .set({ equippedAccessoryId: accessoryId, updatedAt: new Date() })
+    .where(eq(user.id, userId));
+  return { ok: true as const, accessoryId };
+}
+
+export async function unequipAccessory(userId: string) {
+  const db = getDb();
+  await db
+    .update(user)
+    .set({ equippedAccessoryId: null, updatedAt: new Date() })
+    .where(eq(user.id, userId));
+  return { ok: true as const, accessoryId: null };
 }
 
 export async function userOwnsAvatar(userId: string, avatarId: string) {

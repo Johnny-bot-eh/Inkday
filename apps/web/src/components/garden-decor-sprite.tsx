@@ -82,6 +82,48 @@ export function GardenDecorSprite({ itemId, tone, className }: Props) {
       return <ObeliskSprite className={className} />;
     case "deco_mythic_gate":
       return <MythicGateSprite className={className} />;
+    case "deco_grass_tuft":
+    case "deco_twig":
+    case "deco_fern_pot":
+    case "deco_snail_shell":
+    case "deco_ivy_pot":
+      return <GenericPlantSprite className={className} tone={tone} />;
+    case "deco_wheelbarrow":
+      return <WheelbarrowSprite className={className} />;
+    case "deco_beehive":
+      return <BeehiveSprite className={className} />;
+    case "deco_orchid":
+      return <OrchidSprite className={className} />;
+    case "deco_hammock":
+      return <HammockSprite className={className} />;
+    case "deco_scarecrow":
+      return <ScarecrowSprite className={className} />;
+    case "deco_koi_bridge":
+      return <KoiBridgeSprite className={className} />;
+    case "deco_lily_pad":
+      return <LilyPadSprite className={className} />;
+    case "deco_dragonfly":
+      return <DragonflySprite className={className} />;
+    case "deco_gazebo_mini":
+      return <GazeboSprite className={className} />;
+    case "deco_moon_gate":
+      return <MoonGateSprite className={className} />;
+    case "deco_maple":
+      return <MapleSprite className={className} />;
+    case "deco_bamboo":
+      return <BambooSprite className={className} />;
+    case "deco_firefly_jar":
+      return <FireflyJarSprite className={className} />;
+    case "deco_snow_lantern":
+      return <SnowLanternSprite className={className} />;
+    case "deco_harvest_wreath":
+      return <HarvestWreathSprite className={className} />;
+    case "deco_aurora_spire":
+      return <AuroraSpireSprite className={className} />;
+    case "deco_starfall_orb":
+      return <StarfallOrbSprite className={className} />;
+    case "deco_eternal_fountain":
+      return <EternalFountainSprite className={className} />;
     default:
       return <GenericPlantSprite className={className} tone={tone} />;
   }
@@ -715,6 +757,210 @@ function GenericPlantSprite({
       />
       <ellipse cx="24" cy="36" rx="10" ry="6" fill={tone || "#4a7a42"} />
       <ellipse cx="40" cy="34" rx="9" ry="5" fill={tone || "#3d6b38"} />
+    </svg>
+  );
+}
+
+function WheelbarrowSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 72 56" className={className} aria-hidden>
+      <ellipse cx="36" cy="50" rx="20" ry="3" fill="#00000022" />
+      <path d="M14 38 H52 L48 28 H18 Z" fill="#8a5a30" />
+      <circle cx="48" cy="44" r="8" fill="#5a4030" stroke="#8a6a50" strokeWidth="2" />
+      <rect x="12" y="34" width="8" height="4" rx="1" fill="#6a5030" />
+    </svg>
+  );
+}
+
+function BeehiveSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 56" className={className} aria-hidden>
+      <ellipse cx="24" cy="50" rx="10" ry="3" fill="#00000022" />
+      <ellipse cx="24" cy="32" rx="14" ry="16" fill="#c9a227" />
+      <path d="M12 28 H36 M12 34 H36 M12 40 H36" stroke="#8a6a20" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function OrchidSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 64" className={className} aria-hidden>
+      <ellipse cx="24" cy="58" rx="8" ry="2.5" fill="#00000022" />
+      <path d="M24 58 V32" stroke="#3d6b38" strokeWidth="2" />
+      <ellipse cx="24" cy="26" rx="10" ry="8" fill="#8a4aaa" />
+      <ellipse cx="20" cy="22" rx="4" ry="6" fill="#b06acc" />
+      <ellipse cx="28" cy="22" rx="4" ry="6" fill="#b06acc" />
+    </svg>
+  );
+}
+
+function HammockSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 48" className={className} aria-hidden>
+      <line x1="8" y1="8" x2="8" y2="32" stroke="#6a5030" strokeWidth="3" />
+      <line x1="88" y1="8" x2="88" y2="32" stroke="#6a5030" strokeWidth="3" />
+      <path d="M8 16 Q48 36 88 16" fill="none" stroke="#c45c6a" strokeWidth="6" />
+      <path d="M8 20 Q48 40 88 20" fill="#d46a7a" opacity="0.6" />
+    </svg>
+  );
+}
+
+function ScarecrowSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 72" className={className} aria-hidden>
+      <ellipse cx="24" cy="66" rx="10" ry="3" fill="#00000022" />
+      <line x1="24" y1="20" x2="24" y2="58" stroke="#8a6a30" strokeWidth="3" />
+      <line x1="8" y1="32" x2="40" y2="32" stroke="#8a6a30" strokeWidth="3" />
+      <circle cx="24" cy="16" r="8" fill="#c9a88a" />
+      <path d="M16 12 L32 12 L28 8 L20 8 Z" fill="#8a5a30" />
+    </svg>
+  );
+}
+
+function KoiBridgeSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 56" className={className} aria-hidden>
+      <ellipse cx="48" cy="48" rx="36" ry="6" fill="#3d6f8f" opacity="0.5" />
+      <path d="M12 40 Q48 8 84 40" fill="none" stroke="#8a5a30" strokeWidth="5" />
+      <path d="M16 38 Q48 12 80 38" fill="none" stroke="#c9a88a" strokeWidth="3" />
+    </svg>
+  );
+}
+
+function LilyPadSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 48" className={className} aria-hidden>
+      <ellipse cx="32" cy="36" rx="22" ry="8" fill="#3d6f8f" opacity="0.4" />
+      <ellipse cx="28" cy="32" rx="12" ry="6" fill="#4a8a42" />
+      <ellipse cx="40" cy="34" rx="10" ry="5" fill="#3d7a38" />
+      <circle cx="32" cy="28" r="4" fill="#f0e8f4" />
+    </svg>
+  );
+}
+
+function DragonflySprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} aria-hidden>
+      <line x1="24" y1="12" x2="24" y2="36" stroke="#5a9aaa" strokeWidth="2" />
+      <ellipse cx="16" cy="18" rx="10" ry="4" fill="#7ec8e8" opacity="0.7" />
+      <ellipse cx="32" cy="18" rx="10" ry="4" fill="#7ec8e8" opacity="0.7" />
+      <circle cx="24" cy="10" r="3" fill="#5a9aaa" />
+    </svg>
+  );
+}
+
+function GazeboSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 72 64" className={className} aria-hidden>
+      <ellipse cx="36" cy="58" rx="18" ry="3" fill="#00000022" />
+      <polygon points="36,8 8,28 64,28" fill="#8a5a30" />
+      <rect x="14" y="28" width="44" height="28" fill="none" stroke="#c9a88a" strokeWidth="2" />
+      <line x1="36" y1="8" x2="36" y2="56" stroke="#6a5030" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function MoonGateSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 72" className={className} aria-hidden>
+      <ellipse cx="32" cy="66" rx="14" ry="3" fill="#00000022" />
+      <circle cx="32" cy="36" r="24" fill="none" stroke="#8a8680" strokeWidth="5" />
+      <circle cx="32" cy="36" r="16" fill="none" stroke="#c9c4b5" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function MapleSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 56 80" className={className} aria-hidden>
+      <ellipse cx="28" cy="74" rx="12" ry="3" fill="#00000022" />
+      <rect x="26" y="40" width="4" height="34" fill="#6a5030" />
+      <circle cx="28" cy="28" r="18" fill="#c45c26" />
+      <circle cx="22" cy="22" r="10" fill="#d47820" />
+      <circle cx="34" cy="24" r="9" fill="#b4531f" />
+    </svg>
+  );
+}
+
+function BambooSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 80" className={className} aria-hidden>
+      <ellipse cx="24" cy="74" rx="10" ry="3" fill="#00000022" />
+      <line x1="16" y1="74" x2="16" y2="16" stroke="#4a8a42" strokeWidth="4" />
+      <line x1="24" y1="74" x2="24" y2="12" stroke="#3d7a38" strokeWidth="4" />
+      <line x1="32" y1="74" x2="32" y2="18" stroke="#4a8a42" strokeWidth="4" />
+      <line x1="14" y1="28" x2="34" y2="24" stroke="#5a9a48" strokeWidth="2" />
+      <line x1="14" y1="44" x2="34" y2="40" stroke="#5a9a48" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function FireflyJarSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 56" className={className} aria-hidden>
+      <ellipse cx="20" cy="50" rx="8" ry="2.5" fill="#00000022" />
+      <rect x="12" y="16" width="16" height="32" rx="4" fill="#8aa0a8" opacity="0.5" />
+      <circle cx="16" cy="28" r="2" fill="#e8d48b" />
+      <circle cx="24" cy="34" r="1.5" fill="#e8d48b" />
+      <circle cx="18" cy="38" r="1.5" fill="#ffba08" />
+      <rect x="14" y="10" width="12" height="6" rx="2" fill="#8a6a30" />
+    </svg>
+  );
+}
+
+function SnowLanternSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 64" className={className} aria-hidden>
+      <ellipse cx="24" cy="58" rx="8" ry="2.5" fill="#00000022" />
+      <rect x="20" y="48" width="8" height="10" fill="#8a8680" />
+      <path d="M14 24 Q14 14 24 12 Q34 14 34 24 V40 Q34 46 24 48 Q14 46 14 40Z" fill="#e8eef1" />
+      <ellipse cx="24" cy="30" rx="6" ry="8" fill="#fff6c8" opacity="0.8" />
+    </svg>
+  );
+}
+
+function HarvestWreathSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 56 56" className={className} aria-hidden>
+      <circle cx="28" cy="28" r="18" fill="none" stroke="#c45c26" strokeWidth="6" />
+      <circle cx="20" cy="20" r="3" fill="#8a5a30" />
+      <circle cx="36" cy="18" r="3" fill="#c9a227" />
+      <circle cx="38" cy="34" r="3" fill="#8a5a30" />
+    </svg>
+  );
+}
+
+function AuroraSpireSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 80" className={className} aria-hidden>
+      <ellipse cx="24" cy="74" rx="14" ry="3.5" fill="#00000028" />
+      <path d="M12 70 L24 6 L36 70 Z" fill="#2a6a6a" />
+      <path d="M18 70 L24 20 L30 70 Z" fill="#5eead4" opacity="0.7" />
+      <circle cx="24" cy="12" r="4" fill="#b0fff0" />
+    </svg>
+  );
+}
+
+function StarfallOrbSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 56" className={className} aria-hidden>
+      <ellipse cx="24" cy="50" rx="10" ry="3" fill="#00000022" />
+      <line x1="24" y1="50" x2="24" y2="38" stroke="#8a7abc" strokeWidth="2" />
+      <circle cx="24" cy="24" r="14" fill="#b9a6ff" opacity="0.8" />
+      <circle cx="24" cy="24" r="8" fill="#e8d8ff" />
+      <circle cx="20" cy="20" r="2" fill="#fff" />
+    </svg>
+  );
+}
+
+function EternalFountainSprite({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 72" className={className} aria-hidden>
+      <ellipse cx="32" cy="66" rx="20" ry="4" fill="#3d6f8f" opacity="0.5" />
+      <ellipse cx="32" cy="58" rx="18" ry="6" fill="#5a8aaa" />
+      <rect x="28" y="24" width="8" height="34" fill="#9aa0a8" />
+      <ellipse cx="32" cy="22" rx="12" ry="6" fill="#8a9098" />
+      <path d="M28 18 Q32 8 36 18" fill="none" stroke="#7ec8e8" strokeWidth="2" />
     </svg>
   );
 }

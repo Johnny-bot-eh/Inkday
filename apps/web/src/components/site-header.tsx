@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { ensureUserStats } from "@/lib/game-service";
-import { getCoinBalance, getEquippedAvatar } from "@/lib/coin-service";
+import { getCoinBalance, getEquippedAccessory, getEquippedAvatar } from "@/lib/coin-service";
 import { getAccountXpSummary } from "@/lib/pet-service";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AccountXpChip } from "@/components/account-xp-chip";
@@ -31,6 +31,7 @@ export async function SiteHeader() {
   }
   let coins: number | null = null;
   let avatarId = "avatar_default";
+  let accessoryId: string | null = null;
   let accountXp: Awaited<ReturnType<typeof getAccountXpSummary>> | null = null;
   if (session?.user) {
     try {
@@ -42,6 +43,11 @@ export async function SiteHeader() {
       avatarId = await getEquippedAvatar(session.user.id);
     } catch {
       avatarId = "avatar_default";
+    }
+    try {
+      accessoryId = await getEquippedAccessory(session.user.id);
+    } catch {
+      accessoryId = null;
     }
     try {
       accountXp = await getAccountXpSummary(session.user.id);
@@ -86,6 +92,7 @@ export async function SiteHeader() {
               {accountXp && <AccountXpChip initial={accountXp} />}
               <HeaderAvatarChip
                 initialAvatarId={avatarId}
+                initialAccessoryId={accessoryId}
                 name={session.user.name.split(" ")[0] ?? "You"}
               />
             </>

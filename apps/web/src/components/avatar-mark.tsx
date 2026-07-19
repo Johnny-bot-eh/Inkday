@@ -1,45 +1,262 @@
 "use client";
 
-import { resolveAvatarId } from "@daily-puzzle/puzzle-core";
+import { resolveAccessoryId, resolveAvatarId } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   avatarId?: string | null;
+  accessoryId?: string | null;
+  animate?: boolean;
   size?: number;
   className?: string;
   title?: string;
 };
 
+function avatarAnimClass(id: string): string {
+  if (id.startsWith("avatar_plus_") || id.startsWith("avatar_badge_")) {
+    return "avatar-sparkle";
+  }
+  return "avatar-idle";
+}
+
 /** Distinctive circular Inkday avatar marks (SVG, no uploads). */
 export function AvatarMark({
   avatarId,
+  accessoryId,
+  animate = true,
   size = 40,
   className = "",
   title,
 }: Props) {
   const id = resolveAvatarId(avatarId);
+  const accessory = resolveAccessoryId(accessoryId);
+  const animClass = animate ? avatarAnimClass(id) : "";
+
   return (
     <span
-      className={`relative inline-block shrink-0 overflow-hidden rounded-full border border-[var(--line)] leading-none ${className}`}
+      className={`relative inline-block shrink-0 overflow-visible leading-none ${className}`}
       style={{ width: size, height: size }}
       title={title}
       aria-hidden={title ? undefined : true}
     >
-      <svg
-        viewBox="0 0 64 64"
-        className="absolute inset-0 block h-full w-full"
-        preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg"
-        role="img"
-        aria-label={title}
+      <span
+        className={`absolute inset-0 overflow-hidden rounded-full border border-[var(--line)] ${animClass}`}
       >
-        <AvatarArt id={id} />
-      </svg>
+        <svg
+          viewBox="0 0 64 64"
+          className="absolute inset-0 block h-full w-full"
+          preserveAspectRatio="xMidYMid slice"
+          xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-label={title}
+        >
+          <AvatarArt id={id} />
+        </svg>
+      </span>
+      {accessory && (
+        <svg
+          viewBox="0 0 64 64"
+          className="pointer-events-none absolute inset-0 block h-full w-full overflow-visible"
+          preserveAspectRatio="xMidYMid meet"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
+        >
+          <AccessoryOverlay id={accessory} />
+        </svg>
+      )}
     </span>
   );
 }
 
+function AccessoryOverlay({ id }: { id: string }) {
+  if (id.startsWith("accessory_ribbon_")) {
+    const color =
+      id === "accessory_ribbon_junior"
+        ? "#5eead4"
+        : id === "accessory_ribbon_investigator"
+          ? "#7ec8e8"
+          : id === "accessory_ribbon_master"
+            ? "#c9a227"
+            : id === "accessory_ribbon_legendary"
+              ? "#e85d04"
+              : id === "accessory_ribbon_casefile"
+                ? "#c45c8a"
+                : "#e85d04";
+    return (
+      <>
+        <path
+          d="M18 52 L14 64 L26 58 L32 64 L38 58 L50 64 L46 52 Z"
+          fill={color}
+          opacity="0.95"
+        />
+        <circle cx="32" cy="50" r="6" fill={color} />
+        <circle cx="32" cy="50" r="3" fill="#1a1210" opacity="0.35" />
+      </>
+    );
+  }
+  if (id === "accessory_crown_gold") {
+    return (
+      <>
+        <path
+          d="M14 18 L20 8 L26 16 L32 6 L38 16 L44 8 L50 18 L50 24 L14 24 Z"
+          fill="#c9a227"
+          stroke="#e8d48b"
+          strokeWidth="1.5"
+        />
+        <circle cx="32" cy="14" r="2.5" fill="#ffba08" />
+      </>
+    );
+  }
+  if (id === "accessory_crown_silver") {
+    return (
+      <>
+        <path
+          d="M16 18 L22 10 L28 16 L32 8 L36 16 L42 10 L48 18 L48 24 L16 24 Z"
+          fill="#9aa0a8"
+          stroke="#e8eef1"
+          strokeWidth="1.5"
+        />
+        <ellipse cx="32" cy="14" rx="4" ry="2" fill="#c9d4e8" />
+      </>
+    );
+  }
+  if (id === "accessory_crown_bronze") {
+    return (
+      <>
+        <path
+          d="M18 18 L24 12 L30 17 L32 10 L34 17 L40 12 L46 18 L46 24 L18 24 Z"
+          fill="#8a5a30"
+          stroke="#c9a88a"
+          strokeWidth="1.5"
+        />
+        <rect x="28" y="12" width="8" height="4" rx="1" fill="#c9a227" />
+      </>
+    );
+  }
+  if (id === "accessory_frame_ember") {
+    return (
+      <>
+        <circle
+          cx="32"
+          cy="32"
+          r="30"
+          fill="none"
+          stroke="#e85d04"
+          strokeWidth="3"
+        />
+        <circle
+          cx="32"
+          cy="32"
+          r="27"
+          fill="none"
+          stroke="#f48c06"
+          strokeWidth="1.5"
+          opacity="0.7"
+        />
+      </>
+    );
+  }
+  return null;
+}
+
 function AvatarArt({ id }: { id: string }) {
   switch (id) {
+    case "avatar_badge_gumshoe":
+      return (
+        <>
+          <rect width="64" height="64" fill="#141820" />
+          <circle cx="32" cy="32" r="22" fill="#2a3142" stroke="#94a3b8" strokeWidth="2" />
+          <rect x="22" y="26" width="20" height="14" rx="2" fill="#c9d4e8" opacity="0.8" />
+          <circle cx="32" cy="33" r="4" fill="#e85d04" />
+          <path d="M26 38 H38" stroke="#7a889e" strokeWidth="2" />
+        </>
+      );
+    case "avatar_badge_sherlock":
+      return (
+        <>
+          <rect width="64" height="64" fill="#1a1410" />
+          <circle cx="32" cy="34" r="18" fill="#c9a88a" />
+          <path d="M18 22 Q32 8 46 22 L42 28 Q32 18 22 28 Z" fill="#5a4030" />
+          <circle cx="26" cy="34" r="2" fill="#1a1210" />
+          <circle cx="38" cy="34" r="2" fill="#1a1210" />
+          <path d="M28 42 Q32 46 36 42" fill="none" stroke="#8a6a50" strokeWidth="1.5" />
+        </>
+      );
+    case "avatar_badge_logic":
+      return (
+        <>
+          <rect width="64" height="64" fill="#101820" />
+          <rect x="14" y="14" width="16" height="16" rx="2" fill="#34d399" opacity="0.8" />
+          <rect x="34" y="14" width="16" height="16" rx="2" fill="#6ee7b7" opacity="0.6" />
+          <rect x="14" y="34" width="16" height="16" rx="2" fill="#6ee7b7" opacity="0.6" />
+          <rect x="34" y="34" width="16" height="16" rx="2" fill="#34d399" opacity="0.9" />
+        </>
+      );
+    case "avatar_badge_einstein":
+      return (
+        <>
+          <rect width="64" height="64" fill="#1a1810" />
+          <ellipse cx="32" cy="36" rx="20" ry="18" fill="#e8e0d0" />
+          <path
+            d="M14 28 Q10 18 20 14 Q32 8 44 14 Q54 18 50 28"
+            fill="#c9c4b5"
+            stroke="#9a9690"
+            strokeWidth="1"
+          />
+          <circle cx="26" cy="36" r="2.5" fill="#1a1210" />
+          <circle cx="38" cy="36" r="2.5" fill="#1a1210" />
+          <path d="M24 46 Q32 52 40 46" fill="none" stroke="#8a8680" strokeWidth="2" />
+        </>
+      );
+    case "avatar_badge_master":
+      return (
+        <>
+          <rect width="64" height="64" fill="#141018" />
+          <path
+            d="M32 10 L38 26 L56 26 L42 36 L48 52 L32 42 L16 52 L22 36 L8 26 L26 26 Z"
+            fill="#c9a227"
+          />
+          <circle cx="32" cy="32" r="8" fill="#1a1210" />
+          <text x="32" y="36" textAnchor="middle" fill="#ffba08" fontSize="10" fontWeight="700">
+            ★
+          </text>
+        </>
+      );
+    case "avatar_badge_legend":
+      return (
+        <>
+          <rect width="64" height="64" fill="#1a0c14" />
+          <circle cx="32" cy="32" r="22" fill="none" stroke="#e85d04" strokeWidth="3" />
+          <path
+            d="M32 14 L36 28 L50 28 L39 36 L44 50 L32 42 L20 50 L25 36 L14 28 L28 28 Z"
+            fill="#ffba08"
+          />
+        </>
+      );
+    case "avatar_badge_season":
+      return (
+        <>
+          <rect width="64" height="64" fill="#101820" />
+          <circle cx="32" cy="32" r="20" fill="#1e2a4a" />
+          <circle cx="20" cy="22" r="4" fill="#5eead4" />
+          <circle cx="44" cy="24" r="4" fill="#f48c06" />
+          <circle cx="24" cy="44" r="4" fill="#c45c8a" />
+          <circle cx="42" cy="42" r="4" fill="#7ec8e8" />
+        </>
+      );
+    case "avatar_badge_weekly":
+      return (
+        <>
+          <rect width="64" height="64" fill="#12161c" />
+          <circle cx="32" cy="32" r="20" fill="#2a3142" stroke="#c9a227" strokeWidth="2" />
+          <text x="32" y="28" textAnchor="middle" fill="#e8d48b" fontSize="9" fontWeight="700">
+            W
+          </text>
+          <path d="M20 40 H44" stroke="#c9a227" strokeWidth="2" />
+          <circle cx="24" cy="40" r="3" fill="#e85d04" />
+          <circle cx="32" cy="40" r="3" fill="#ffba08" />
+          <circle cx="40" cy="40" r="3" fill="#c9d4e8" />
+        </>
+      );
     case "avatar_ink":
       return (
         <>

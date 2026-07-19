@@ -38,7 +38,9 @@ export default async function ProfilePage() {
     premium,
     notifications,
     equippedAvatarId,
+    equippedAccessoryId,
     ownedAvatarIds,
+    ownedAccessoryIds,
   } = profile;
 
   let coinBalance: number | null = null;
@@ -69,7 +71,9 @@ export default async function ProfilePage() {
         recent={recent}
         isPlus={premiumView.active}
         equippedAvatarId={equippedAvatarId}
+        equippedAccessoryId={equippedAccessoryId}
         ownedAvatarIds={ownedAvatarIds}
+        ownedAccessoryIds={ownedAccessoryIds}
         coinBalance={coinBalance}
       />
       <AccountPanels

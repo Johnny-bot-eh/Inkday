@@ -12,6 +12,10 @@ import {
   collectionIdForDate,
   evaluateAchievements,
   evaluateUnlocks,
+  avatarRewardForAchievement,
+  accessoryRewardForMilestone,
+  accessoryRewardForTournament,
+  caseFileCompleteAccessoryId,
   getMonthlyCollection,
   isAchievementVisible,
   isNightOwlClear,
@@ -451,6 +455,15 @@ async function syncProgression(
     });
   }
 
+  const { grantCosmeticItem } = await import("@/lib/coin-service");
+  const grantedCosmetics: string[] = [];
+  for (const achievementId of newAchievementIds) {
+    const avatarId = avatarRewardForAchievement(achievementId);
+    if (!avatarId) continue;
+    const grant = await grantCosmeticItem(userId, avatarId);
+    if (grant.ok && grant.granted) grantedCosmetics.push(avatarId);
+  }
+
   return {
     counters,
     newAchievements: ACHIEVEMENTS.filter((a) =>
@@ -459,6 +472,7 @@ async function syncProgression(
     newUnlocks: UNLOCKS.filter((u) => newUnlockIds.includes(u.id)),
     achievementIds: [...earnedSet, ...newAchievementIds],
     unlockIds: [...unlockedSet, ...newUnlockIds],
+    grantedCosmetics,
   };
 }
 
@@ -525,6 +539,7 @@ export async function getLeaderboard(opts: {
       name: user.name,
       displayName: user.displayName,
       equippedAvatarId: user.equippedAvatarId,
+      equippedAccessoryId: user.equippedAccessoryId,
       dayScore: sql<number>`sum(${playResult.score})`.mapWith(Number),
       wins: sql<number>`sum(case when ${playResult.won} then 1 else 0 end)`.mapWith(
         Number,
@@ -538,6 +553,7 @@ export async function getLeaderboard(opts: {
       user.name,
       user.displayName,
       user.equippedAvatarId,
+      user.equippedAccessoryId,
     )
     .orderBy(desc(sql`sum(${playResult.score})`))
     .limit(limit);
@@ -802,6 +818,7 @@ export async function getProfile(userId: string) {
       id: f.other!.id,
       name: f.other!.displayName || f.other!.name,
       equippedAvatarId: f.other!.equippedAvatarId ?? null,
+      equippedAccessoryId: f.other!.equippedAccessoryId ?? null,
     }));
 
   const earned = new Set(achievementIds);
@@ -811,12 +828,14 @@ export async function getProfile(userId: string) {
     ensureNotificationPrefs(userId),
   ]);
 
-  const { getEquippedAvatar, listOwnedAvatarIds } = await import(
-    "@/lib/coin-service"
-  );
-  const [equippedAvatarId, ownedAvatarIds] = await Promise.all([
+  const { getEquippedAvatar, getEquippedAccessory, listOwnedAvatarIds, listOwnedAccessoryIds } =
+    await import("@/lib/coin-service");
+  const [equippedAvatarId, equippedAccessoryId, ownedAvatarIds, ownedAccessoryIds] =
+    await Promise.all([
     getEquippedAvatar(userId),
+    getEquippedAccessory(userId),
     listOwnedAvatarIds(userId),
+    listOwnedAccessoryIds(userId),
   ]);
 
   return {
@@ -826,7 +845,9 @@ export async function getProfile(userId: string) {
     premium,
     notifications,
     equippedAvatarId,
+    equippedAccessoryId,
     ownedAvatarIds,
+    ownedAccessoryIds,
     insights: {
       averageCompletionMs:
         timedPlays > 0 ? Math.round(totalElapsed / timedPlays) : null,
@@ -1140,6 +1161,11 @@ export async function settleWeeklyTournaments(opts?: {
           .where(eq(userStats.userId, row.userId));
       }
       await syncProgression(row.userId);
+      const accessoryId = accessoryRewardForTournament(badge);
+      if (accessoryId) {
+        const { grantCosmeticItem } = await import("@/lib/coin-service");
+        await grantCosmeticItem(row.userId, accessoryId);
+      }
       awards.push({
         userId: row.userId,
         place,
@@ -1216,6 +1242,11 @@ export async function settleWeeklyTournaments(opts?: {
             .where(eq(userStats.userId, row.userId));
         }
         await syncProgression(row.userId);
+        const friendAccessoryId = accessoryRewardForTournament(badge);
+        if (friendAccessoryId) {
+          const { grantCosmeticItem } = await import("@/lib/coin-service");
+          await grantCosmeticItem(row.userId, friendAccessoryId);
+        }
         if (row.userId === opts.forUserId) {
           awards.push({
             userId: row.userId,
@@ -1811,6 +1842,20 @@ export async function submitMonthlyClear(opts: {
       title,
     });
     newBadges.push({ badgeId, title });
+
+    const accessoryId = accessoryRewardForMilestone(milestone.id);
+    if (accessoryId) {
+      const { grantCosmeticItem } = await import("@/lib/coin-service");
+      await grantCosmeticItem(opts.userId, accessoryId);
+    }
+  }
+
+  if (
+    cleared >= 60 &&
+    newlyEarned.some((m) => m.id === "legendary")
+  ) {
+    const { grantCosmeticItem } = await import("@/lib/coin-service");
+    await grantCosmeticItem(opts.userId, caseFileCompleteAccessoryId());
   }
 
   if (totalBonus > 0) {
