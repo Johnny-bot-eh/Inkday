@@ -20,8 +20,10 @@ import {
   getWordleConfig,
   isMonthlyOnlyType,
   isValidWordleGuess,
+  timedClearBreakdown,
   type Difficulty,
   type MonthlyPuzzleType,
+  type ScoreBreakdown,
 } from "@daily-puzzle/puzzle-core";
 import {
   getMonthlyCompletion,
@@ -48,8 +50,9 @@ type Body = {
   outcome?: MonthlyForfeitOutcome;
 };
 
-function scoreFor(difficulty: Difficulty, won: boolean): number {
-  return won ? BASE_POINTS[difficulty] : 0;
+function clampElapsed(ms: unknown): number | undefined {
+  if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) return undefined;
+  return Math.min(ms, 1000 * 60 * 60 * 6);
 }
 
 function verifyExisting(
@@ -162,7 +165,7 @@ export async function POST(req: Request) {
       puzzleType: slot.puzzleType,
       difficulty: slot.difficulty,
       outcome,
-      meta: { elapsedMs: body.elapsedMs },
+      meta: { elapsedMs: clampElapsed(body.elapsedMs) },
     });
     if (!result.ok) {
       return NextResponse.json({ error: result.reason }, { status: 400 });
@@ -215,7 +218,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const score = scoreFor(slot.difficulty, true);
+  const elapsedMs = clampElapsed(body.elapsedMs);
+  const breakdown: ScoreBreakdown = timedClearBreakdown({
+    base: BASE_POINTS[slot.difficulty],
+    elapsedMs,
+  });
+  const score = breakdown.total;
   const result = await submitMonthlyClear({
     userId: session.user.id,
     collectionId,
@@ -224,7 +232,7 @@ export async function POST(req: Request) {
     difficulty: slot.difficulty,
     score,
     won: true,
-    meta: { elapsedMs: body.elapsedMs },
+    meta: { elapsedMs, breakdown, timeBonus: breakdown.timeBonus },
   });
 
   if (!result.ok) {
@@ -233,6 +241,9 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     score: result.score,
+    timeBonus: breakdown.timeBonus,
+    breakdown,
+    elapsedMs,
     cleared: result.cleared,
     total: collection.puzzles.length,
     alreadyCleared: result.alreadyCleared,

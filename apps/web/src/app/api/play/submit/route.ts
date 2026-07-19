@@ -24,9 +24,7 @@ import {
   isSeasonActiveOn,
   isValidWordleGuess,
   normalizeSeasonId,
-  noHintsBonus,
   parseWordleCategory,
-  perfectBonus,
   scoreAcrostic,
   scoreAnagram,
   scoreCryptogram,
@@ -34,13 +32,10 @@ import {
   scoreLogic,
   scoreWordLadder,
   scoreWordle,
-  seasonBonus,
   plusBonus,
   sumScore,
-  timeBonus,
+  timedClearBreakdown,
   todayKey,
-  weeklyBonus,
-  monthlyBonus,
   wordleCategorySeasonId,
   type Difficulty,
   type PuzzleType,
@@ -122,14 +117,11 @@ function buildBreakdown(opts: {
       plusBonus: 0,
     });
   }
-  return sumScore({
+  return timedClearBreakdown({
     base: opts.base,
-    timeBonus: timeBonus(opts.elapsedMs),
-    perfectBonus: perfectBonus(opts.isPerfect),
-    noHintsBonus: noHintsBonus(true),
-    weeklyBonus: weeklyBonus(),
-    monthlyBonus: monthlyBonus(),
-    seasonBonus: seasonBonus(Boolean(opts.seasonActive)),
+    elapsedMs: opts.elapsedMs,
+    isPerfect: opts.isPerfect,
+    seasonActive: opts.seasonActive,
     plusBonus: plusBonus(Boolean(opts.plusActive)),
   });
 }

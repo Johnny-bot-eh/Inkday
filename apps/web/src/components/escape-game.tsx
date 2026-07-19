@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { markBoardPlayed } from "@/lib/played-boards";
-import { submitMonthlyFromGame, forfeitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
+import { caseFileClearLabel, submitMonthlyFromGame, forfeitMonthlyFromGame, type MonthlyPlayContext } from "@/lib/monthly-submit";
 import { PlayTimer, formatDuration, usePlayTimer } from "@/components/play-timer";
 import {
   PlayResultsCard,
@@ -190,6 +190,7 @@ export function EscapeGame({
           won: true,
           elapsedMs,
           score: mres.data.score,
+          breakdown: mres.data.breakdown,
           answer: room.answer,
           explanation: room.explanation,
           coinsEarned: mres.data.coinsEarned,
@@ -204,11 +205,7 @@ export function EscapeGame({
         if (typeof mres.data.coinBalance === "number") {
           emitCoinBalance(mres.data.coinBalance);
         }
-        setStatus(
-          mres.data.totalBonus
-            ? `Case File · ${mres.data.score} pts · bonus +${mres.data.totalBonus}`
-            : `Case File · ${mres.data.score} pts`,
-        );
+        setStatus(caseFileClearLabel(mres.data));
         router.refresh();
       } catch {
         setStatus("Network error saving result");

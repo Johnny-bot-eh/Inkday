@@ -17,13 +17,20 @@ export type LogicPuzzle = {
   clues: string[];
   question: string;
   answer: string;
+  /** What the final guess dropdown offers (subjects on easy; a place trait on medium+). */
+  answerChoices: string[];
+  /** Dropdown prompt for the final guess. */
+  answerPrompt: string;
   /** subject -> traitId -> value */
   solution: Record<string, Record<string, string>>;
   /** How the answer follows from the clues (shown after clear). */
   explanation?: string;
 };
 
-type LogicTemplate = Omit<LogicPuzzle, "id"> & {
+type LogicTemplate = Omit<
+  LogicPuzzle,
+  "id" | "answerChoices" | "answerPrompt" | "explanation"
+> & {
   slug: string;
   /** Hard boards use deduction-only templates instead of direct lookup clues. */
   tier?: "standard" | "deduction";
@@ -440,6 +447,44 @@ const SIZE_FOR: Record<Difficulty, number[]> = {
   impossible: [4],
 };
 
+const LOCATION_TRAIT_IDS = new Set([
+  "room",
+  "stall",
+  "seat",
+  "desk",
+  "place",
+  "spot",
+  "booth",
+  "table",
+  "aisle",
+  "dock",
+  "bay",
+  "yard",
+  "car",
+  "easel",
+]);
+
+function locationTraitFor(template: LogicTemplate): LogicCategory {
+  const byId = template.traits.find((t) => LOCATION_TRAIT_IDS.has(t.id));
+  if (byId) return byId;
+  const byLabel = template.traits.find((t) =>
+    /room|stall|seat|desk|place|location|booth|table|aisle|dock|bay/i.test(
+      t.label,
+    ),
+  );
+  return byLabel ?? template.traits[0]!;
+}
+
+/** Medium+ boards ask for a place/location instead of the suspect’s name. */
+function usesLocationAnswer(difficulty: Difficulty): boolean {
+  return (
+    difficulty === "medium" ||
+    difficulty === "hard" ||
+    difficulty === "obscure" ||
+    difficulty === "impossible"
+  );
+}
+
 export function getLogicPuzzle(
   dateKey: string,
   difficulty: Difficulty,
@@ -475,6 +520,23 @@ export function getLogicPuzzle(
     ? `Limited-time event. ${template.synopsis}`
     : template.synopsis;
 
+  let question = template.question;
+  let answer = template.answer;
+  let answerChoices = [...template.subjects.values];
+  let answerPrompt = `Choose ${template.subjects.label.toLowerCase()}…`;
+
+  if (usesLocationAnswer(difficulty)) {
+    const place = locationTraitFor(template);
+    const culprit = template.answer;
+    const placeValue = template.solution[culprit]?.[place.id];
+    if (placeValue) {
+      question = `${template.question} Name the ${place.label.toLowerCase()} of the person responsible — not their name.`;
+      answer = placeValue;
+      answerChoices = [...place.values];
+      answerPrompt = `Choose ${place.label.toLowerCase()}…`;
+    }
+  }
+
   const puzzle: LogicPuzzle = {
     id: `${template.slug}-${seasonId ?? "std"}-${dateKey}-${difficulty}`,
     title,
@@ -482,8 +544,10 @@ export function getLogicPuzzle(
     subjects: template.subjects,
     traits: template.traits,
     clues,
-    question: template.question,
-    answer: template.answer,
+    question,
+    answer,
+    answerChoices,
+    answerPrompt,
     solution: template.solution,
   };
   puzzle.explanation = buildLogicExplanation(template.slug, puzzle);

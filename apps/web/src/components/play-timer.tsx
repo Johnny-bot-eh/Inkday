@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { timeBonusScheduleLabel } from "@daily-puzzle/puzzle-core";
 
 export function formatDuration(ms: number): string {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -64,6 +65,7 @@ export function PlayTimer({
   formatted: string;
   stopped?: boolean;
 }) {
+  const schedule = timeBonusScheduleLabel();
   return (
     <div
       className={[
@@ -71,7 +73,8 @@ export function PlayTimer({
         stopped ? "bg-mint/15 text-mint" : "bg-ink-2/80 text-paper",
       ].join(" ")}
       aria-live="polite"
-      aria-label={`Timer ${formatted}`}
+      aria-label={`Timer ${formatted}. Speed score points: ${schedule}`}
+      title={`Speed score points (not Ink Coins): ${schedule}. After 8 min: +0.`}
     >
       <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-fog">
         Time

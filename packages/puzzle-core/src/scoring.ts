@@ -177,15 +177,81 @@ export function isPerfectWordLadder(opts: {
   return opts.stepsUsed > 0 && opts.stepsUsed <= opts.optimalSteps;
 }
 
-/** Speed bonus from elapsed solve time (ms). */
+/** Speed bonus from elapsed solve time (ms). Faster clears earn more score points. */
+export const TIME_BONUS_TIERS = [
+  { maxSec: 30, bonus: 40 },
+  { maxSec: 60, bonus: 30 },
+  { maxSec: 120, bonus: 20 },
+  { maxSec: 180, bonus: 15 },
+  { maxSec: 300, bonus: 10 },
+  { maxSec: 480, bonus: 5 },
+] as const;
+
+/** Player-facing schedule for Speed score points (not Ink Coins). */
+export function timeBonusScheduleLabel(): string {
+  return TIME_BONUS_TIERS.map((t) => {
+    const label =
+      t.maxSec < 60
+        ? `≤${t.maxSec}s`
+        : t.maxSec % 60 === 0
+          ? `≤${t.maxSec / 60}m`
+          : `≤${Math.floor(t.maxSec / 60)}m${t.maxSec % 60}s`;
+    return `${label} +${t.bonus}`;
+  }).join(" · ");
+}
+
+export function timeBonusTierHint(
+  elapsedMs: number | undefined | null,
+): string {
+  const pts = timeBonus(elapsedMs);
+  if (pts > 0) {
+    const sec =
+      typeof elapsedMs === "number" ? Math.max(0, elapsedMs / 1000) : 0;
+    const tier = TIME_BONUS_TIERS.find((t) => sec <= t.maxSec);
+    if (tier) {
+      const label =
+        tier.maxSec < 60
+          ? `${tier.maxSec}s`
+          : tier.maxSec % 60 === 0
+            ? `${tier.maxSec / 60} min`
+            : `${Math.floor(tier.maxSec / 60)}m ${tier.maxSec % 60}s`;
+      return `Cleared within ${label}`;
+    }
+  }
+  return `No Speed pts after 8 min · ${timeBonusScheduleLabel()}`;
+}
+
 export function timeBonus(elapsedMs: number | undefined | null): number {
   if (elapsedMs == null || elapsedMs < 0) return 0;
   const sec = elapsedMs / 1000;
-  if (sec <= 30) return 40;
-  if (sec <= 60) return 30;
-  if (sec <= 120) return 20;
-  if (sec <= 180) return 10;
+  for (const tier of TIME_BONUS_TIERS) {
+    if (sec <= tier.maxSec) return tier.bonus;
+  }
   return 0;
+}
+
+/**
+ * Full score for a clear — always includes the shared time/speed bonus.
+ * Use for every puzzle type (daily + Case File) so speed applies uniformly.
+ */
+export function timedClearBreakdown(opts: {
+  base: number;
+  elapsedMs?: number | null;
+  isPerfect?: boolean;
+  seasonActive?: boolean;
+  /** Extra Plus points if any (currently always 0). */
+  plusBonus?: number;
+}): ScoreBreakdown {
+  return sumScore({
+    base: opts.base,
+    timeBonus: timeBonus(opts.elapsedMs),
+    perfectBonus: perfectBonus(Boolean(opts.isPerfect)),
+    noHintsBonus: noHintsBonus(true),
+    weeklyBonus: weeklyBonus(),
+    monthlyBonus: monthlyBonus(),
+    seasonBonus: seasonBonus(Boolean(opts.seasonActive)),
+    plusBonus: opts.plusBonus ?? 0,
+  });
 }
 
 export type StreakUpdate = {

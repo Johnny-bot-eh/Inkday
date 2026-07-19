@@ -43,6 +43,11 @@ export function CoinHistoryClient() {
           </span>{" "}
           Ink Coins
         </p>
+        <p className="mt-2 text-sm text-fog">
+          Clears pay a flat coin reward. Faster times add{" "}
+          <span className="text-paper">Speed score points</span>, not extra
+          coins (≤30s +40 pts · ≤1m +30 · ≤2m +20 · ≤3m +15 · ≤5m +10 · ≤8m +5).
+        </p>
         <Link href="/shop" className="mt-3 inline-block text-sm text-ember hover:underline">
           ← Shop
         </Link>

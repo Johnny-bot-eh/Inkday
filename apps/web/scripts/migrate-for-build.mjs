@@ -8,7 +8,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const migratePath = path.resolve(here, "../../packages/db/src/migrate.mjs");
+// apps/web/scripts → repo root → packages/db
+const migratePath = path.resolve(here, "../../../packages/db/src/migrate.mjs");
 
 const result = spawnSync(process.execPath, [migratePath], {
   stdio: "inherit",

@@ -7,6 +7,10 @@ import { getDb, getLibsqlClient, gardenPlacement, user, userGift } from "@daily-
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
+  MAX_COIN_GIFT,
+  MIN_COIN_GIFT,
+} from "@/lib/friend-gift-constants";
+import {
   consumeInventory,
   grantCoins,
   grantInventoryItem,
@@ -15,8 +19,7 @@ import {
 } from "@/lib/coin-service";
 import { areFriends } from "@/lib/game-service";
 
-export const MIN_COIN_GIFT = 10;
-export const MAX_COIN_GIFT = 500;
+export { MAX_COIN_GIFT, MIN_COIN_GIFT } from "@/lib/friend-gift-constants";
 
 const USER_GIFT_CREATE_SQL = `CREATE TABLE IF NOT EXISTS user_gift (
   id TEXT PRIMARY KEY NOT NULL,

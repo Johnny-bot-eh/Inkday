@@ -3,7 +3,11 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { formatDuration } from "@/components/play-timer";
-import type { ScoreBreakdown } from "@daily-puzzle/puzzle-core";
+import {
+  timeBonusScheduleLabel,
+  timeBonusTierHint,
+  type ScoreBreakdown,
+} from "@daily-puzzle/puzzle-core";
 import { emitAccountXp } from "@/components/account-xp-chip";
 
 export type PlayRanks = {
@@ -225,16 +229,26 @@ export function PlayResultsCard({
       )}
 
       {won && breakdown && (
-        <div className="grid grid-cols-2 gap-2 text-xs text-fog sm:grid-cols-3">
-          <Bonus label="Base" value={breakdown.base} />
-          <Bonus label="Speed" value={breakdown.timeBonus} />
-          <Bonus label="Perfect" value={breakdown.perfectBonus} />
-          {(breakdown.seasonBonus ?? 0) > 0 && (
-            <Bonus label="Season" value={breakdown.seasonBonus} />
-          )}
-          {(breakdown.plusBonus ?? 0) > 0 && (
-            <Bonus label="Plus" value={breakdown.plusBonus} />
-          )}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2 text-xs text-fog sm:grid-cols-3">
+            <Bonus label="Base" value={breakdown.base} />
+            <Bonus
+              label="Speed"
+              value={breakdown.timeBonus}
+              hint={timeBonusTierHint(elapsedMs)}
+            />
+            <Bonus label="Perfect" value={breakdown.perfectBonus} />
+            {(breakdown.seasonBonus ?? 0) > 0 && (
+              <Bonus label="Season" value={breakdown.seasonBonus} />
+            )}
+            {(breakdown.plusBonus ?? 0) > 0 && (
+              <Bonus label="Plus" value={breakdown.plusBonus} />
+            )}
+          </div>
+          <p className="text-[11px] leading-relaxed text-fog/80">
+            Speed adds score points (not Ink Coins) for faster clears:{" "}
+            {timeBonusScheduleLabel()}. After 8 minutes, Speed is +0.
+          </p>
         </div>
       )}
 
@@ -290,11 +304,20 @@ export function PlayResultsCard({
   );
 }
 
-function Bonus({ label, value }: { label: string; value: number }) {
+function Bonus({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+}) {
   return (
     <div className="rounded-lg border border-[var(--line)] bg-ink-2/60 px-3 py-2">
       <div className="uppercase tracking-wider">{label}</div>
       <div className="mt-0.5 font-semibold text-paper">+{value}</div>
+      {hint ? <div className="mt-0.5 text-[10px] text-fog/80">{hint}</div> : null}
     </div>
   );
 }
