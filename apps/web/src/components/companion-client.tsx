@@ -649,7 +649,7 @@ export function CompanionClient({ signedIn, initial }: Props) {
                   {p.name ?? p.speciesTitle}
                 </h2>
                 <p className="mt-0.5 text-sm text-fog">
-                  Lv {p.level} · {p.stage}
+                  Lv {p.level} · {p.stage} · {p.personalityTitle}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
