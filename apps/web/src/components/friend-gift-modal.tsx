@@ -116,8 +116,8 @@ export function FriendGiftModal({
           Send a gift to {recipientName}
         </h2>
         <p className="mt-1 text-sm text-fog">
-          Send coins or an unplaced decoration — you earn a little XP for
-          sharing.
+          Send coins or an unplaced decoration from your inventory — you earn
+          a little XP for sharing.
         </p>
 
         <div className="mt-4 flex gap-2">
