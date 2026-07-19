@@ -6,6 +6,7 @@ import {
   STARTER_DECORATION_IDS,
   STARTER_SPECIES,
   clampGardenCoord,
+  clampNestCoord,
   clampHappiness,
   daysAway,
   dayIndex,
@@ -652,11 +653,11 @@ export async function getCompanionSnapshot(
       pet: {
         x:
           prog.nestX != null
-            ? clampGardenCoord(prog.nestX)
+            ? clampNestCoord(prog.nestX, "x")
             : GARDEN_SCENE.pet.x,
         y:
           prog.nestY != null
-            ? clampGardenCoord(prog.nestY)
+            ? clampNestCoord(prog.nestY, "y")
             : GARDEN_SCENE.pet.y,
         layer: GARDEN_SCENE.pet.layer,
       },
@@ -1137,8 +1138,8 @@ export async function moveGardenNest(
   await db
     .update(userProgression)
     .set({
-      nestX: Math.round(clampGardenCoord(x)),
-      nestY: Math.round(clampGardenCoord(y)),
+      nestX: Math.round(clampNestCoord(x, "x")),
+      nestY: Math.round(clampNestCoord(y, "y")),
       updatedAt: new Date(),
     })
     .where(eq(userProgression.userId, userId));

@@ -4,6 +4,7 @@
  */
 import {
   clampGardenCoord,
+  clampNestCoord,
   gardenAmbience,
   gardenClimateFromLocal,
   gardenDailyWeather,
@@ -68,6 +69,9 @@ assert(!isDecorationVisibleInShop(20, 7), "later locked hidden");
 assert(GARDEN_SCENE.aspectRatio > 1, "diorama is wider than tall");
 assert(clampGardenCoord(200) === 92, "garden coord clamps high");
 assert(clampGardenCoord(-4) === 8, "garden coord clamps low");
+assert(clampNestCoord(99, "y") === 84, "nest y clamps high");
+assert(clampNestCoord(10, "y") === 56, "nest y clamps low");
+assert(clampNestCoord(99, "x") === 88, "nest x clamps high");
 
 // Local-calendar helpers — construct with explicit local components.
 const localNoon = new Date(2026, 6, 18, 12, 0, 0); // July = summer
