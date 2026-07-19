@@ -126,10 +126,18 @@ h4 {
 
 [class*="font-[family-name:var(--font-display)]"],
 .font-display {
-  line-height: 1.3;
+  line-height: 1.35;
   overflow: visible;
-  padding-bottom: 0.12em;
+  padding-bottom: 0.18em;
   padding-right: 0.04em;
+}
+
+/* Single-letter cryptogram/acrostic inputs still clip descenders unless the
+   content box is allowed to grow past the underline. */
+input[class*="font-[family-name:var(--font-display)]"] {
+  line-height: 1.5;
+  overflow: visible;
+  padding-bottom: 0.35em;
 }
 
 body::before {

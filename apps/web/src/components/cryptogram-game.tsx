@@ -383,48 +383,66 @@ export function CryptogramGame({
           {wordLayout.map((word, wordIndex) => (
             <div
               key={`word-${wordIndex}`}
-              className="flex flex-wrap items-end gap-x-2.5 gap-y-2"
+              className="flex flex-wrap items-end gap-x-2.5 gap-y-3"
             >
               {word.slotIndexes.map((slotIndex) => {
                 const slot = slots[slotIndex]!;
                 const value = letters[slotIndex] ?? "";
                 const locked = isLocked(slotIndex);
-                if (locked) {
-                  return (
-                    <span
-                      key={slotIndex}
-                      className={[
-                        "inline-flex h-11 w-8 items-end justify-center border-b pb-1 font-[family-name:var(--font-display)] text-2xl font-semibold lowercase",
-                        hintedLetters.includes(slot.letter)
-                          ? "border-mint/50 text-mint"
-                          : "border-paper/35 text-paper",
-                      ].join(" ")}
-                    >
-                      {slot.letter}
-                    </span>
-                  );
-                }
+                const underline = hintedLetters.includes(slot.letter)
+                  ? "border-mint/50"
+                  : locked
+                    ? "border-paper/35"
+                    : "border-ember/55";
+                const glyph = locked
+                  ? hintedLetters.includes(slot.letter)
+                    ? "text-mint"
+                    : "text-paper"
+                  : "text-ember";
                 return (
-                  <input
+                  <span
                     key={slotIndex}
-                    ref={(el) => {
-                      inputRefs.current[slotIndex] = el;
-                    }}
-                    type="text"
-                    inputMode="text"
-                    autoComplete="off"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    maxLength={1}
-                    value={value}
-                    disabled={done || submitting}
-                    onChange={(e) => setLetterAt(slotIndex, e.target.value)}
-                    onKeyDown={(e) => onKeyDown(slotIndex, e)}
-                    onFocus={(e) => e.target.select()}
-                    aria-label={`Letter ${slotIndex + 1}`}
-                    className="h-11 w-8 border-0 border-b border-ember/55 bg-transparent pb-1 text-center font-[family-name:var(--font-display)] text-2xl font-semibold lowercase text-ember outline-none transition-[border-color] placeholder:text-fog/40 focus:border-ember disabled:opacity-60"
-                    placeholder="_"
-                  />
+                    className={[
+                      // Border lives on the wrapper so descenders (g/y/p/q)
+                      // are never clipped by the input’s fixed content box.
+                      "inline-flex w-9 flex-col items-center border-b-2",
+                      underline,
+                    ].join(" ")}
+                  >
+                    {locked ? (
+                      <span
+                        className={[
+                          "flex min-h-11 w-full items-center justify-center overflow-visible px-0.5 pb-1.5 pt-1 font-[family-name:var(--font-display)] text-2xl font-semibold lowercase leading-[1.5]",
+                          glyph,
+                        ].join(" ")}
+                      >
+                        {slot.letter}
+                      </span>
+                    ) : (
+                      <input
+                        ref={(el) => {
+                          inputRefs.current[slotIndex] = el;
+                        }}
+                        type="text"
+                        inputMode="text"
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        maxLength={1}
+                        value={value}
+                        disabled={done || submitting}
+                        onChange={(e) => setLetterAt(slotIndex, e.target.value)}
+                        onKeyDown={(e) => onKeyDown(slotIndex, e)}
+                        onFocus={(e) => e.target.select()}
+                        aria-label={`Letter ${slotIndex + 1}`}
+                        className={[
+                          "min-h-11 w-full appearance-none border-0 bg-transparent px-0.5 pb-1.5 pt-1 text-center font-[family-name:var(--font-display)] text-2xl font-semibold lowercase leading-[1.5] outline-none placeholder:text-fog/40 disabled:opacity-60",
+                          glyph,
+                        ].join(" ")}
+                        placeholder="_"
+                      />
+                    )}
+                  </span>
                 );
               })}
             </div>

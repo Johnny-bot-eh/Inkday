@@ -301,7 +301,7 @@ export function AcrosticGame({
         <p className="text-xs uppercase tracking-wider text-fog">
           Hidden message
         </p>
-        <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold tracking-[0.2em]">
+        <p className="mt-1 overflow-visible pb-1 font-[family-name:var(--font-display)] text-2xl font-bold leading-[1.4] tracking-[0.2em]">
           {initialPreview}
         </p>
         <p className="mt-1 text-xs text-fog">

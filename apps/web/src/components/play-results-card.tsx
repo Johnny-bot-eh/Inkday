@@ -164,7 +164,7 @@ export function PlayResultsCard({
           >
             {won ? "Answer" : "Solution"}
           </p>
-          <p className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold tracking-wide text-paper sm:text-3xl">
+          <p className="mt-2 overflow-visible pb-1 font-[family-name:var(--font-display)] text-2xl font-bold leading-[1.35] tracking-wide text-paper sm:text-3xl">
             {answer}
           </p>
           {definition ? (
