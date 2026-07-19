@@ -171,6 +171,9 @@ export function ShopClient({
       isDecorationVisibleInShop(i.requiredLevel ?? 1, level),
     )
     .sort((a, b) => {
+      const ownedA = qty(a.id) > 0 ? 1 : 0;
+      const ownedB = qty(b.id) > 0 ? 1 : 0;
+      if (ownedA !== ownedB) return ownedA - ownedB;
       const la = a.requiredLevel ?? 1;
       const lb = b.requiredLevel ?? 1;
       if (la !== lb) return la - lb;
