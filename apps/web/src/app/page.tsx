@@ -73,8 +73,11 @@ export default async function HomePage() {
 
   function doneCopy(play: DayPlay | undefined): string {
     if (!play) return "Completed today";
-    if (session?.user) return `Logged · ${play.score} pts`;
-    return "Completed today";
+    if (!session?.user) return "Completed today";
+    if (play.won) return `Cleared · ${play.score} pts`;
+    return play.score > 0
+      ? `Not cleared · ${play.score} pts`
+      : "Not cleared · 0 pts";
   }
 
   const monthlyPct = Math.round((monthlyCleared / MONTHLY_SLOT_COUNT) * 100);
@@ -379,7 +382,7 @@ export default async function HomePage() {
                 const play = boardPlay("wordle", difficulty);
                 const subtitle =
                   difficulty === "easy"
-                    ? "Featured above as Daily Word"
+                    ? "Extra board · shorter words"
                     : difficulty === "hard"
                       ? "Rare words · 7 letters · 5 guesses"
                       : "Do you even know that word? · 500 pts";

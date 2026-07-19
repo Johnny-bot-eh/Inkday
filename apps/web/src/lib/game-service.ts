@@ -155,26 +155,41 @@ export async function submitPlay(opts: {
   });
 
   const stats = await ensureUserStats(opts.userId);
-  const streak = nextStreak({
-    previousStreak: stats?.currentStreak ?? 0,
-    previousDate: stats?.lastPlayDate ?? null,
-    playDate: opts.dateKey,
-    won: opts.won,
-  });
+
+  // Daily / weekly / monthly streaks advance on wins only.
+  // A loss must not touch lastPlayDate or zero a multi-day streak.
+  const streak = opts.won
+    ? nextStreak({
+        previousStreak: stats?.currentStreak ?? 0,
+        previousDate: stats?.lastPlayDate ?? null,
+        playDate: opts.dateKey,
+        won: true,
+      })
+    : (stats?.currentStreak ?? 0);
   const bestStreak = Math.max(stats?.bestStreak ?? 0, streak);
 
-  const weekly = nextWeeklyStreak({
-    previousStreak: stats?.weeklyStreak ?? 0,
-    lastWinWeekStart: stats?.lastWinWeekStart ?? null,
-    playDate: opts.dateKey,
-    won: opts.won,
-  });
-  const monthly = nextMonthlyStreak({
-    previousStreak: stats?.monthlyStreak ?? 0,
-    lastWinMonthStart: stats?.lastWinMonthStart ?? null,
-    playDate: opts.dateKey,
-    won: opts.won,
-  });
+  const weekly = opts.won
+    ? nextWeeklyStreak({
+        previousStreak: stats?.weeklyStreak ?? 0,
+        lastWinWeekStart: stats?.lastWinWeekStart ?? null,
+        playDate: opts.dateKey,
+        won: true,
+      })
+    : {
+        streak: stats?.weeklyStreak ?? 0,
+        weekStart: stats?.lastWinWeekStart ?? null,
+      };
+  const monthly = opts.won
+    ? nextMonthlyStreak({
+        previousStreak: stats?.monthlyStreak ?? 0,
+        lastWinMonthStart: stats?.lastWinMonthStart ?? null,
+        playDate: opts.dateKey,
+        won: true,
+      })
+    : {
+        streak: stats?.monthlyStreak ?? 0,
+        monthStart: stats?.lastWinMonthStart ?? null,
+      };
   const bestWeeklyStreak = Math.max(
     stats?.bestWeeklyStreak ?? 0,
     weekly.streak,
@@ -186,6 +201,9 @@ export async function submitPlay(opts: {
 
   const totalScore = (stats?.totalScore ?? 0) + opts.score;
   const puzzlesSolved = (stats?.puzzlesSolved ?? 0) + (opts.won ? 1 : 0);
+  const lastPlayDate = opts.won
+    ? opts.dateKey
+    : (stats?.lastPlayDate ?? null);
 
   await db
     .insert(userStats)
@@ -201,7 +219,7 @@ export async function submitPlay(opts: {
       lastWinMonthStart: monthly.monthStart,
       totalScore,
       puzzlesSolved,
-      lastPlayDate: opts.dateKey,
+      lastPlayDate,
     })
     .onConflictDoUpdate({
       target: userStats.userId,
@@ -216,7 +234,7 @@ export async function submitPlay(opts: {
         lastWinMonthStart: monthly.monthStart,
         totalScore,
         puzzlesSolved,
-        lastPlayDate: opts.dateKey,
+        ...(opts.won ? { lastPlayDate: opts.dateKey } : {}),
         updatedAt: new Date(),
       },
     });

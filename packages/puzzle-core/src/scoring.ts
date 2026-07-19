@@ -196,14 +196,19 @@ export type StreakUpdate = {
 };
 
 /**
- * Daily win streak.
- * - Win on a new consecutive day → +1
- * - Loss as the first play after a gap / next day → resets to 0
- * - Same-day loss after an earlier win does not wipe the streak
+ * Daily win streak (UTC calendar days).
+ * Call only for wins — losses must not update lastPlayDate / currentStreak.
+ * - Win on the next consecutive day → +1
+ * - Win again the same day → keep streak
+ * - Win after a gap → restart at 1
  */
 export function nextStreak(update: StreakUpdate): number {
+  if (!update.won) {
+    return update.previousStreak;
+  }
+
   if (!update.previousDate) {
-    return update.won ? 1 : 0;
+    return 1;
   }
 
   const prev = Date.parse(`${update.previousDate}T00:00:00Z`);
@@ -211,13 +216,12 @@ export function nextStreak(update: StreakUpdate): number {
   const dayDiff = Math.round((curr - prev) / 86_400_000);
 
   if (dayDiff === 0) {
-    if (update.won) return Math.max(1, update.previousStreak);
-    return update.previousStreak;
+    return Math.max(1, update.previousStreak);
   }
 
   if (dayDiff === 1) {
-    return update.won ? update.previousStreak + 1 : 0;
+    return update.previousStreak + 1;
   }
 
-  return update.won ? 1 : 0;
+  return 1;
 }
