@@ -772,6 +772,17 @@ export function clampGardenCoord(n: number): number {
   return Math.min(92, Math.max(8, value));
 }
 
+/**
+ * Nest sits on the clearing with a tall sprite (`translate(-50%, -72%)`).
+ * Keep Y low enough that the nest rim never spills past the garden frame.
+ */
+export function clampNestCoord(n: number, axis: "x" | "y"): number {
+  const value = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(value)) return axis === "x" ? 52 : 78;
+  if (axis === "x") return Math.min(88, Math.max(12, value));
+  return Math.min(84, Math.max(56, value));
+}
+
 export function isValidGardenLayer(v: unknown): v is GardenLayer {
   return v === "background" || v === "middle" || v === "foreground";
 }

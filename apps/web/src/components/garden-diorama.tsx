@@ -20,6 +20,7 @@ import type {
   CompanionSnapshot,
   PetSpeciesId,
 } from "@daily-puzzle/puzzle-core";
+import { clampNestCoord } from "@daily-puzzle/puzzle-core";
 
 type Props = {
   garden: CompanionSnapshot["garden"];
@@ -79,6 +80,39 @@ function layerZ(layer: string): number {
   if (layer === "background") return 1;
   if (layer === "foreground") return 4;
   return 2;
+}
+
+/** Cap so garden sprites never outrank page chrome / modals. */
+function stageZ(layer: string, y: number, bump = 0): number {
+  return Math.min(28, layerZ(layer) + Math.round(y) + bump);
+}
+
+function DialogueBubble({
+  text,
+  side,
+}: {
+  text: string;
+  side: "left" | "right";
+}) {
+  return (
+    <div
+      className={[
+        // Sit fully above the nest/pet; wide enough that lines stay horizontal.
+        "pointer-events-none absolute bottom-[calc(100%+0.4rem)] z-20 w-max max-w-[min(15rem,62vw)] rounded-2xl px-3 py-1.5 text-left text-[clamp(0.58rem,1.4vw,0.75rem)] leading-snug text-[#1a2414] shadow-md",
+        side === "left" ? "right-[8%]" : "left-[8%]",
+      ].join(" ")}
+      style={{ background: "rgba(255,255,255,0.94)" }}
+    >
+      {text}
+      <span
+        className={[
+          "absolute top-full h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/94",
+          side === "left" ? "right-5" : "left-5",
+        ].join(" ")}
+        aria-hidden
+      />
+    </div>
+  );
 }
 
 function motionClass(motion: string): string {
@@ -237,13 +271,21 @@ export function GardenDiorama({
 
   function onDragPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
     if (!dragRef.current) return;
-    queueLive(toNorm(e.clientX, e.clientY));
+    const raw = toNorm(e.clientX, e.clientY);
+    if (dragRef.current.kind === "nest") {
+      queueLive({
+        x: clampNestCoord(raw.x, "x"),
+        y: clampNestCoord(raw.y, "y"),
+      });
+      return;
+    }
+    queueLive(raw);
   }
 
   function endDrag(e: ReactPointerEvent<HTMLButtonElement>) {
     const current = dragRef.current;
     if (!current) return;
-    const pos = toNorm(e.clientX, e.clientY);
+    const raw = toNorm(e.clientX, e.clientY);
     if (rafRef.current != null) {
       window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -255,10 +297,14 @@ export function GardenDiorama({
     onSelectPlacement?.(null);
 
     if (current.kind === "nest") {
-      onMoveNest?.(pos.x, pos.y, { x: current.fromX, y: current.fromY });
+      onMoveNest?.(
+        clampNestCoord(raw.x, "x"),
+        clampNestCoord(raw.y, "y"),
+        { x: current.fromX, y: current.fromY },
+      );
       return;
     }
-    onMove?.(current.id, pos.x, pos.y, {
+    onMove?.(current.id, raw.x, raw.y, {
       x: current.fromX,
       y: current.fromY,
     });
@@ -278,10 +324,14 @@ export function GardenDiorama({
   }
 
   const night = tone === "night" || tone === "dusk";
-  const nestX =
-    drag?.kind === "nest" && livePos ? livePos.x : garden.pet.x;
-  const nestY =
-    drag?.kind === "nest" && livePos ? livePos.y : garden.pet.y;
+  const nestX = clampNestCoord(
+    drag?.kind === "nest" && livePos ? livePos.x : garden.pet.x,
+    "x",
+  );
+  const nestY = clampNestCoord(
+    drag?.kind === "nest" && livePos ? livePos.y : garden.pet.y,
+    "y",
+  );
   const petMotion = usePetStageMotion(pet?.id ?? "visit", pet?.stage ?? "egg");
   const inNest = !pet || pet.stage === "egg" || petMotion === "hatch";
   const roam = usePetRoam({
@@ -305,7 +355,7 @@ export function GardenDiorama({
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-3xl border border-[var(--line)] shadow-[inset_0_-24px_40px_rgba(0,0,0,0.12)]"
+      className="relative z-0 isolate w-full overflow-hidden rounded-3xl border border-[var(--line)] shadow-[inset_0_-24px_40px_rgba(0,0,0,0.12)]"
       style={{ aspectRatio: String(garden.aspectRatio) }}
     >
       <div
@@ -394,7 +444,7 @@ export function GardenDiorama({
                   ? undefined
                   : "translate(-50%, -100%)",
                 transformOrigin: "50% 100%",
-                zIndex: layerZ(p.layer) + Math.round(pos.y),
+                zIndex: stageZ(p.layer, pos.y),
               }}
             >
               <GardenDecorSprite
@@ -434,9 +484,7 @@ export function GardenDiorama({
                     ? undefined
                     : "translate(-50%, -100%)",
                 transformOrigin: "50% 100%",
-                zIndex: isDragging
-                  ? 40
-                  : layerZ(p.layer) + Math.round(pos.y),
+                zIndex: isDragging ? 40 : stageZ(p.layer, pos.y),
               }}
             >
               <GardenDecorSprite
@@ -455,7 +503,7 @@ export function GardenDiorama({
             style={{
               left: `${nestX}%`,
               top: `${nestY}%`,
-              zIndex: layerZ(garden.pet.layer) + Math.round(nestY),
+              zIndex: stageZ(garden.pet.layer, nestY),
               width: "min(22%, 128px)",
               transform: "translate(-50%, -72%)",
             }}
@@ -483,21 +531,10 @@ export function GardenDiorama({
               />
             </div>
             {pet && inNest ? (
-              <div
-                className={[
-                  "pointer-events-none absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-                  bubbleLeft ? "right-[95%]" : "left-[95%]",
-                ].join(" ")}
-                style={{ background: "rgba(255,255,255,0.92)" }}
-              >
-                {pet.dialogue}
-                <span
-                  className={[
-                    "absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/92",
-                    bubbleLeft ? "-right-1" : "-left-1",
-                  ].join(" ")}
-                />
-              </div>
+              <DialogueBubble
+                text={pet.dialogue}
+                side={bubbleLeft ? "left" : "right"}
+              />
             ) : null}
           </div>
         ) : (
@@ -515,9 +552,7 @@ export function GardenDiorama({
           style={{
             left: `${nestX}%`,
             top: `${nestY}%`,
-            zIndex: draggingNest
-              ? 40
-              : layerZ(garden.pet.layer) + Math.round(nestY),
+            zIndex: draggingNest ? 40 : stageZ(garden.pet.layer, nestY),
             width: "min(22%, 128px)",
             transform: "translate(-50%, -72%)",
           }}
@@ -547,21 +582,10 @@ export function GardenDiorama({
             />
           </div>
           {pet && inNest ? (
-            <div
-              className={[
-                "pointer-events-none absolute top-[-6%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-                bubbleLeft ? "right-[95%]" : "left-[95%]",
-              ].join(" ")}
-              style={{ background: "rgba(255,255,255,0.92)" }}
-            >
-              {pet.dialogue}
-              <span
-                className={[
-                  "absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/92",
-                  bubbleLeft ? "-right-1" : "-left-1",
-                ].join(" ")}
-              />
-            </div>
+            <DialogueBubble
+              text={pet.dialogue}
+              side={bubbleLeft ? "left" : "right"}
+            />
           ) : null}
         </button>
         )}
@@ -574,7 +598,7 @@ export function GardenDiorama({
               left: `${petX}%`,
               top: `${petY}%`,
               width: petWidth,
-              zIndex: layerZ(garden.pet.layer) + Math.round(petY) + 2,
+              zIndex: stageZ(garden.pet.layer, petY, 2),
               transform: "translate(-50%, -100%)",
             }}
           >
@@ -607,21 +631,10 @@ export function GardenDiorama({
                 />
               </div>
             </div>
-            <div
-              className={[
-                "pointer-events-none absolute top-[-8%] z-[4] max-w-[9.5rem] rounded-2xl px-2.5 py-1.5 text-[clamp(0.55rem,1.35vw,0.72rem)] leading-snug text-[#1a2414] shadow-md",
-                bubbleLeft ? "right-[90%]" : "left-[90%]",
-              ].join(" ")}
-              style={{ background: "rgba(255,255,255,0.92)" }}
-            >
-              {pet.dialogue}
-              <span
-                className={[
-                  "absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-white/92",
-                  bubbleLeft ? "-right-1" : "-left-1",
-                ].join(" ")}
-              />
-            </div>
+            <DialogueBubble
+              text={pet.dialogue}
+              side={bubbleLeft ? "left" : "right"}
+            />
           </div>
         ) : null}
 
