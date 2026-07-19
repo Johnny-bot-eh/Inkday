@@ -164,10 +164,10 @@ export const TODAYS_CHALLENGES: DailyChallenge[] = [
   {
     id: "daily-word",
     title: "Daily Word Puzzle",
-    difficultyLabel: "Easy",
+    difficultyLabel: "Medium",
     puzzleType: "wordle",
-    difficulty: "easy",
-    href: "/play/wordle/easy",
+    difficulty: "medium",
+    href: "/play/wordle/medium",
   },
   {
     id: "daily-mystery",
