@@ -893,6 +893,50 @@ export const petGiftRelations = relations(petGift, ({ one }) => ({
   }),
 }));
 
+/** Friend-to-friend gifts (coins or decorations). */
+export const userGift = sqliteTable(
+  "user_gift",
+  {
+    id: text("id").primaryKey(),
+    senderId: text("sender_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    recipientId: text("recipient_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["coins", "decoration"] }).notNull(),
+    coins: integer("coins").notNull().default(0),
+    itemId: text("item_id"),
+    status: text("status", {
+      enum: ["pending", "claimed", "declined"],
+    })
+      .notNull()
+      .default("pending"),
+    message: text("message"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    claimedAt: integer("claimed_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [
+    index("user_gift_recipient_status_idx").on(t.recipientId, t.status),
+    index("user_gift_sender_idx").on(t.senderId),
+  ],
+);
+
+export const userGiftRelations = relations(userGift, ({ one }) => ({
+  sender: one(user, {
+    fields: [userGift.senderId],
+    references: [user.id],
+    relationName: "user_gift_sender",
+  }),
+  recipient: one(user, {
+    fields: [userGift.recipientId],
+    references: [user.id],
+    relationName: "user_gift_recipient",
+  }),
+}));
+
 export const gardenPlacementRelations = relations(
   gardenPlacement,
   ({ one }) => ({
@@ -930,6 +974,7 @@ export const schema = {
   userPet,
   progressionEvent,
   petGift,
+  userGift,
   gardenPlacement,
   userRelations,
   userStatsRelations,
@@ -954,5 +999,6 @@ export const schema = {
   userPetRelations,
   progressionEventRelations,
   petGiftRelations,
+  userGiftRelations,
   gardenPlacementRelations,
 };

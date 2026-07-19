@@ -871,7 +871,7 @@ export async function getProfile(userId: string) {
   };
 }
 
-async function areFriends(a: string, b: string): Promise<boolean> {
+export async function areFriends(a: string, b: string): Promise<boolean> {
   const ids = await getFriendIds(a);
   return ids.includes(b);
 }

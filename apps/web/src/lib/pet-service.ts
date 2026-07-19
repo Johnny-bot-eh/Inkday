@@ -46,6 +46,7 @@ import {
   petGift,
   playResult,
   progressionEvent,
+  user,
   userPet,
   userProgression,
   coinInventory,
@@ -54,6 +55,7 @@ import {
 import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { grantCoins, getInventoryQty, listCoinInventory } from "@/lib/coin-service";
+import { areFriends } from "@/lib/game-service";
 
 export type { CompanionSnapshot } from "@daily-puzzle/puzzle-core";
 
@@ -1277,4 +1279,58 @@ export async function getAccountXpSummary(userId: string): Promise<{
 
 export function decorationCatalog() {
   return DECORATION_SHOP_ITEMS;
+}
+
+export type FriendGardenSnapshotResult =
+  | {
+      ok: true;
+      friend: {
+        id: string;
+        name: string;
+        displayName: string | null;
+        equippedAvatarId: string | null;
+        equippedAccessoryId: string | null;
+      };
+      snapshot: CompanionSnapshot;
+    }
+  | { ok: false; reason: "not_friends" | "not_found" | "no_garden" };
+
+/** Read-only garden view for a connected friend. */
+export async function getFriendGardenSnapshot(
+  viewerId: string,
+  friendId: string,
+): Promise<FriendGardenSnapshotResult> {
+  if (!(await areFriends(viewerId, friendId))) {
+    return { ok: false, reason: "not_friends" };
+  }
+
+  const db = getDb();
+  const friendUser = await db.query.user.findFirst({
+    where: eq(user.id, friendId),
+  });
+  if (!friendUser) return { ok: false, reason: "not_found" };
+
+  const full = await getCompanionSnapshot(friendId);
+  const publicSnapshot: CompanionSnapshot = {
+    ...full,
+    needsStarter: false,
+    gift: null,
+    foodInventory: [],
+    garden: {
+      ...full.garden,
+      inventoryDecor: [],
+    },
+  };
+
+  return {
+    ok: true,
+    friend: {
+      id: friendUser.id,
+      name: friendUser.name,
+      displayName: friendUser.displayName,
+      equippedAvatarId: friendUser.equippedAvatarId ?? null,
+      equippedAccessoryId: friendUser.equippedAccessoryId ?? null,
+    },
+    snapshot: publicSnapshot,
+  };
 }

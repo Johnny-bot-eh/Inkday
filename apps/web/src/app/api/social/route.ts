@@ -11,6 +11,15 @@ import {
   respondFriendChallenge,
   settleWeeklyTournaments,
 } from "@/lib/game-service";
+import {
+  claimFriendGift,
+  countPendingGifts,
+  declineFriendGift,
+  listPendingGifts,
+  listSendableDecor,
+  sendFriendGift,
+} from "@/lib/friend-gift-service";
+import { getFriendGardenSnapshot } from "@/lib/pet-service";
 import { getSession } from "@/lib/session";
 import {
   todayKey,
@@ -107,11 +116,34 @@ export async function GET(req: Request) {
     return NextResponse.json({ challenges });
   }
 
-  const [friendships, challenges] = await Promise.all([
+  if (view === "gifts") {
+    const gifts = await listPendingGifts(session.user.id);
+    return NextResponse.json({ gifts });
+  }
+
+  if (view === "sendable_decor") {
+    const decor = await listSendableDecor(session.user.id);
+    return NextResponse.json({ decor });
+  }
+
+  if (view === "garden") {
+    const friendId = searchParams.get("userId");
+    if (!friendId) {
+      return NextResponse.json({ error: "userId required" }, { status: 400 });
+    }
+    const result = await getFriendGardenSnapshot(session.user.id, friendId);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 403 });
+    }
+    return NextResponse.json(result);
+  }
+
+  const [friendships, challenges, pendingGiftsCount] = await Promise.all([
     listFriendships(session.user.id),
     listFriendChallenges(session.user.id),
+    countPendingGifts(session.user.id),
   ]);
-  return NextResponse.json({ friendships, challenges });
+  return NextResponse.json({ friendships, challenges, pendingGiftsCount });
 }
 
 export async function POST(req: Request) {
@@ -126,7 +158,10 @@ export async function POST(req: Request) {
       | "respond"
       | "challenge"
       | "challenge_respond"
-      | "claim_invite";
+      | "claim_invite"
+      | "send_gift"
+      | "claim_gift"
+      | "decline_gift";
     email?: string;
     friendshipId?: string;
     accept?: boolean;
@@ -136,6 +171,12 @@ export async function POST(req: Request) {
     dateKey?: string;
     challengeId?: string;
     inviterId?: string;
+    recipientId?: string;
+    kind?: "coins" | "decoration";
+    coins?: number;
+    itemId?: string;
+    message?: string;
+    giftId?: string;
   };
 
   if (body.action === "claim_invite") {
@@ -207,6 +248,46 @@ export async function POST(req: Request) {
       body.challengeId,
       body.accept,
     );
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+    return NextResponse.json(result);
+  }
+
+  if (body.action === "send_gift") {
+    if (!body.recipientId || !body.kind) {
+      return NextResponse.json({ error: "Invalid gift" }, { status: 400 });
+    }
+    const result = await sendFriendGift({
+      senderId: session.user.id,
+      recipientId: body.recipientId,
+      kind: body.kind,
+      coins: body.coins,
+      itemId: body.itemId,
+      message: body.message,
+    });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+    return NextResponse.json(result);
+  }
+
+  if (body.action === "claim_gift") {
+    if (!body.giftId) {
+      return NextResponse.json({ error: "giftId required" }, { status: 400 });
+    }
+    const result = await claimFriendGift(session.user.id, body.giftId);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 400 });
+    }
+    return NextResponse.json(result);
+  }
+
+  if (body.action === "decline_gift") {
+    if (!body.giftId) {
+      return NextResponse.json({ error: "giftId required" }, { status: 400 });
+    }
+    const result = await declineFriendGift(session.user.id, body.giftId);
     if (!result.ok) {
       return NextResponse.json({ error: result.reason }, { status: 400 });
     }

@@ -220,7 +220,7 @@ export async function spendCoins(opts: {
   });
 }
 
-async function addInventory(userId: string, itemId: string, qty = 1) {
+export async function grantInventoryItem(userId: string, itemId: string, qty = 1) {
   const db = getDb();
   const existing = await db.query.coinInventory.findFirst({
     where: and(
@@ -244,7 +244,7 @@ async function addInventory(userId: string, itemId: string, qty = 1) {
   return qty;
 }
 
-async function consumeInventory(
+export async function consumeInventory(
   userId: string,
   itemId: string,
   qty = 1,
@@ -356,7 +356,7 @@ export async function buyShopItem(userId: string, itemId: string) {
     spent = item.price;
   }
 
-  const qty = await addInventory(userId, itemId, 1);
+  const qty = await grantInventoryItem(userId, itemId, 1);
   // Cap cosmetics / avatars / accessories at 1 (decorations stack).
   if (
     (item.slot === "avatar" ||
@@ -415,7 +415,7 @@ export async function grantCosmeticItem(userId: string, itemId: string) {
       qty: owned,
     };
   }
-  const qty = await addInventory(userId, itemId, 1);
+  const qty = await grantInventoryItem(userId, itemId, 1);
   return {
     ok: true as const,
     itemId,
