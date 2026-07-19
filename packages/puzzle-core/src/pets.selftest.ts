@@ -21,6 +21,7 @@ import {
   isDecorationVisibleInShop,
   nextDecorationUnlockLevel,
   xpForDailyWin,
+  xpForFriendGiftSend,
   xpForGardenBuy,
   xpToNextLevel,
 } from "./pets";
@@ -62,6 +63,9 @@ assert(xpForDailyWin("hard") > xpForDailyWin("easy"), "harder wins grant more XP
 assert(xpForGardenBuy(1, 0) === 7, "garden buy first copy");
 assert(xpForGardenBuy(1, 1) < xpForGardenBuy(1, 0), "repeat buy less XP");
 assert(xpForGardenBuy(50, 0) === 56, "garden buy lv50");
+assert(xpForFriendGiftSend("coins", 10) === 5, "min coin gift XP");
+assert(xpForFriendGiftSend("coins", 500) === 15, "max coin gift XP");
+assert(xpForFriendGiftSend("decoration") === 10, "decor gift XP");
 assert(nextDecorationUnlockLevel(7) === 10, "next unlock after 7 is 10");
 assert(isDecorationVisibleInShop(5, 7), "unlocked visible");
 assert(isDecorationVisibleInShop(10, 7), "next tier visible");

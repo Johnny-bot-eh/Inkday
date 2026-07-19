@@ -31,6 +31,7 @@ import {
   todayKey,
   welcomeBackLine,
   xpForDailyWin,
+  xpForFriendGiftSend,
   xpForGardenBuy,
   xpForMonthlySlot,
   xpForStreak7,
@@ -973,6 +974,48 @@ export async function grantGardenBuyXp(
     amount: xp,
     sourceType: "garden_buy",
     sourceId: `${itemId}:${ownedBefore}`,
+  });
+  if (event.duplicate) return 0;
+
+  await db
+    .update(userProgression)
+    .set({
+      accountXp: sql`${userProgression.accountXp} + ${xp}`,
+      updatedAt: new Date(),
+    })
+    .where(eq(userProgression.userId, userId));
+
+  const pet = await getActivePet(userId);
+  if (pet) {
+    await db
+      .update(userPet)
+      .set({
+        petXp: sql`${userPet.petXp} + ${xp}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(userPet.id, pet.id));
+  }
+  return xp;
+}
+
+/** XP for sending a friend gift. Idempotent per gift id. */
+export async function grantFriendGiftSendXp(
+  userId: string,
+  giftId: string,
+  kind: "coins" | "decoration",
+  coins = 0,
+): Promise<number> {
+  const xp = xpForFriendGiftSend(kind, coins);
+  if (xp <= 0) return 0;
+
+  const db = getDb();
+  await ensureProgression(userId);
+  const event = await recordEvent({
+    userId,
+    kind: "xp",
+    amount: xp,
+    sourceType: "friend_gift_send",
+    sourceId: giftId,
   });
   if (event.duplicate) return 0;
 

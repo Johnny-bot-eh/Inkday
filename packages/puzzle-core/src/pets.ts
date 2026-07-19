@@ -397,6 +397,10 @@ export const XP_AWARD = {
   streak7: 75,
   /** Base XP for the first purchase of a garden decoration. */
   gardenBuyBase: 6,
+  /** Base XP for sending coins to a friend (plus 1 per 50 coins). */
+  friendGiftCoinsBase: 5,
+  /** Flat XP for gifting an unplaced decoration to a friend. */
+  friendGiftDecor: 10,
 } as const;
 
 /** Account levels that unlock new decoration tiers. */
@@ -441,6 +445,16 @@ export function xpForGardenBuy(
 /** @deprecated Prefer xpForGardenBuy — kept for older callers. */
 export function xpForGardenPlace(requiredLevel = 1): number {
   return xpForGardenBuy(requiredLevel, 0);
+}
+
+/** XP for sending a friend gift (coins or decoration). */
+export function xpForFriendGiftSend(
+  kind: "coins" | "decoration",
+  coins = 0,
+): number {
+  if (kind === "decoration") return XP_AWARD.friendGiftDecor;
+  const amount = Math.max(0, Math.floor(coins));
+  return XP_AWARD.friendGiftCoinsBase + Math.floor(amount / 50);
 }
 
 export const HAPPINESS = {

@@ -606,8 +606,12 @@ export function FriendsPanel({
           recipientName={giftTarget.name}
           open={Boolean(giftTarget)}
           onClose={() => setGiftTarget(null)}
-          onSent={() => {
-            setMessage("Gift sent!");
+          onSent={(detail) => {
+            const xp =
+              typeof detail?.xpEarned === "number" && detail.xpEarned > 0
+                ? ` · +${detail.xpEarned} XP`
+                : "";
+            setMessage(`Gift sent!${xp}`);
           }}
         />
       ) : null}

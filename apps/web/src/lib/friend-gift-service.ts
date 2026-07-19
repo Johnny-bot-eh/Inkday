@@ -184,7 +184,7 @@ export async function sendFriendGift(opts: {
   itemId?: string;
   message?: string;
 }): Promise<
-  | { ok: true; giftId: string }
+  | { ok: true; giftId: string; xpEarned: number; accountXp: number }
   | { ok: false; reason: string }
 > {
   await ensureUserGiftTable();
@@ -204,6 +204,28 @@ export async function sendFriendGift(opts: {
 
   const giftId = randomUUID();
   const trimmedMessage = opts.message?.trim().slice(0, 140) || null;
+
+  async function finishOk(
+    kind: "coins" | "decoration",
+    coins: number,
+  ): Promise<{ ok: true; giftId: string; xpEarned: number; accountXp: number }> {
+    const { grantFriendGiftSendXp, getAccountXpSummary } = await import(
+      "@/lib/pet-service"
+    );
+    const xpEarned = await grantFriendGiftSendXp(
+      opts.senderId,
+      giftId,
+      kind,
+      coins,
+    );
+    const summary = await getAccountXpSummary(opts.senderId);
+    return {
+      ok: true,
+      giftId,
+      xpEarned,
+      accountXp: summary.accountXp,
+    };
+  }
 
   if (opts.kind === "coins") {
     const amount = Math.floor(opts.coins ?? 0);
@@ -232,7 +254,7 @@ export async function sendFriendGift(opts: {
       status: "pending",
     });
 
-    return { ok: true, giftId };
+    return finishOk("coins", amount);
   }
 
   if (opts.kind === "decoration") {
@@ -262,7 +284,7 @@ export async function sendFriendGift(opts: {
       status: "pending",
     });
 
-    return { ok: true, giftId };
+    return finishOk("decoration", 0);
   }
 
   return { ok: false, reason: "invalid_kind" };

@@ -20,6 +20,7 @@ type Props = {
 
 export function FriendGardenVisit({ friend, snapshot }: Props) {
   const [giftOpen, setGiftOpen] = useState(false);
+  const [sentNote, setSentNote] = useState<string | null>(null);
   const displayName = friend.displayName?.trim() || friend.name;
 
   return (
@@ -60,6 +61,10 @@ export function FriendGardenVisit({ friend, snapshot }: Props) {
         </p>
       ) : null}
 
+      {sentNote ? (
+        <p className="text-center text-sm text-ember">{sentNote}</p>
+      ) : null}
+
       <p className="text-center text-xs text-fog">
         <Link href="/friends" className="text-ember hover:underline">
           ← Back to friends
@@ -71,6 +76,13 @@ export function FriendGardenVisit({ friend, snapshot }: Props) {
         recipientName={displayName}
         open={giftOpen}
         onClose={() => setGiftOpen(false)}
+        onSent={(detail) => {
+          const xp =
+            typeof detail?.xpEarned === "number" && detail.xpEarned > 0
+              ? ` · +${detail.xpEarned} XP`
+              : "";
+          setSentNote(`Gift sent!${xp}`);
+        }}
       />
     </div>
   );
