@@ -25,7 +25,7 @@ type Props = {
 
 /**
  * Home-only digest of newly unlocked cosmetics + optional upcoming hints.
- * Never mounts on /play — puzzles stay uninterrupted.
+ * Never mounts on /play — active puzzles stay uninterrupted.
  */
 export function UnlockNoticesBanner({
   upcoming = null,
