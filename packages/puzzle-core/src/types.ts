@@ -58,6 +58,13 @@ export const PUZZLE_LABELS: Record<PuzzleType, string> = {
   wordladder: "Word Ladders",
 };
 
+/** Retired board types that may still exist in old play history. */
+export const RETIRED_PUZZLE_TYPES = new Set<string>(["path", "detective"]);
+
+export function isActivePuzzleType(type: string): type is PuzzleType {
+  return (PUZZLE_TYPES as string[]).includes(type);
+}
+
 /** Extra word games listed under “Word games” on the home page */
 export const WORD_GAME_TYPES: Array<
   Extract<PuzzleType, "anagram" | "cryptogram" | "acrostic" | "wordladder">
