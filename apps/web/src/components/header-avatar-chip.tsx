@@ -120,7 +120,7 @@ export function HeaderAvatarChip({
           : name
       }
     >
-      <AvatarMark avatarId={avatarId} accessoryId={accessoryId} size={40} />
+      <AvatarMark avatarId={avatarId} accessoryId={accessoryId} size={48} />
       <span className="max-w-[4.5rem] truncate text-[11px] font-semibold text-mint">
         {name}
       </span>
