@@ -29,7 +29,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getSession();
+  let signedIn = false;
+  try {
+    const session = await getSession();
+    signedIn = Boolean(session?.user);
+  } catch (err) {
+    console.error("Root layout session failed", err);
+  }
 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} dark h-full`} suppressHydrationWarning>
@@ -44,7 +50,7 @@ export default async function RootLayout({
         <footer className="relative z-10 border-t border-[var(--line)] px-4 py-6 text-center text-xs text-fog">
           Inkday · shared puzzle core ready for a future mobile app
         </footer>
-        <DailyLoginPopup signedIn={Boolean(session?.user)} />
+        <DailyLoginPopup signedIn={signedIn} />
       </body>
     </html>
   );
