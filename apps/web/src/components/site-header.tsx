@@ -4,7 +4,6 @@ import { ensureUserStats } from "@/lib/game-service";
 import { getCoinBalance, getEquippedAccessory, getEquippedAvatar } from "@/lib/coin-service";
 import { getAccountXpSummary } from "@/lib/pet-service";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { AccountXpChip } from "@/components/account-xp-chip";
 import { CoinBalanceChip } from "@/components/coin-balance-chip";
 import { HeaderAvatarChip } from "@/components/header-avatar-chip";
 
@@ -89,11 +88,11 @@ export async function SiteHeader() {
               >
                 Streak {stats?.currentStreak ?? 0}
               </Link>
-              {accountXp && <AccountXpChip initial={accountXp} />}
               <HeaderAvatarChip
                 initialAvatarId={avatarId}
                 initialAccessoryId={accessoryId}
                 name={session.user.name.split(" ")[0] ?? "You"}
+                initialXp={accountXp}
               />
             </>
           ) : (
