@@ -90,9 +90,13 @@ export function PlayResultsCard({
     }
   }, [accountXp, accountLevel]);
 
+  const cosmeticsKey =
+    newCosmetics?.map((n) => n.id).slice().sort().join(",") ?? "";
   useEffect(() => {
     queueUnlockNotices(newCosmetics);
-  }, [newCosmetics]);
+    // Depend on content identity, not array reference (parents often pass a fresh []).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- newCosmetics tied to cosmeticsKey
+  }, [cosmeticsKey]);
 
   const heading =
     outcomeLabel?.trim() || (won ? "Cleared" : "Not solved");

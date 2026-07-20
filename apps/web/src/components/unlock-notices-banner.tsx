@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { getShopItem } from "@daily-puzzle/puzzle-core";
 import {
   dismissAllUnlockNotices,
   dismissUnlockNotice,
+  EMPTY_UNLOCK_NOTICES,
   listUnlockNotices,
   subscribeUnlockNotices,
+  type QueuedUnlockNotice,
 } from "@/lib/unlock-notices";
 
 type UpcomingHint = {
@@ -31,11 +33,20 @@ export function UnlockNoticesBanner({
   upcoming = null,
   shopTeaser = false,
 }: Props) {
-  const notices = useSyncExternalStore(
-    subscribeUnlockNotices,
-    listUnlockNotices,
-    () => [],
+  // Prefer useState + subscribe over useSyncExternalStore here: an unstable
+  // getServerSnapshot (`() => []`) caused React #185 on signed-in home.
+  const [notices, setNotices] = useState<QueuedUnlockNotice[]>(
+    EMPTY_UNLOCK_NOTICES,
   );
+
+  useEffect(() => {
+    const sync = () => {
+      const next = listUnlockNotices();
+      setNotices((prev) => (prev === next ? prev : next));
+    };
+    sync();
+    return subscribeUnlockNotices(sync);
+  }, []);
 
   if (notices.length === 0 && !upcoming && !shopTeaser) return null;
 
