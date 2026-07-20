@@ -5,23 +5,46 @@
  * `inkday-xxxxx-inkday.vercel.app`.
  */
 export function getPublicAppUrl(): string {
-  const fromEnv =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    process.env.BETTER_AUTH_URL?.trim() ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+  const brokenCustom = new Set([
+    "https://inkday.app",
+    "https://www.inkday.app",
+  ]);
+
+  const candidates = [
+    process.env.NEXT_PUBLIC_APP_URL?.trim(),
+    process.env.BETTER_AUTH_URL?.trim(),
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "");
-  if (fromEnv) {
+      : undefined,
+    "https://inkday-web.vercel.app",
+  ];
+
+  // First pass: skip known-broken custom domains (expired SSL / not linked).
+  for (const fromEnv of candidates) {
+    if (!fromEnv) continue;
+    try {
+      const origin = new URL(fromEnv).origin;
+      if (brokenCustom.has(origin)) continue;
+      return origin;
+    } catch {
+      // fall through
+    }
+  }
+
+  // Second pass: allow custom domain once reattached in Vercel.
+  for (const fromEnv of candidates) {
+    if (!fromEnv) continue;
     try {
       return new URL(fromEnv).origin;
     } catch {
       // fall through
     }
   }
+
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
-  return "http://localhost:3000";
+  return "https://inkday-web.vercel.app";
 }
 
 /** Absolute URL for a site path, using the canonical host when set. */
