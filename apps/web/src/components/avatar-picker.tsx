@@ -169,7 +169,7 @@ export function AvatarPicker({
         <AvatarMark
           avatarId={equipped}
           accessoryId={accessory}
-          size={72}
+          size={96}
           title="Your avatar"
         />
         <div>
