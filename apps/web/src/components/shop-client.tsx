@@ -171,9 +171,17 @@ export function ShopClient({
       isDecorationVisibleInShop(i.requiredLevel ?? 1, level),
     )
     .sort((a, b) => {
-      const ownedA = qty(a.id) > 0 ? 1 : 0;
-      const ownedB = qty(b.id) > 0 ? 1 : 0;
-      if (ownedA !== ownedB) return ownedA - ownedB;
+      // 1) Unlocked (can buy at current level) before locked
+      const lockedA = a.levelLocked ? 1 : 0;
+      const lockedB = b.levelLocked ? 1 : 0;
+      if (lockedA !== lockedB) return lockedA - lockedB;
+      // 2) Among unlocked: not yet bought, then already owned
+      //    (locked items skip this — none are buyable yet)
+      if (!a.levelLocked && !b.levelLocked) {
+        const ownedA = qty(a.id) > 0 ? 1 : 0;
+        const ownedB = qty(b.id) > 0 ? 1 : 0;
+        if (ownedA !== ownedB) return ownedA - ownedB;
+      }
       const la = a.requiredLevel ?? 1;
       const lb = b.requiredLevel ?? 1;
       if (la !== lb) return la - lb;
