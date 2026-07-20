@@ -10,35 +10,64 @@ export type QueuedUnlockNotice = CosmeticUnlockNotice & {
   queuedAt: number;
 };
 
+/** Stable snapshot for useSyncExternalStore — must not allocate a new [] each read. */
+let cachedNotices: QueuedUnlockNotice[] = [];
+let cachedRaw: string | null = null;
+
 function emit(): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(UNLOCK_NOTICES_EVENT));
 }
 
-function readQueue(): QueuedUnlockNotice[] {
-  if (typeof window === "undefined") return [];
+function readQueueRaw(): string | null {
+  if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(QUEUE_KEY);
-    if (!raw) return [];
+    return window.localStorage.getItem(QUEUE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function parseQueue(raw: string | null): QueuedUnlockNotice[] {
+  if (!raw) return [];
+  try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (n): n is QueuedUnlockNotice =>
-        Boolean(n) &&
-        typeof n === "object" &&
-        typeof (n as QueuedUnlockNotice).id === "string" &&
-        typeof (n as QueuedUnlockNotice).title === "string",
-    );
+    return parsed
+      .filter(
+        (n): n is QueuedUnlockNotice =>
+          Boolean(n) &&
+          typeof n === "object" &&
+          typeof (n as QueuedUnlockNotice).id === "string" &&
+          typeof (n as QueuedUnlockNotice).title === "string",
+      )
+      .sort((a, b) => b.queuedAt - a.queuedAt);
   } catch {
     return [];
   }
 }
 
+function readQueue(): QueuedUnlockNotice[] {
+  const raw = readQueueRaw();
+  if (raw === cachedRaw) return cachedNotices;
+  cachedRaw = raw;
+  cachedNotices = parseQueue(raw);
+  return cachedNotices;
+}
+
 function writeQueue(items: QueuedUnlockNotice[]): void {
   if (typeof window === "undefined") return;
   try {
-    if (items.length === 0) window.localStorage.removeItem(QUEUE_KEY);
-    else window.localStorage.setItem(QUEUE_KEY, JSON.stringify(items));
+    if (items.length === 0) {
+      window.localStorage.removeItem(QUEUE_KEY);
+      cachedRaw = null;
+      cachedNotices = [];
+    } else {
+      const raw = JSON.stringify(items);
+      window.localStorage.setItem(QUEUE_KEY, raw);
+      cachedRaw = raw;
+      cachedNotices = [...items].sort((a, b) => b.queuedAt - a.queuedAt);
+    }
   } catch {
     /* quota */
   }
@@ -85,7 +114,7 @@ export function queueUnlockNotices(
 }
 
 export function listUnlockNotices(): QueuedUnlockNotice[] {
-  return readQueue().sort((a, b) => b.queuedAt - a.queuedAt);
+  return readQueue();
 }
 
 export function dismissUnlockNotice(id: string): void {

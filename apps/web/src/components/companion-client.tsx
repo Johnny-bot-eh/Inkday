@@ -84,19 +84,27 @@ export function CompanionClient({
   const gardenSectionRef = useRef<HTMLElement | null>(null);
   const highlightParam = highlightItemId?.trim() || null;
   const placeParam = placeItemId?.trim() || null;
+  const highlightHandledRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!snapshot) return;
+    const handleKey = `${highlightParam ?? ""}|${placeParam ?? ""}`;
+    if (highlightHandledRef.current === handleKey) return;
+    if (!highlightParam && !placeParam) {
+      highlightHandledRef.current = handleKey;
+      return;
+    }
+
     if (highlightParam) {
       const match = snapshot.garden.placements.find(
         (p) => p.itemId === highlightParam,
       );
+      highlightHandledRef.current = handleKey;
       if (match) {
         setSelectedDecor(null);
         setSelectedPlacement(match.id);
         setFocusItemId(highlightParam);
         setMessage(`Showing ${match.title} in your garden`);
-        // Defer scroll until after paint so the garden section exists.
         const scrollTimer = window.setTimeout(() => {
           gardenSectionRef.current?.scrollIntoView({
             behavior: "smooth",
@@ -116,6 +124,7 @@ export function CompanionClient({
       const remaining = snapshot.garden.inventoryDecor.find(
         (d) => d.itemId === placeParam,
       );
+      highlightHandledRef.current = handleKey;
       if (remaining && remaining.qty > 0) {
         setFocusItemId(null);
         setSelectedPlacement(null);

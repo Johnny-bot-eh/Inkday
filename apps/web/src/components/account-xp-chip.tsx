@@ -15,8 +15,23 @@ export function AccountXpChip({ initial }: { initial: AccountXpSummary }) {
   const [summary, setSummary] = useState(initial);
 
   useEffect(() => {
-    setSummary(initial);
-  }, [initial]);
+    setSummary((prev) => {
+      if (
+        prev.accountXp === initial.accountXp &&
+        prev.level === initial.level &&
+        prev.xpIntoLevel === initial.xpIntoLevel &&
+        prev.xpForNext === initial.xpForNext
+      ) {
+        return prev;
+      }
+      return initial;
+    });
+  }, [
+    initial.accountXp,
+    initial.level,
+    initial.xpIntoLevel,
+    initial.xpForNext,
+  ]);
 
   useEffect(() => {
     function onXp(e: Event) {
