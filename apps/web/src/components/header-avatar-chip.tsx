@@ -113,7 +113,7 @@ export function HeaderAvatarChip({
   return (
     <Link
       href="/profile"
-      className="ml-1 inline-flex flex-col items-center gap-1 rounded-lg border border-[var(--line)] bg-panel/40 px-2 py-1.5 text-mint"
+      className="ml-1 inline-flex min-w-[3.25rem] flex-col items-center gap-1 rounded-lg border border-[var(--line)] bg-panel/40 px-2 py-1.5"
       title={
         summary
           ? `${name} · Lv ${summary.level} · ${summary.xpIntoLevel}/${summary.xpForNext} XP`
@@ -121,8 +121,11 @@ export function HeaderAvatarChip({
       }
     >
       <AvatarMark avatarId={avatarId} accessoryId={accessoryId} size={40} />
+      <span className="max-w-[4.5rem] truncate text-[11px] font-semibold text-mint">
+        {name}
+      </span>
       {summary ? (
-        <span className="flex w-full min-w-[2.75rem] flex-col items-center gap-0.5">
+        <span className="flex w-full flex-col items-center gap-0.5">
           <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-ember">
             Lv {summary.level}
           </span>
@@ -133,11 +136,7 @@ export function HeaderAvatarChip({
             />
           </span>
         </span>
-      ) : (
-        <span className="max-w-[3.5rem] truncate text-[10px] text-fog">
-          {name}
-        </span>
-      )}
+      ) : null}
     </Link>
   );
 }
