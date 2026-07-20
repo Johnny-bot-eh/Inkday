@@ -10,8 +10,14 @@ export type QueuedUnlockNotice = CosmeticUnlockNotice & {
   queuedAt: number;
 };
 
-/** Stable snapshot for useSyncExternalStore — must not allocate a new [] each read. */
-let cachedNotices: QueuedUnlockNotice[] = [];
+/**
+ * Stable empty snapshot for useSyncExternalStore.
+ * Returning a fresh `[]` from getSnapshot / getServerSnapshot causes React #185
+ * (maximum update depth) because Object.is sees a new reference every read.
+ */
+export const EMPTY_UNLOCK_NOTICES: QueuedUnlockNotice[] = [];
+
+let cachedNotices: QueuedUnlockNotice[] = EMPTY_UNLOCK_NOTICES;
 let cachedRaw: string | null = null;
 
 function emit(): void {
@@ -29,11 +35,11 @@ function readQueueRaw(): string | null {
 }
 
 function parseQueue(raw: string | null): QueuedUnlockNotice[] {
-  if (!raw) return [];
+  if (!raw) return EMPTY_UNLOCK_NOTICES;
   try {
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed
+    if (!Array.isArray(parsed)) return EMPTY_UNLOCK_NOTICES;
+    const next = parsed
       .filter(
         (n): n is QueuedUnlockNotice =>
           Boolean(n) &&
@@ -42,8 +48,9 @@ function parseQueue(raw: string | null): QueuedUnlockNotice[] {
           typeof (n as QueuedUnlockNotice).title === "string",
       )
       .sort((a, b) => b.queuedAt - a.queuedAt);
+    return next.length === 0 ? EMPTY_UNLOCK_NOTICES : next;
   } catch {
-    return [];
+    return EMPTY_UNLOCK_NOTICES;
   }
 }
 
@@ -61,7 +68,7 @@ function writeQueue(items: QueuedUnlockNotice[]): void {
     if (items.length === 0) {
       window.localStorage.removeItem(QUEUE_KEY);
       cachedRaw = null;
-      cachedNotices = [];
+      cachedNotices = EMPTY_UNLOCK_NOTICES;
     } else {
       const raw = JSON.stringify(items);
       window.localStorage.setItem(QUEUE_KEY, raw);
@@ -115,6 +122,11 @@ export function queueUnlockNotices(
 
 export function listUnlockNotices(): QueuedUnlockNotice[] {
   return readQueue();
+}
+
+/** SSR / hydration snapshot — must be referentially stable. */
+export function getServerUnlockNotices(): QueuedUnlockNotice[] {
+  return EMPTY_UNLOCK_NOTICES;
 }
 
 export function dismissUnlockNotice(id: string): void {
