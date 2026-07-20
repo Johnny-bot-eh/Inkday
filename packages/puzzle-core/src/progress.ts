@@ -22,6 +22,7 @@ export type AchievementId =
   | "night_owl"
   | "three_day_wonder"
   | "weeklong_wanderer"
+  | "monthlong_marathon"
   | "legend"
   | "weekly_champion"
   | "challenge_victor"
@@ -29,6 +30,17 @@ export type AchievementId =
   | "seasonal_regular"
   | "season_devotee"
   | "ink_blot_connoisseur"
+  | "word_dabbler"
+  | "word_regular"
+  | "lexicon_legend"
+  | "scramble_scout"
+  | "cipher_clerk"
+  | "vertical_thinker"
+  | "rung_runner"
+  | "case_file_clerk"
+  | "case_file_veteran"
+  | "hard_boiled"
+  | "well_rounded"
   | `season_${string}_adept`;
 
 export type AchievementDef = {
@@ -118,10 +130,78 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     revealAfter: "three_day_wonder",
   },
   {
+    id: "monthlong_marathon",
+    title: "Monthlong Marathon",
+    description: "Hold a 30-day streak. Your calendar has adopted you.",
+    revealAfter: "weeklong_wanderer",
+  },
+  {
     id: "legend",
     title: "Legend",
     description: "Reach a 365-day daily streak. Calendar printers fear you.",
-    revealAfter: "weeklong_wanderer",
+    revealAfter: "monthlong_marathon",
+  },
+  // Word Daily ladder
+  {
+    id: "word_dabbler",
+    title: "Word Dabbler",
+    description: "Clear 10 Word Daily boards. Five letters never felt so long.",
+  },
+  {
+    id: "word_regular",
+    title: "Word Regular",
+    description: "Clear 25 Word Daily boards. The keyboard knows your walk.",
+    revealAfter: "word_dabbler",
+  },
+  {
+    id: "lexicon_legend",
+    title: "Lexicon Legend",
+    description: "Clear 50 Word Daily boards. Dictionaries leave fan mail.",
+    revealAfter: "word_regular",
+  },
+  // Extra word games
+  {
+    id: "scramble_scout",
+    title: "Scramble Scout",
+    description: "Solve 15 anagrams. Letters report for duty in new uniforms.",
+  },
+  {
+    id: "cipher_clerk",
+    title: "Cipher Clerk",
+    description: "Solve 15 cryptograms. Substitution never looked so tidy.",
+  },
+  {
+    id: "vertical_thinker",
+    title: "Vertical Thinker",
+    description: "Solve 15 acrostics. Down the side, up the prestige.",
+  },
+  {
+    id: "rung_runner",
+    title: "Rung Runner",
+    description: "Solve 15 word ladders. One letter at a time, somehow.",
+  },
+  // Case File + hard clears
+  {
+    id: "case_file_clerk",
+    title: "Case File Clerk",
+    description: "Clear 10 Monthly Case File puzzles. Stamp, file, smirk.",
+  },
+  {
+    id: "case_file_veteran",
+    title: "Case File Veteran",
+    description: "Clear 30 Monthly Case File puzzles. The archive nods back.",
+    revealAfter: "case_file_clerk",
+  },
+  {
+    id: "hard_boiled",
+    title: "Hard-Boiled",
+    description: "Clear 25 Hard or Obscure boards. Soft modes fear you.",
+  },
+  {
+    id: "well_rounded",
+    title: "Well-Rounded",
+    description:
+      "Win at least one of every live puzzle type. No favorites, only range.",
   },
   // Seasonal ladder
   {
@@ -247,6 +327,15 @@ export const UNLOCKS: UnlockDef[] = [
 export type ProgressCounters = {
   escapeWins: number;
   logicWins: number;
+  wordleWins: number;
+  anagramWins: number;
+  cryptogramWins: number;
+  acrosticWins: number;
+  wordladderWins: number;
+  hardWins: number;
+  monthlyClears: number;
+  /** Distinct active puzzle types with at least one win. */
+  distinctPuzzleTypes: number;
   totalWins: number;
   speedClears: number;
   perfectClears: number;
@@ -285,6 +374,18 @@ export function evaluateAchievements(
   check("triple_digits", counters.totalWins >= 100);
   check("puzzle_master", counters.totalWins >= 500);
 
+  check("word_dabbler", counters.wordleWins >= 10);
+  check("word_regular", counters.wordleWins >= 25);
+  check("lexicon_legend", counters.wordleWins >= 50);
+  check("scramble_scout", counters.anagramWins >= 15);
+  check("cipher_clerk", counters.cryptogramWins >= 15);
+  check("vertical_thinker", counters.acrosticWins >= 15);
+  check("rung_runner", counters.wordladderWins >= 15);
+  check("case_file_clerk", counters.monthlyClears >= 10);
+  check("case_file_veteran", counters.monthlyClears >= 30);
+  check("hard_boiled", counters.hardWins >= 25);
+  check("well_rounded", counters.distinctPuzzleTypes >= 7);
+
   check("speed_demon", counters.speedClears >= 25);
   check("perfectionist", counters.perfectClears >= 50);
   check("night_owl", counters.nightOwlClears >= 10);
@@ -296,6 +397,10 @@ export function evaluateAchievements(
   check(
     "weeklong_wanderer",
     counters.dailyStreak >= 7 || counters.bestDailyStreak >= 7,
+  );
+  check(
+    "monthlong_marathon",
+    counters.dailyStreak >= 30 || counters.bestDailyStreak >= 30,
   );
   check("challenge_victor", counters.challengeWins >= 10);
   check("weekly_champion", counters.weeklyChampionships >= 1);

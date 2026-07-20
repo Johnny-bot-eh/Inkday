@@ -78,7 +78,6 @@ function timeFromMeta(metaJson: string | null): string | null {
 
 function categoryLabel(type: string | null): string {
   if (!type) return "—";
-  if (type === "path") return "Path Puzzle";
   return PUZZLE_LABELS[type as PuzzleType] ?? type;
 }
 
@@ -140,10 +139,10 @@ export function ProfileView({
         <Tile label="Username" value={user.displayName || user.name} />
         <Tile label="Solved" value={`${stats?.puzzlesSolved ?? 0}`} />
         <Tile label="Total points" value={`${stats?.totalScore ?? 0}`} />
-        <Tile label="Daily streak" value={`${stats?.currentStreak ?? 0}d`} />
-        <Tile label="Best daily" value={`${stats?.bestStreak ?? 0}d`} />
-        <Tile label="Weekly streak" value={`${stats?.weeklyStreak ?? 0}w`} />
-        <Tile label="Monthly streak" value={`${stats?.monthlyStreak ?? 0}m`} />
+        <Tile
+          label="Longest streak"
+          value={`${Math.max(stats?.bestStreak ?? 0, stats?.currentStreak ?? 0)}d`}
+        />
         <Tile
           label="Avg time"
           value={

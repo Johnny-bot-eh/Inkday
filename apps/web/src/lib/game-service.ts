@@ -19,6 +19,7 @@ import {
   cosmeticUnlockNotices,
   getMonthlyCollection,
   isAchievementVisible,
+  isActivePuzzleType,
   isNightOwlClear,
   isPremiumActive,
   isSpeedClear,
@@ -357,46 +358,79 @@ async function buildProgressCounters(
   streakOverlay?: Partial<ProgressCounters>,
 ): Promise<ProgressCounters> {
   const db = getDb();
-  const [stats, wins, challengeWinRows, champRows] = await Promise.all([
-    ensureUserStats(userId),
-    db
-      .select({
-        puzzleType: playResult.puzzleType,
-        seasonId: playResult.seasonId,
-        metaJson: playResult.metaJson,
-        createdAt: playResult.createdAt,
-      })
-      .from(playResult)
-      .where(and(eq(playResult.userId, userId), eq(playResult.won, true))),
-    db
-      .select({ id: friendChallenge.id })
-      .from(friendChallenge)
-      .where(
-        and(
-          eq(friendChallenge.winnerId, userId),
-          eq(friendChallenge.status, "completed"),
+  const [stats, wins, challengeWinRows, champRows, monthlyClearRows] =
+    await Promise.all([
+      ensureUserStats(userId),
+      db
+        .select({
+          puzzleType: playResult.puzzleType,
+          difficulty: playResult.difficulty,
+          seasonId: playResult.seasonId,
+          metaJson: playResult.metaJson,
+          createdAt: playResult.createdAt,
+        })
+        .from(playResult)
+        .where(and(eq(playResult.userId, userId), eq(playResult.won, true))),
+      db
+        .select({ id: friendChallenge.id })
+        .from(friendChallenge)
+        .where(
+          and(
+            eq(friendChallenge.winnerId, userId),
+            eq(friendChallenge.status, "completed"),
+          ),
         ),
-      ),
-    db
-      .select({ id: tournamentAward.id })
-      .from(tournamentAward)
-      .where(
-        and(eq(tournamentAward.userId, userId), eq(tournamentAward.place, 1)),
-      ),
-  ]);
+      db
+        .select({ id: tournamentAward.id })
+        .from(tournamentAward)
+        .where(
+          and(eq(tournamentAward.userId, userId), eq(tournamentAward.place, 1)),
+        ),
+      db
+        .select({ id: monthlyCompletion.id })
+        .from(monthlyCompletion)
+        .where(
+          and(
+            eq(monthlyCompletion.userId, userId),
+            eq(monthlyCompletion.won, true),
+          ),
+        ),
+    ]);
 
   let escapeWins = 0;
   let logicWins = 0;
+  let wordleWins = 0;
+  let anagramWins = 0;
+  let cryptogramWins = 0;
+  let acrosticWins = 0;
+  let wordladderWins = 0;
+  let hardWins = 0;
   let speedClears = 0;
   let perfectClears = 0;
   let escapePerfectClears = 0;
   let nightOwlClears = 0;
   let seasonWins = 0;
   const seasonWinsById: Partial<Record<string, number>> = {};
+  const typesCleared = new Set<string>();
 
   for (const play of wins) {
     if (play.puzzleType === "escape") escapeWins += 1;
     if (play.puzzleType === "logic") logicWins += 1;
+    if (play.puzzleType === "wordle") wordleWins += 1;
+    if (play.puzzleType === "anagram") anagramWins += 1;
+    if (play.puzzleType === "cryptogram") cryptogramWins += 1;
+    if (play.puzzleType === "acrostic") acrosticWins += 1;
+    if (play.puzzleType === "wordladder" || play.puzzleType === "path") {
+      wordladderWins += 1;
+    }
+    if (play.difficulty === "hard" || play.difficulty === "obscure") {
+      hardWins += 1;
+    }
+    if (isActivePuzzleType(play.puzzleType)) {
+      typesCleared.add(play.puzzleType);
+    } else if (play.puzzleType === "path") {
+      typesCleared.add("wordladder");
+    }
     if (play.createdAt && isNightOwlClear(new Date(play.createdAt))) {
       nightOwlClears += 1;
     }
@@ -434,6 +468,14 @@ async function buildProgressCounters(
   return {
     escapeWins,
     logicWins,
+    wordleWins,
+    anagramWins,
+    cryptogramWins,
+    acrosticWins,
+    wordladderWins,
+    hardWins,
+    monthlyClears: monthlyClearRows.length,
+    distinctPuzzleTypes: typesCleared.size,
     totalWins: wins.length,
     speedClears,
     perfectClears,
@@ -832,6 +874,8 @@ export async function getProfile(userId: string) {
   let favoriteCategory: string | null = null;
   let favoriteCount = 0;
   for (const [type, count] of typeCounts) {
+    // Skip retired boards (e.g. Path Puzzle) so favorites stay current.
+    if (!isActivePuzzleType(type)) continue;
     if (count > favoriteCount) {
       favoriteCategory = type;
       favoriteCount = count;
