@@ -2,30 +2,28 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb, schema } from "@daily-puzzle/db";
 
-/** Hosts that may serve the app (custom domain + Vercel aliases + previews). */
-const ALLOWED_HOSTS = [
-  "inkday.app",
-  "www.inkday.app",
-  "inkday-web.vercel.app",
-  "*.vercel.app",
-  "localhost",
-  "127.0.0.1",
-] as const;
-
-function fallbackBaseUrl(): string {
+/**
+ * Prefer the working Vercel production alias while inkday.app SSL /
+ * DEPLOYMENT_NOT_FOUND is unresolved. Dynamic baseURL objects have been
+ * unstable for RSC getSession on every page load.
+ */
+function resolveBaseUrl(): string {
+  const broken = new Set(["https://inkday.app", "https://www.inkday.app"]);
   for (const value of [
-    process.env.BETTER_AUTH_URL,
-    process.env.NEXT_PUBLIC_APP_URL,
+    "https://inkday-web.vercel.app",
     process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : undefined,
-    "https://inkday-web.vercel.app",
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.BETTER_AUTH_URL,
   ]) {
     if (!value) continue;
     try {
-      return new URL(value).origin;
+      const origin = new URL(value).origin;
+      if (broken.has(origin)) continue;
+      return origin;
     } catch {
-      // ignore invalid
+      // ignore
     }
   }
   return "https://inkday-web.vercel.app";
@@ -40,6 +38,12 @@ function trustedOrigins(): string[] {
     "http://localhost:3000",
     "http://127.0.0.1:3000",
   ]);
+
+  try {
+    origins.add(resolveBaseUrl());
+  } catch {
+    // ignore
+  }
 
   for (const value of [
     process.env.BETTER_AUTH_URL,
@@ -60,7 +64,6 @@ function trustedOrigins(): string[] {
     }
   }
 
-  // Optional comma-separated extras from env.
   const extra = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",") ?? [];
   for (const raw of extra) {
     const value = raw.trim();
@@ -80,13 +83,7 @@ export const auth = betterAuth({
     process.env.BETTER_AUTH_SECRET ??
     // Build/collect can import auth without secrets; runtime should set env.
     "inkday-dev-secret-change-me",
-  // Resolve baseURL from the request host so login works on
-  // inkday-web.vercel.app while the custom domain is down / renewing.
-  baseURL: {
-    allowedHosts: [...ALLOWED_HOSTS],
-    fallback: fallbackBaseUrl(),
-    protocol: "auto",
-  },
+  baseURL: resolveBaseUrl(),
   database: drizzleAdapter(getDb(), {
     provider: "sqlite",
     schema: {
@@ -112,3 +109,4 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
+
